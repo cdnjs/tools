@@ -12,3 +12,4 @@
 *.out
 
 cmd/packages/packages
+cmd/algolia/algolia
