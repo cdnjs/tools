@@ -217,22 +217,22 @@ func getGitHubMeta(repo *RepositoryMeta) (*GitHubMeta, error) {
 func indexPackage(p Package, index *algoliasearch.Index) error {
 	author, authorerr := parseAuthor(p)
 	if authorerr != nil {
-		return authorerr
+		fmt.Printf("%s", authorerr)
 	}
 
 	license, licenseerr := parseLicense(p)
 	if licenseerr != nil {
-		return licenseerr
+		fmt.Printf("%s", licenseerr)
 	}
 
 	repository, repositoryerr := parseRepository(p)
 	if repositoryerr != nil {
-		return repositoryerr
+		fmt.Printf("%s", repositoryerr)
 	}
 
 	github, githuberr := getGitHubMeta(repository)
 	if githuberr != nil {
-		return githuberr
+		fmt.Printf("%s", githuberr)
 	}
 
 	searchEntry := SearchEntry{
