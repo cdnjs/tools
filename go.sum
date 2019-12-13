@@ -15,6 +15,7 @@ cloud.google.com/go/storage v1.4.0/go.mod h1:ZusYJWlOshgSBGbt6K3GnB3MT3H1xs2id9+
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/algolia/algoliasearch-client-go v2.25.0+incompatible h1:FGQr9l++u4uQPDXrW8jM5kNJm3Iw5SxEJJtYXSFmPRY=
 github.com/algolia/algoliasearch-client-go/v3 v3.4.0 h1:eeVU30L5DkKUK2q/EjXw+8o7reoK4QB1mS+BG0Jbd4Y=
 github.com/algolia/algoliasearch-client-go/v3 v3.4.0/go.mod h1:d0/D54BCmkwhLxT5VIQBeYLAz2GbZHFX9OptYyohTr0=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=

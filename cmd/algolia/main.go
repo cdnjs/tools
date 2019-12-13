@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -230,7 +231,11 @@ func getSRI(p *Package) (string, error) {
 
 	util.Check(json.Unmarshal(data, &j))
 
-	return j[p.Filename].(string), nil
+	if str, ok := j[p.Filename].(string); ok {
+		return str, nil
+	} else {
+		return "", errors.New("SRI could not get converted to a string")
+	}
 }
 
 func indexPackage(p Package, index *algoliasearch.Index) error {
@@ -310,6 +315,10 @@ func main() {
 				fmt.Printf("Ok\n")
 			}
 		}
+		fmt.Printf("Ok\n")
+
+		fmt.Printf("Promoting index to production...")
+		algolia.PromoteIndex(algoliaClient)
 		fmt.Printf("Ok\n")
 
 		return

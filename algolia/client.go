@@ -3,7 +3,13 @@ package algolia
 import (
 	"github.com/xtuc/cdnjs-go/util"
 
+	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
+)
+
+var (
+	tmpIndex  = "libraries.tmp"
+	prodIndex = "libraries"
 )
 
 func GetClient() *search.Client {
@@ -11,5 +17,34 @@ func GetClient() *search.Client {
 }
 
 func GetTmpIndex(client *search.Client) *search.Index {
-	return client.InitIndex("libraries.tmp")
+	index := client.InitIndex(tmpIndex)
+	_, err := index.SetSettings(search.Settings{
+		SearchableAttributes: opt.SearchableAttributes(
+			"unordered(name)",
+			"unordered(alternativeNames)",
+			"unordered(github.repo)",
+			"unordered(description)",
+			"unordered(keywords)",
+			"unordered(filename)",
+			"unordered(repositories.url)",
+			"unordered(github.user)",
+			"unordered(maintainers.name)",
+		),
+		CustomRanking: opt.CustomRanking(
+			"desc(github.stargazers_count)", "asc(name)",
+		),
+		AttributesForFaceting: opt.AttributesForFaceting(
+			"fileType", "keywords",
+		),
+		OptionalWords: opt.OptionalWords(
+			"js", "css",
+		),
+	})
+	util.Check(err)
+	return index
+}
+
+func PromoteIndex(client *search.Client) {
+	_, err := client.MoveIndex(tmpIndex, prodIndex)
+	util.Check(err)
 }
