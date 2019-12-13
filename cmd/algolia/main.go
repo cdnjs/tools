@@ -7,6 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,6 +37,7 @@ type Package struct {
 	Homepage   string      `json:"homepage"`
 	Author     interface{} `json:"author,omitempty"`
 	Repository interface{} `json:"repository,omitempty"`
+	Namespace  interface{} `json:"namespace,omitempty"`
 }
 
 type SearchEntry struct {
@@ -49,7 +52,7 @@ type SearchEntry struct {
 	ObjectID         string          `json:"objectID"`
 	License          string          `json:"license"`
 	Homepage         string          `json:"homepage"`
-	Namespace        *string         `json:"Namespace,omitempty"`
+	Namespace        string          `json:"namespace,omitempty"`
 	Repository       *RepositoryMeta `json:"repository"`
 	Author           string          `json:"author"`
 	OriginalName     string          `json:"originalName"`
@@ -99,7 +102,7 @@ func getAlternativeNames(name string) []string {
 	return names
 }
 
-func parseLicense(p Package) (string, error) {
+func parseLicense(p *Package) (string, error) {
 	license := ""
 	switch v := p.License.(type) {
 	case string:
@@ -126,7 +129,7 @@ func parseLicense(p Package) (string, error) {
 	return license, nil
 }
 
-func parseAuthor(p Package) (string, error) {
+func parseAuthor(p *Package) (string, error) {
 	author := ""
 	switch v := p.Author.(type) {
 	case string:
@@ -154,7 +157,7 @@ func parseAuthor(p Package) (string, error) {
 	return author, nil
 }
 
-func parseRepository(p Package) (*RepositoryMeta, error) {
+func parseRepository(p *Package) (*RepositoryMeta, error) {
 	switch v := p.Repository.(type) {
 	case string:
 		return &RepositoryMeta{
@@ -214,18 +217,34 @@ func getGitHubMeta(repo *RepositoryMeta) (*GitHubMeta, error) {
 	}, nil
 }
 
+func getSRI(p *Package) (string, error) {
+	jsonFile := path.Join(".", "sri", p.Name, p.Version+".json")
+
+	var j map[string]interface{}
+
+	data, err := ioutil.ReadFile(jsonFile)
+
+	if err != nil {
+		return "", nil
+	}
+
+	util.Check(json.Unmarshal(data, &j))
+
+	return j[p.Filename].(string), nil
+}
+
 func indexPackage(p Package, index *algoliasearch.Index) error {
-	author, authorerr := parseAuthor(p)
+	author, authorerr := parseAuthor(&p)
 	if authorerr != nil {
 		fmt.Printf("%s", authorerr)
 	}
 
-	license, licenseerr := parseLicense(p)
+	license, licenseerr := parseLicense(&p)
 	if licenseerr != nil {
 		fmt.Printf("%s", licenseerr)
 	}
 
-	repository, repositoryerr := parseRepository(p)
+	repository, repositoryerr := parseRepository(&p)
 	if repositoryerr != nil {
 		fmt.Printf("%s", repositoryerr)
 	}
@@ -233,6 +252,11 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 	github, githuberr := getGitHubMeta(repository)
 	if githuberr != nil {
 		fmt.Printf("%s", githuberr)
+	}
+
+	sri, srierr := getSRI(&p)
+	if srierr != nil {
+		fmt.Printf("%s", srierr)
 	}
 
 	searchEntry := SearchEntry{
@@ -250,10 +274,11 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 		Repository:       repository,
 		Author:           author,
 		OriginalName:     p.Name,
-		// TODO: SRI is not stored in package.min.js
-		Sri: "",
+		Sri:              sri,
 	}
-	// searchEntry.namespace = util.String("t")
+	if str, ok := p.Namespace.(string); ok {
+		searchEntry.Namespace = str
+	}
 
 	_, err := index.SaveObject(searchEntry)
 	return err
