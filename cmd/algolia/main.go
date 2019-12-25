@@ -17,6 +17,7 @@ import (
 	"github.com/xtuc/cdnjs-go/algolia"
 	"github.com/xtuc/cdnjs-go/cloudstorage"
 	"github.com/xtuc/cdnjs-go/github"
+	"github.com/xtuc/cdnjs-go/packages"
 	"github.com/xtuc/cdnjs-go/util"
 
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
@@ -26,6 +27,8 @@ import (
 type PackagesJSON struct {
 	Packages []Package `json:"packages"`
 }
+
+// FIXME(sven): remove parsing here in favor of github.com/xtuc/cdnjs-go/packages
 type Package struct {
 	Name        string   `json:"name"`
 	Filename    string   `json:"filename"`
@@ -42,27 +45,22 @@ type Package struct {
 }
 
 type SearchEntry struct {
-	Name             string          `json:"name"`
-	Filename         string          `json:"filename"`
-	Description      string          `json:"description"`
-	Version          string          `json:"version"`
-	Keywords         []string        `json:"keywords"`
-	AlternativeNames []string        `json:"alternativeNames"`
-	FileType         string          `json:"fileType"`
-	Github           *GitHubMeta     `json:"github"`
-	ObjectID         string          `json:"objectID"`
-	License          string          `json:"license"`
-	Homepage         string          `json:"homepage"`
-	Namespace        string          `json:"namespace,omitempty"`
-	Repository       *RepositoryMeta `json:"repository"`
-	Author           string          `json:"author"`
-	OriginalName     string          `json:"originalName"`
-	Sri              string          `json:"sri"`
-}
-
-type RepositoryMeta struct {
-	Repotype string `json:"type"`
-	Url      string `json:"url"`
+	Name             string               `json:"name"`
+	Filename         string               `json:"filename"`
+	Description      string               `json:"description"`
+	Version          string               `json:"version"`
+	Keywords         []string             `json:"keywords"`
+	AlternativeNames []string             `json:"alternativeNames"`
+	FileType         string               `json:"fileType"`
+	Github           *GitHubMeta          `json:"github"`
+	ObjectID         string               `json:"objectID"`
+	License          string               `json:"license"`
+	Homepage         string               `json:"homepage"`
+	Namespace        string               `json:"namespace,omitempty"`
+	Repository       *packages.Repository `json:"repository"`
+	Author           string               `json:"author"`
+	OriginalName     string               `json:"originalName"`
+	Sri              string               `json:"sri"`
 }
 
 type GitHubMeta struct {
@@ -158,17 +156,17 @@ func parseAuthor(p *Package) (string, error) {
 	return author, nil
 }
 
-func parseRepository(p *Package) (*RepositoryMeta, error) {
+func parseRepository(p *Package) (*packages.Repository, error) {
 	switch v := p.Repository.(type) {
 	case string:
-		return &RepositoryMeta{
+		return &packages.Repository{
 			Repotype: "",
 			Url:      v,
 		}, nil
 	case map[string]interface{}:
 		{
 			if v["type"] != nil && v["url"] != nil {
-				return &RepositoryMeta{
+				return &packages.Repository{
 					Repotype: v["type"].(string),
 					Url:      v["url"].(string),
 				}, nil
@@ -189,7 +187,7 @@ func parseRepository(p *Package) (*RepositoryMeta, error) {
 
 var githubUrl = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
 
-func getGitHubMeta(repo *RepositoryMeta) (*GitHubMeta, error) {
+func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	if repo == nil {
 		// no repo configured
 		return nil, nil
