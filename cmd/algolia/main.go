@@ -255,6 +255,10 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 	github, githuberr := getGitHubMeta(repository)
 	if githuberr != nil {
 		fmt.Printf("%s", githuberr)
+		if !strings.Contains(githuberr.Error(), "404 Not Found") {
+			// 404 Not Found errors are mostly. It's caused by a misconfiguration.
+			return fmt.Errorf("Fatal error `%s`", githuberr)
+		}
 	}
 
 	sri, srierr := getSRI(&p)
@@ -306,12 +310,8 @@ func main() {
 
 		for _, p := range j.Packages {
 			fmt.Printf("%s: ", p.Name)
-			err := indexPackage(p, tmpIndex)
-			if err != nil {
-				fmt.Printf("%s\n", err)
-			} else {
-				fmt.Printf("Ok\n")
-			}
+			util.Check(indexPackage(p, tmpIndex))
+			fmt.Printf("Ok\n")
 		}
 		fmt.Printf("Ok\n")
 

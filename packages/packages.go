@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/xtuc/cdnjs-go/util"
 
@@ -16,7 +14,7 @@ import (
 )
 
 const (
-	PACKAGES_PATH = "./ajax/libs"
+	PACKAGES_PATH = "ajax/libs"
 )
 
 type Repository struct {
@@ -83,7 +81,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to read %s", file)
 	}
 
 	jsonerr := json.Unmarshal(data, &jsondata)
@@ -233,16 +231,7 @@ func (p *Package) path() string {
 }
 
 func (p *Package) Versions() (versions []string) {
-	files, err := filepath.Glob(path.Join(p.path(), "*"))
-	util.Check(err)
-	// filter out package.json
-	for _, file := range files {
-		if !strings.HasSuffix(file, "package.json") {
-			parts := strings.Split(file, "/")
-			versions = append(versions, parts[3])
-		}
-	}
-	return versions
+	return GitListPackageVersions(p.ctx, p.path())
 }
 
 func (p *Package) files(version string) []string {

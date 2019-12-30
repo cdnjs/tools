@@ -27,7 +27,6 @@ func encodeJson(packages []outputPackage) (string, error) {
 
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
-	encoder.SetIndent("", "  ")
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(&out)
 	return buffer.String(), err
@@ -64,7 +63,10 @@ func main() {
 			ctx := util.ContextWithName(f)
 
 			p, err := packages.ReadPackageJSON(ctx, f)
-			util.Check(err)
+			if err != nil {
+				util.Printf(ctx, "error while processing package: %s\n", err)
+				continue
+			}
 
 			if p.Version == "" {
 				util.Printf(ctx, "version is invalid\n")
