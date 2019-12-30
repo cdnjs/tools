@@ -21,7 +21,7 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 
 	// filter out package.json
 	for _, file := range filesOnFs {
-		if !strings.HasSuffix(file, "package.json") && strings.Trim(file, " ") != "" {
+		if !strings.HasSuffix(file, ".donotoptimizepng") && !strings.HasSuffix(file, "package.json") && strings.Trim(file, " ") != "" {
 			filteredFilesOnFs = append(filteredFilesOnFs, file)
 		}
 	}

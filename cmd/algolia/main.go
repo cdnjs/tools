@@ -255,8 +255,7 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 	github, githuberr := getGitHubMeta(repository)
 	if githuberr != nil {
 		fmt.Printf("%s", githuberr)
-		if !strings.Contains(githuberr.Error(), "404 Not Found") {
-			// 404 Not Found errors are mostly. It's caused by a misconfiguration.
+		if strings.Contains(githuberr.Error(), "403 API rate limit") {
 			return fmt.Errorf("Fatal error `%s`", githuberr)
 		}
 	}

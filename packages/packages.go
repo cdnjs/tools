@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 
+	"github.com/xtuc/cdnjs-go/openssl"
 	"github.com/xtuc/cdnjs-go/util"
 
 	"github.com/pkg/errors"
@@ -51,6 +52,8 @@ type Asset struct {
 
 type Package struct {
 	ctx context.Context
+	// Cache list of versions for the package
+	versions []string
 
 	Title       string
 	Name        string
@@ -231,7 +234,24 @@ func (p *Package) path() string {
 }
 
 func (p *Package) Versions() (versions []string) {
-	return GitListPackageVersions(p.ctx, p.path())
+	if p.versions != nil {
+		return p.versions
+	}
+	p.versions = GitListPackageVersions(p.ctx, p.path())
+	return p.versions
+}
+
+func (p *Package) CalculateVersionSris(version string) map[string]string {
+	sriFileMap := make(map[string]string)
+
+	for _, relFile := range p.files(version) {
+		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
+			absFile := path.Join(p.path(), version, relFile)
+			sriFileMap[relFile] = openssl.CalculateFileSri(absFile)
+		}
+	}
+
+	return sriFileMap
 }
 
 func (p *Package) files(version string) []string {

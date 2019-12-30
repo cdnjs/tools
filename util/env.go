@@ -12,3 +12,7 @@ func GetEnv(name string) string {
 	}
 	return v
 }
+
+func IsDebug() bool {
+	return os.Getenv("DEBUG") != ""
+}

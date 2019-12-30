@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,6 +17,10 @@ import (
 	"github.com/xtuc/cdnjs-go/util"
 
 	"cloud.google.com/go/storage"
+)
+
+const (
+	WEBSITE_PATH = "../new-website"
 )
 
 func encodeJson(packages []outputPackage) (string, error) {
@@ -35,6 +40,10 @@ func encodeJson(packages []outputPackage) (string, error) {
 func main() {
 	flag.Parse()
 	subcommand := flag.Arg(0)
+
+	if util.IsDebug() {
+		fmt.Println("Running in debug mode")
+	}
 
 	ctx := context.Background()
 
@@ -71,6 +80,26 @@ func main() {
 			if p.Version == "" {
 				util.Printf(ctx, "version is invalid\n")
 				continue
+			}
+
+			for _, version := range p.Versions() {
+				if !hasSri(p, version) {
+					util.Printf(ctx, "version %s needs SRI calculation\n", version)
+
+					sriFileMap := p.CalculateVersionSris(version)
+					bytes, jsonErr := json.Marshal(sriFileMap)
+					util.Check(jsonErr)
+
+					writeSriJson(p, version, bytes)
+				}
+
+				// In debug mode ensure that we still generate the same SRI;
+				// compare with the existing ones.
+				if util.IsDebug() && hasSri(p, version) {
+					expectedSriFileMap := getSriFileMap(p, version)
+					actualSriFileMap := p.CalculateVersionSris(version)
+					compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
+				}
 			}
 
 			out = append(out, generatePackage(ctx, p))
@@ -154,4 +183,44 @@ func generatePackage(ctx context.Context, p *packages.Package) outputPackage {
 	out.Assets = p.Assets()
 
 	return out
+}
+
+func hasSri(p *packages.Package, version string) bool {
+	sriPath := path.Join(WEBSITE_PATH, "sri", p.Name, version+".json")
+	_, statErr := os.Stat(sriPath)
+	return !os.IsNotExist(statErr)
+}
+
+func getSriFileMap(p *packages.Package, version string) map[string]string {
+	sriPath := path.Join(WEBSITE_PATH, "sri", p.Name, version+".json")
+	data, err := ioutil.ReadFile(sriPath)
+	util.Check(err)
+
+	var fileMap map[string]string
+	util.Check(json.Unmarshal(data, &fileMap))
+
+	return fileMap
+}
+
+func writeSriJson(p *packages.Package, version string, content []byte) {
+	sriDir := path.Join(WEBSITE_PATH, "sri", p.Name)
+	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
+		util.Check(os.MkdirAll(sriDir, 0777))
+	}
+
+	sriFilename := path.Join(sriDir, version+".json")
+	util.Check(ioutil.WriteFile(sriFilename, content, 0777))
+}
+
+func compareMaps(ctx context.Context, a, b map[string]string) {
+	for k := range a {
+		if _, bHas := b[k]; !bHas {
+			util.Printf(ctx, "Sri non existing for file %s\n", k)
+			continue
+		}
+		if a[k] != b[k] {
+			util.Printf(ctx, "Sri diff %s vs %s for file %s\n", a[k], b[k], k)
+			continue
+		}
+	}
 }
