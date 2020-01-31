@@ -13,3 +13,4 @@
 
 cmd/packages/packages
 cmd/algolia/algolia
+cmd/checker/checker
