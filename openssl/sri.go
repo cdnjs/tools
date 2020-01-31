@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/util"
 )
 
 func CalculateFileSri(filename string) string {

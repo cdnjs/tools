@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/xtuc/cdnjs-go/packages"
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/util"
 )
 
 func main() {

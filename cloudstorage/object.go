@@ -4,7 +4,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/util"
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"

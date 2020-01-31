@@ -12,9 +12,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/xtuc/cdnjs-go/cloudstorage"
-	"github.com/xtuc/cdnjs-go/packages"
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/cloudstorage"
+	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/util"
 
 	"cloud.google.com/go/storage"
 )

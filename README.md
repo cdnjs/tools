@@ -1,4 +1,4 @@
-# cdnjs-go
+# tools
 
 Repository that contains various tools for maintaining cdnjs.
 

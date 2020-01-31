@@ -1,4 +1,4 @@
-module github.com/xtuc/cdnjs-go
+module github.com/cdnjs/tools
 
 go 1.13
 

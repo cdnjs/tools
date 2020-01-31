@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/util"
 )
 
 // We first list all the versions (and top-level package.json)

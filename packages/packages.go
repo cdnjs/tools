@@ -8,8 +8,8 @@ import (
 	"path"
 	"sort"
 
-	"github.com/xtuc/cdnjs-go/openssl"
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/openssl"
+	"github.com/cdnjs/tools/util"
 
 	"github.com/pkg/errors"
 )

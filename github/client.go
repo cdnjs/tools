@@ -1,7 +1,7 @@
 package github
 
 import (
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/util"
 
 	githubapi "github.com/google/go-github/github"
 	"golang.org/x/net/context"

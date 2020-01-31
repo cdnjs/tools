@@ -1,7 +1,7 @@
 package algolia
 
 import (
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/util"
 
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"

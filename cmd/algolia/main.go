@@ -14,11 +14,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/xtuc/cdnjs-go/algolia"
-	"github.com/xtuc/cdnjs-go/cloudstorage"
-	"github.com/xtuc/cdnjs-go/github"
-	"github.com/xtuc/cdnjs-go/packages"
-	"github.com/xtuc/cdnjs-go/util"
+	"github.com/cdnjs/tools/algolia"
+	"github.com/cdnjs/tools/cloudstorage"
+	"github.com/cdnjs/tools/github"
+	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/util"
 
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"golang.org/x/net/context"
@@ -28,7 +28,7 @@ type PackagesJSON struct {
 	Packages []Package `json:"packages"`
 }
 
-// FIXME(sven): remove parsing here in favor of github.com/xtuc/cdnjs-go/packages
+// FIXME(sven): remove parsing here in favor of github.com/cdnjs/tools/packages
 type Package struct {
 	Name        string   `json:"name"`
 	Filename    string   `json:"filename"`
