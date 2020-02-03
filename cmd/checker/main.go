@@ -76,6 +76,10 @@ func lintPackage(name string) {
 	} else {
 		warn(ctx, ".autoupdate should not be null. Package will never auto-update")
 	}
+
+	if pckg.Repository.Repotype != "git" {
+		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
+	}
 }
 
 func err(ctx context.Context, s string) {

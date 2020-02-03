@@ -193,23 +193,29 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 		case "autoupdate":
 			{
 				if valuemap, ok := value.(map[string]interface{}); ok {
-					p.Autoupdate = &Autoupdate{
-						Source: valuemap["source"].(string),
-						Target: valuemap["target"].(string),
-					}
-					if fileMap, ok := valuemap["fileMap"].([]interface{}); ok {
-						p.Autoupdate.FileMap = new([]FileMap)
-						for _, rawvalue := range fileMap {
-							value := rawvalue.(map[string]interface{})
-							autoupdateFileMap := FileMap{
-								BasePath: stringInObject("basePath", value),
-								Files:    make([]string, 0),
-							}
-							for _, file := range value["files"].([]interface{}) {
-								autoupdateFileMap.Files = append(autoupdateFileMap.Files, file.(string))
-							}
-							*p.Autoupdate.FileMap = append(*p.Autoupdate.FileMap, autoupdateFileMap)
+					source, sourceok := valuemap["source"].(string)
+					target, targetok := valuemap["target"].(string)
+					if sourceok && targetok {
+						p.Autoupdate = &Autoupdate{
+							Source: source,
+							Target: target,
 						}
+						if fileMap, ok := valuemap["fileMap"].([]interface{}); ok {
+							p.Autoupdate.FileMap = new([]FileMap)
+							for _, rawvalue := range fileMap {
+								value := rawvalue.(map[string]interface{})
+								autoupdateFileMap := FileMap{
+									BasePath: stringInObject("basePath", value),
+									Files:    make([]string, 0),
+								}
+								for _, file := range value["files"].([]interface{}) {
+									autoupdateFileMap.Files = append(autoupdateFileMap.Files, file.(string))
+								}
+								*p.Autoupdate.FileMap = append(*p.Autoupdate.FileMap, autoupdateFileMap)
+							}
+						}
+					} else {
+						return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported Autoupdate map", file))
 					}
 				} else {
 					return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported Autoupdate", file))
