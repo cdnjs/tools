@@ -19,10 +19,6 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-const (
-	SRI_PATH = "../SRIs"
-)
-
 func encodeJson(packages []outputPackage) (string, error) {
 	out := struct {
 		Packages []outputPackage `json:"packages"`
@@ -186,13 +182,13 @@ func generatePackage(ctx context.Context, p *packages.Package) outputPackage {
 }
 
 func hasSri(p *packages.Package, version string) bool {
-	sriPath := path.Join(SRI_PATH, p.Name, version+".json")
+	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
 	_, statErr := os.Stat(sriPath)
 	return !os.IsNotExist(statErr)
 }
 
 func getSriFileMap(p *packages.Package, version string) map[string]string {
-	sriPath := path.Join(SRI_PATH, p.Name, version+".json")
+	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
 	data, err := ioutil.ReadFile(sriPath)
 	util.Check(err)
 
@@ -203,7 +199,7 @@ func getSriFileMap(p *packages.Package, version string) map[string]string {
 }
 
 func writeSriJson(p *packages.Package, version string, content []byte) {
-	sriDir := path.Join(SRI_PATH, p.Name)
+	sriDir := path.Join(util.SRI_PATH, p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))
 	}

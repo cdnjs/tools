@@ -5,6 +5,10 @@ import (
 	"os"
 )
 
+const (
+	SRI_PATH = "../SRIs"
+)
+
 func GetEnv(name string) string {
 	v := os.Getenv(name)
 	if v == "" {
