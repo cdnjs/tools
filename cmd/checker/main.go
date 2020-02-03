@@ -4,10 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"path"
 
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
+)
+
+var (
+	// Store the number of validation errors
+	validationErrorCount uint = 0
 )
 
 func main() {
@@ -24,6 +30,11 @@ func main() {
 		for _, name := range names {
 			lintPackage(name)
 		}
+
+		if validationErrorCount > 0 {
+			fmt.Printf("%d linting error(s)\n", validationErrorCount)
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -35,21 +46,51 @@ func lintPackage(name string) {
 
 	ctx := util.ContextWithName(path)
 
-	pckg, err := packages.ReadPackageJSON(ctx, path)
-	util.Check(err)
+	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+	util.Check(readerr)
 
-	checkNotEmpty(ctx, ".name", pckg.Name)
-	checkNotEmpty(ctx, ".version", pckg.Version)
-}
+	if util.IsDebug() {
+		fmt.Printf("Linting %s...\n", name)
+	}
 
-func checkNotEmpty(ctx context.Context, name string, v string) {
-	if v == "" {
-		util.Printf(ctx, name+" is empty\n")
+	if pckg.Name == "" {
+		err(ctx, shouldNotBeEmpty(".name"))
+	}
+
+	if pckg.Version == "" {
+		err(ctx, shouldNotBeEmpty(".version"))
+	}
+
+	if pckg.NpmName != nil && *pckg.NpmName == "" {
+		err(ctx, shouldBeEmpty(".NpmName"))
+	}
+
+	if len(pckg.NpmFileMap) > 0 {
+		err(ctx, shouldBeEmpty(".NpmFileMap"))
+	}
+
+	if pckg.Autoupdate != nil {
+		if pckg.Autoupdate.Source != "npm" && pckg.Autoupdate.Source != "git" {
+			err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
+		}
+	} else {
+		warn(ctx, ".autoupdate should not be null. Package will never auto-update")
 	}
 }
 
-func checkEmpty(ctx context.Context, name string, v string) {
-	if v != "" {
-		util.Printf(ctx, name+" is specified\n")
-	}
+func err(ctx context.Context, s string) {
+	util.Printf(ctx, "error: "+s)
+	validationErrorCount += 1
+}
+
+func warn(ctx context.Context, s string) {
+	util.Printf(ctx, "warning: "+s)
+}
+
+func shouldBeEmpty(name string) string {
+	return fmt.Sprintf("%s should be empty\n", name)
+}
+
+func shouldNotBeEmpty(name string) string {
+	return fmt.Sprintf("%s should be specified\n", name)
 }
