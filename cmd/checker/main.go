@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
@@ -26,9 +27,10 @@ func main() {
 
 	if subcommand == "lint" {
 		names := flag.Args()[1:]
+		runAllChecks := len(names) == 1
 
 		for _, name := range names {
-			lintPackage(name)
+			lintPackage(runAllChecks, name)
 		}
 
 		if validationErrorCount > 0 {
@@ -41,16 +43,19 @@ func main() {
 	panic("unknown subcommand")
 }
 
-func lintPackage(name string) {
+func lintPackage(runAllChecks bool, name string) {
 	path := path.Join(packages.PACKAGES_PATH, name, "package.json")
 
 	ctx := util.ContextWithName(path)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, path)
-	util.Check(readerr)
-
 	if util.IsDebug() {
 		fmt.Printf("Linting %s...\n", name)
+	}
+
+	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+	if readerr != nil {
+		err(ctx, readerr.Error())
+		return
 	}
 
 	if pckg.Name == "" {
@@ -61,13 +66,13 @@ func lintPackage(name string) {
 		err(ctx, shouldNotBeEmpty(".version"))
 	}
 
-	if pckg.NpmName != nil && *pckg.NpmName == "" {
-		err(ctx, shouldBeEmpty(".NpmName"))
-	}
+	// if pckg.NpmName != nil && *pckg.NpmName == "" {
+	// 	err(ctx, shouldBeEmpty(".NpmName"))
+	// }
 
-	if len(pckg.NpmFileMap) > 0 {
-		err(ctx, shouldBeEmpty(".NpmFileMap"))
-	}
+	// if len(pckg.NpmFileMap) > 0 {
+	// 	err(ctx, shouldBeEmpty(".NpmFileMap"))
+	// }
 
 	if pckg.Autoupdate != nil {
 		if pckg.Autoupdate.Source != "npm" && pckg.Autoupdate.Source != "git" {
@@ -80,6 +85,20 @@ func lintPackage(name string) {
 	if pckg.Repository.Repotype != "git" {
 		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
 	}
+
+	if pckg.Autoupdate != nil && pckg.Autoupdate.Source == "npm" {
+		if !npm.Exists(pckg.Autoupdate.Target) {
+			err(ctx, "package doesn't exists on npm")
+		} else {
+			if runAllChecks {
+				counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
+				if counts.Downloads < 800 {
+					err(ctx, "package download per month on npm is under 800")
+				}
+			}
+		}
+	}
+
 }
 
 func err(ctx context.Context, s string) {
