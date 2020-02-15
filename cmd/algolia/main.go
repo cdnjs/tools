@@ -74,7 +74,7 @@ type GitHubMeta struct {
 func getPackagesBuffer() bytes.Buffer {
 	ctx := context.Background()
 
-	bkt, err := cloudstorage.GetBucket(ctx)
+	bkt, err := cloudstorage.GetAssetsBucket(ctx)
 	util.Check(err)
 
 	obj := bkt.Object("package.min.js")

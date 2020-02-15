@@ -1,32 +1,23 @@
 package cloudstorage
 
 import (
-	"os"
-	"path"
-
+	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/util"
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
-	"google.golang.org/api/option"
 )
 
-func getCredentialsFile() string {
-	home, err := os.UserHomeDir()
+func GetAssetsBucket(ctx context.Context) (*storage.BucketHandle, error) {
+	client, err := gcp.GetStorageClient(ctx)
 	util.Check(err)
-
-	return path.Join(home, "google_storage_cdnjs_assets.json")
+	bkt := client.Bucket("cdnjs-assets")
+	return bkt, nil
 }
 
-const bucketName = "cdnjs-assets"
-
-func GetClient(ctx context.Context) (*storage.Client, error) {
-	return storage.NewClient(ctx, option.WithCredentialsFile(getCredentialsFile()))
-}
-
-func GetBucket(ctx context.Context) (*storage.BucketHandle, error) {
-	client, err := GetClient(ctx)
+func GetRobotcdnjsBucket(ctx context.Context) (*storage.BucketHandle, error) {
+	client, err := gcp.GetStorageClient(ctx)
 	util.Check(err)
-	bkt := client.Bucket(bucketName)
+	bkt := client.Bucket("robotcdnjs")
 	return bkt, nil
 }

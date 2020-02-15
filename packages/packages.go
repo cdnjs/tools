@@ -2,20 +2,18 @@ package packages
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"sort"
 
 	"github.com/cdnjs/tools/openssl"
 	"github.com/cdnjs/tools/util"
-
-	"github.com/pkg/errors"
 )
 
-const (
-	PACKAGES_PATH = "ajax/libs"
+var (
+	BASE_PATH           = util.GetEnv("BOT_BASE_PATH")
+	CDNJS_PATH          = path.Join(BASE_PATH, "cdnjs")
+	CDNJS_PACKAGES_PATH = path.Join(BASE_PATH, "cdnjs", "ajax", "libs")
 )
 
 type Repository struct {
@@ -79,24 +77,25 @@ func stringInObject(key string, object map[string]interface{}) string {
 	}
 }
 
-func (p *Package) path() string {
-	return path.Join(PACKAGES_PATH, p.Name)
+// Location of the package in the cdnjs repo
+func (p *Package) Path() string {
+	return path.Join(CDNJS_PACKAGES_PATH, p.Name)
 }
 
 func (p *Package) Versions() (versions []string) {
 	if p.versions != nil {
 		return p.versions
 	}
-	p.versions = GitListPackageVersions(p.ctx, p.path())
+	p.versions = GitListPackageVersions(p.ctx, p.Path())
 	return p.versions
 }
 
 func (p *Package) CalculateVersionSris(version string) map[string]string {
 	sriFileMap := make(map[string]string)
 
-	for _, relFile := range p.files(version) {
+	for _, relFile := range p.AllFiles(version) {
 		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
-			absFile := path.Join(p.path(), version, relFile)
+			absFile := path.Join(p.Path(), version, relFile)
 			sriFileMap[relFile] = openssl.CalculateFileSri(absFile)
 		}
 	}
@@ -104,10 +103,38 @@ func (p *Package) CalculateVersionSris(version string) map[string]string {
 	return sriFileMap
 }
 
-func (p *Package) files(version string) []string {
+type NpmFileMoveOp struct {
+	From string
+	To   string
+}
+
+// List files that match the npm glob pattern in the `base` directory
+// Returns a struct that represent the move semantics
+func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
+	out := make([]NpmFileMoveOp, 0)
+
+	for _, fileMap := range p.NpmFileMap {
+		for _, pattern := range fileMap.Files {
+			basePath := path.Join(base, fileMap.BasePath)
+			fmt.Println("match", pattern, "in", basePath)
+
+			for _, f := range util.ListFilesGlob(basePath, pattern) {
+				out = append(out, NpmFileMoveOp{
+					From: path.Join(fileMap.BasePath, f),
+					To:   f,
+				})
+			}
+		}
+	}
+
+	return out
+}
+
+// List all files in the version directory
+func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
-	basePath := path.Join(p.path(), version)
+	basePath := path.Join(p.Path(), version)
 	out = append(out, util.ListFilesGlob(basePath, "**")...)
 
 	return out
@@ -117,7 +144,7 @@ func (p *Package) Assets() []Asset {
 	assets := make([]Asset, 0)
 
 	for _, version := range p.Versions() {
-		files := p.files(version)
+		files := p.AllFiles(version)
 
 		assets = append(assets, Asset{
 			Version: version,
@@ -126,7 +153,7 @@ func (p *Package) Assets() []Asset {
 	}
 
 	// Sort by version
-	sort.Sort(ByVersion(assets))
+	sort.Sort(ByVersionAsset(assets))
 
 	return assets
 }

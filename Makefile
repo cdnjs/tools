@@ -1,4 +1,4 @@
-all: algolia checker packages
+all: algolia checker packages autoupdate
 
 .PHONY: algolia
 algolia:
@@ -11,3 +11,7 @@ checker:
 .PHONY: packages
 packages:
 	go build -v -ldflags="-s -w" -o bin/packages ./cmd/packages
+
+.PHONY: autoupdate
+autoupdate:
+	go build -v -ldflags="-s -w" -o bin/autoupdate ./cmd/autoupdate

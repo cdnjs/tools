@@ -117,7 +117,7 @@ func TestGlob(t *testing.T) {
 		{
 			pattern: "**/*.js",
 			assert: func(g *glob.Glob, t *testing.T) {
-				assert.False(t, g.Match("file.js"))
+				assert.True(t, g.Match("file.js"))
 				assert.True(t, g.Match("a/file.js"))
 				assert.True(t, g.Match("a/b/file.js"))
 				assert.True(t, g.Match("a/b/c/file.js"))
@@ -127,7 +127,7 @@ func TestGlob(t *testing.T) {
 		{
 			pattern: "**/!(a|b)",
 			assert: func(g *glob.Glob, t *testing.T) {
-				assert.False(t, g.Match("file"))
+				assert.True(t, g.Match("file"))
 				assert.True(t, g.Match("a/file"))
 				assert.True(t, g.Match("a/b/file"))
 				assert.False(t, g.Match("a/a"))
@@ -138,7 +138,7 @@ func TestGlob(t *testing.T) {
 		{
 			pattern: "**/!(*.common.*|*.html)",
 			assert: func(g *glob.Glob, t *testing.T) {
-				assert.False(t, g.Match("file"))
+				assert.True(t, g.Match("file"))
 				assert.True(t, g.Match("a/file"))
 				assert.True(t, g.Match("a/b/file"))
 				assert.True(t, g.Match("a/b/file.js"))

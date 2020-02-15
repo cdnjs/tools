@@ -2,6 +2,7 @@ package packages
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -31,10 +32,11 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 	}
 	args = append(args, filteredFilesOnFs...)
 
-	out, err := exec.Command("git", args...).Output()
-	util.Check(err)
+	cmd := exec.Command("git", args...)
+	cmd.Dir = CDNJS_PATH
+	out := checkCmd(cmd.CombinedOutput())
 
-	outFiles := strings.Split(string(out), "\n")
+	outFiles := strings.Split(out, "\n")
 
 	filteredOutFiles := make([]string, 0)
 	// remove basePath from the output
@@ -45,14 +47,49 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 		}
 	}
 
-	// Debug mode
-	diff := arrDiff(filteredFilesOnFs, outFiles)
-	if len(diff) > 0 {
-		util.Printf(ctx, "found staged version: %+q\n", diff)
+	if util.IsDebug() {
+		diff := arrDiff(filteredFilesOnFs, outFiles)
+		if len(diff) > 0 {
+			util.Printf(ctx, "found staged version: %+q\n", diff)
+		}
 	}
-	// Debug mode
 
 	return filteredOutFiles
+}
+
+func GitAdd(ctx context.Context, gitpath string, relpath string) {
+	args := []string{"add", relpath}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	checkCmd(cmd.CombinedOutput())
+}
+
+func GitCommit(ctx context.Context, gitpath string, msg string) {
+	args := []string{"commit", "-m", msg}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	checkCmd(cmd.CombinedOutput())
+}
+
+func GitPush(ctx context.Context, gitpath string) {
+	args := []string{"push"}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	checkCmd(cmd.CombinedOutput())
+}
+
+func checkCmd(out []byte, err error) string {
+	if err != nil {
+		fmt.Println(string(out))
+	}
+	util.Check(err)
+	return string(out)
 }
 
 func arrDiff(a, b []string) (diff []string) {
