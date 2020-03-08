@@ -43,7 +43,7 @@ func main() {
 
 	ctx := context.Background()
 
-	bkt, err := cloudstorage.GetBucket(ctx)
+	bkt, err := cloudstorage.GetAssetsBucket(ctx)
 	util.Check(err)
 
 	obj := bkt.Object("package.min.js")
@@ -90,7 +90,7 @@ func main() {
 				}
 
 				// In debug mode ensure that we still generate the same SRI;
-				// compare with the existing ones.
+				// compare with the existing ones (slow).
 				if util.IsDebug() && hasSri(p, version) {
 					expectedSriFileMap := getSriFileMap(p, version)
 					actualSriFileMap := p.CalculateVersionSris(version)

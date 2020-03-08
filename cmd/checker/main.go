@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
 
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
@@ -43,14 +42,10 @@ func main() {
 	panic("unknown subcommand")
 }
 
-func lintPackage(runAllChecks bool, name string) {
-	path := path.Join(packages.PACKAGES_PATH, name, "package.json")
-
+func lintPackage(runAllChecks bool, path string) {
 	ctx := util.ContextWithName(path)
 
-	if util.IsDebug() {
-		fmt.Printf("Linting %s...\n", name)
-	}
+	util.Debugf(ctx, "Linting %s...\n", path)
 
 	pckg, readerr := packages.ReadPackageJSON(ctx, path)
 	if readerr != nil {
@@ -63,7 +58,7 @@ func lintPackage(runAllChecks bool, name string) {
 	}
 
 	if pckg.Version == "" {
-		err(ctx, shouldNotBeEmpty(".version"))
+		err(ctx, shouldBeEmpty(".version"))
 	}
 
 	// if pckg.NpmName != nil && *pckg.NpmName == "" {

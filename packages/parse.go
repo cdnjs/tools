@@ -133,6 +133,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 							Target: target,
 						}
 						if fileMap, ok := valuemap["fileMap"].([]interface{}); ok {
+							p.NpmFileMap = make([]FileMap, 0)
 							p.Autoupdate.FileMap = new([]FileMap)
 							for _, rawvalue := range fileMap {
 								value := rawvalue.(map[string]interface{})
@@ -144,6 +145,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 									autoupdateFileMap.Files = append(autoupdateFileMap.Files, file.(string))
 								}
 								*p.Autoupdate.FileMap = append(*p.Autoupdate.FileMap, autoupdateFileMap)
+								p.NpmFileMap = append(p.NpmFileMap, autoupdateFileMap)
 							}
 						}
 					} else {
