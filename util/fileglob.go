@@ -1,31 +1,30 @@
 package util
 
 import (
-	"os"
-	"path/filepath"
+	"bytes"
+	"fmt"
+	"os/exec"
+	"path"
 	"strings"
+)
 
-	ohmyglob "github.com/pachyderm/ohmyglob"
+var (
+	GLOB_EXECUTABLE = path.Join(GetEnv("BOT_BASE_PATH"), "glob", "index.js")
 )
 
 func ListFilesGlob(base string, pattern string) []string {
-	list := make([]string, 0)
-	glob, err := ohmyglob.Compile(pattern)
-	Check(err)
+	fmt.Println("match", pattern, "in", base)
 
-	Check(filepath.Walk(base, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return filepath.SkipDir
-		}
+	cmd := exec.Command(GLOB_EXECUTABLE, pattern)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	cmd.Dir = base
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("%s: %s\n", err, out.String())
+		Check(err)
+	}
 
-		relativePath := strings.ReplaceAll(path, base+"/", "")
-
-		if !info.IsDir() && glob.Match(relativePath) {
-			list = append(list, relativePath)
-		}
-
-		return nil
-	}))
-
-	return list
+	return strings.Split(out.String(), "\n")
 }

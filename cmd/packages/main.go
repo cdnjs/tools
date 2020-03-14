@@ -59,7 +59,7 @@ func main() {
 	}
 
 	if subcommand == "generate" {
-		files, err := filepath.Glob(path.Join(packages.PACKAGES_PATH, "*", "package.json"))
+		files, err := filepath.Glob(path.Join(packages.CDNJS_PACKAGES_PATH, "*", "package.json"))
 		util.Check(err)
 
 		out := make([]outputPackage, 0)
