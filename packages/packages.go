@@ -2,7 +2,6 @@ package packages
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"sort"
 
@@ -116,7 +115,6 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	for _, fileMap := range p.NpmFileMap {
 		for _, pattern := range fileMap.Files {
 			basePath := path.Join(base, fileMap.BasePath)
-			fmt.Println("match", pattern, "in", basePath)
 
 			for _, f := range util.ListFilesGlob(basePath, pattern) {
 				out = append(out, NpmFileMoveOp{
@@ -134,8 +132,8 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
-	basePath := path.Join(p.Path(), version)
-	out = append(out, util.ListFilesGlob(basePath, "**")...)
+	absPath := path.Join(CDNJS_PATH, version)
+	out = append(out, util.ListFilesGlob(absPath, "**")...)
 
 	return out
 }
