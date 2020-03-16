@@ -27,13 +27,19 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 		}
 	}
 
+	// no local version, no need to check what's in git
+	if len(filteredFilesOnFs) == 0 {
+		return make([]string, 0)
+	}
+
 	args := []string{
 		"ls-tree", "--name-only", "origin/master",
 	}
 	args = append(args, filteredFilesOnFs...)
 
 	cmd := exec.Command("git", args...)
-	cmd.Dir = CDNJS_PATH
+	cmd.Dir = basePath
+	util.Debugf(ctx, "run %s from %s\n", cmd, basePath)
 	out := checkCmd(cmd.CombinedOutput())
 
 	outFiles := strings.Split(out, "\n")

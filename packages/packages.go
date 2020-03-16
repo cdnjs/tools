@@ -132,7 +132,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
-	absPath := path.Join(CDNJS_PATH, version)
+	absPath := path.Join(p.Path(), version)
 	out = append(out, util.ListFilesGlob(absPath, "**")...)
 
 	return out
