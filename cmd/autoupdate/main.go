@@ -12,6 +12,7 @@ import (
 
 	"github.com/blang/semver"
 
+	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
@@ -119,12 +120,73 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersio
 	util.Check(err)
 }
 
+// Filter a list of files by extensions
+func filterByExt(files []string, extensions map[string]bool) []string {
+	var matches []string
+	for _, file := range files {
+		ext := path.Ext(file)
+		if v, ok := extensions[ext]; ok && v {
+			matches = append(matches, file)
+		}
+	}
+	return matches
+}
+
+func compressNewVersion(ctx context.Context, version newVersionToCommit) {
+	files := version.pckg.AllFiles(version.newVersion)
+
+	// jpeg
+	{
+		files := filterByExt(files, compress.JpegExt)
+		util.Debugf(ctx, "found %d jpeg to compress\n", len(files))
+		for _, file := range files {
+			absfile := path.Join(version.versionPath, file)
+			compress.CompressJpeg(ctx, absfile)
+		}
+	}
+	// png
+	{
+		// if a `.donotoptimizepng` is present in the package ignore png
+		// compression
+		_, err := os.Stat(path.Join(version.pckg.Path(), ".donotoptimizepng"))
+		if os.IsNotExist(err) {
+			files := filterByExt(files, compress.PngExt)
+			util.Debugf(ctx, "found %d png to compress\n", len(files))
+			for _, file := range files {
+				absfile := path.Join(version.versionPath, file)
+				compress.CompressPng(ctx, absfile)
+			}
+		}
+	}
+	// js
+	{
+		files := filterByExt(files, compress.JsExt)
+		util.Debugf(ctx, "found %d js to compress\n", len(files))
+		for _, file := range files {
+			absfile := path.Join(version.versionPath, file)
+			compress.CompressJs(ctx, absfile)
+		}
+	}
+	// css
+	{
+		files := filterByExt(files, compress.CssExt)
+		util.Debugf(ctx, "found %d css to compress\n", len(files))
+		for _, file := range files {
+			absfile := path.Join(version.versionPath, file)
+			compress.CompressCss(ctx, absfile)
+		}
+	}
+}
+
 func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, packageJsonPath string) {
 	if len(newVersionsToCommit) == 0 {
 		return
 	}
 
 	for _, newVersionToCommit := range newVersionsToCommit {
+		// Compress assets
+		compressNewVersion(ctx, newVersionToCommit)
+
 		// Add to git the new version directory
 		packages.GitAdd(ctx, CDNJS_PATH, newVersionToCommit.versionPath)
 
