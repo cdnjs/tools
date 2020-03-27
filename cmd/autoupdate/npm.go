@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -110,10 +111,13 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 
 				util.Debugf(ctx, "%s -> %s\n", absFrom, absDest)
 
-				util.Check(util.MoveFile(
+				err := util.MoveFile(
 					absFrom,
 					absDest,
-				))
+				)
+				if err != nil {
+					fmt.Println("could not move file:", err)
+				}
 			}
 
 			log(ctx, LogCreatedNewVersion{Version: version.Version})

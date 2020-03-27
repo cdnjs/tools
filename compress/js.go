@@ -2,6 +2,7 @@ package compress
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -21,6 +22,14 @@ var (
 
 // Perform a compression of the file
 func CompressJs(ctx context.Context, file string) {
+	outfile := strings.ReplaceAll(file, ".js", ".min.js")
+
+	// compressed file already exists, ignore
+	if _, err := os.Stat(outfile); !os.IsNotExist(err) {
+		util.Debugf(ctx, "compressed file already exists: %s\n", outfile)
+		return
+	}
+
 	// Already minified, ignore
 	if strings.HasSuffix(file, ".min.js") {
 		return
@@ -30,7 +39,7 @@ func CompressJs(ctx context.Context, file string) {
 		"--mangle",
 		"--compress",
 		"if_return=true",
-		"-o", strings.ReplaceAll(file, ".js", ".min.js"),
+		"-o", outfile,
 		file,
 	}
 

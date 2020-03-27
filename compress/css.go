@@ -2,6 +2,7 @@ package compress
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -21,6 +22,14 @@ var (
 
 // Perform a compression of the file
 func CompressCss(ctx context.Context, file string) {
+	outfile := strings.ReplaceAll(file, ".css", ".min.css")
+
+	// compressed file already exists, ignore
+	if _, err := os.Stat(outfile); !os.IsNotExist(err) {
+		util.Debugf(ctx, "compressed file already exists: %s\n", outfile)
+		return
+	}
+
 	// Already minified, ignore
 	if strings.HasSuffix(file, ".min.css") {
 		return
@@ -29,7 +38,7 @@ func CompressCss(ctx context.Context, file string) {
 	args := []string{
 		"--compatibility",
 		"--s0",
-		"-o", strings.ReplaceAll(file, ".css", ".min.css"),
+		"-o", outfile,
 		file,
 	}
 

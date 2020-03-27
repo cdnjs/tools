@@ -89,13 +89,14 @@ func main() {
 					writeSriJson(p, version, bytes)
 				}
 
-				// In debug mode ensure that we still generate the same SRI;
-				// compare with the existing ones (slow).
-				if util.IsDebug() && hasSri(p, version) {
-					expectedSriFileMap := getSriFileMap(p, version)
-					actualSriFileMap := p.CalculateVersionSris(version)
-					compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
-				}
+				// FIXME: reenable that once we don't run in debug mode anymore
+				// // In debug mode ensure that we still generate the same SRI;
+				// // compare with the existing ones (slow).
+				// if util.IsDebug() && hasSri(p, version) {
+				// 	expectedSriFileMap := getSriFileMap(p, version)
+				// 	actualSriFileMap := p.CalculateVersionSris(version)
+				// 	compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
+				// }
 			}
 
 			out = append(out, generatePackage(ctx, p))

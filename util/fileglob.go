@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -13,6 +14,11 @@ var (
 )
 
 func ListFilesGlob(base string, pattern string) []string {
+	if _, err := os.Stat(base); os.IsNotExist(err) {
+		fmt.Println("match", pattern, "in", base, "but doesn't exists")
+		return []string{}
+	}
+
 	fmt.Println("match", pattern, "in", base)
 
 	cmd := exec.Command(GLOB_EXECUTABLE, pattern)
