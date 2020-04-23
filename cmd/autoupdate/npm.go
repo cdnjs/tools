@@ -18,12 +18,7 @@ import (
 
 func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
 	var newVersionsToCommit []newVersionToCommit
-	existingVersionSet := make([]string, 0)
-
-	for _, asset := range pckg.Assets() {
-		_, version := path.Split(asset.Version)
-		existingVersionSet = append(existingVersionSet, string(version))
-	}
+	existingVersionSet := pckg.Versions()
 
 	// We currently ignore any non-semver versions
 	// FIXME: handle them?
