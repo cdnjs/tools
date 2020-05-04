@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"path"
 )
 
 const (
@@ -19,4 +20,16 @@ func GetEnv(name string) string {
 
 func IsDebug() bool {
 	return os.Getenv("DEBUG") != ""
+}
+
+func GetBotBasePath() string {
+	return GetEnv("BOT_BASE_PATH")
+}
+
+func GetCDNJSPath() string {
+	return path.Join(GetBotBasePath(), "cdnjs")
+}
+
+func GetCDNJSPackages() string {
+	return path.Join(GetBotBasePath(), "cdnjs", "ajax", "libs")
 }

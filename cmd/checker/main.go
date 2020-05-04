@@ -25,12 +25,7 @@ func main() {
 	}
 
 	if subcommand == "lint" {
-		names := flag.Args()[1:]
-		runAllChecks := len(names) == 1
-
-		for _, name := range names {
-			lintPackage(runAllChecks, name)
-		}
+		lintPackage(flag.Arg(1))
 
 		if validationErrorCount > 0 {
 			fmt.Printf("%d linting error(s)\n", validationErrorCount)
@@ -42,7 +37,7 @@ func main() {
 	panic("unknown subcommand")
 }
 
-func lintPackage(runAllChecks bool, path string) {
+func lintPackage(path string) {
 	ctx := util.ContextWithName(path)
 
 	util.Debugf(ctx, "Linting %s...\n", path)
@@ -85,11 +80,9 @@ func lintPackage(runAllChecks bool, path string) {
 		if !npm.Exists(pckg.Autoupdate.Target) {
 			err(ctx, "package doesn't exists on npm")
 		} else {
-			if runAllChecks {
-				counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
-				if counts.Downloads < 800 {
-					err(ctx, "package download per month on npm is under 800")
-				}
+			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
+			if counts.Downloads < 800 {
+				err(ctx, "package download per month on npm is under 800")
 			}
 		}
 	}

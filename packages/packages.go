@@ -9,12 +9,6 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-var (
-	BASE_PATH           = util.GetEnv("BOT_BASE_PATH")
-	CDNJS_PATH          = path.Join(BASE_PATH, "cdnjs")
-	CDNJS_PACKAGES_PATH = path.Join(BASE_PATH, "cdnjs", "ajax", "libs")
-)
-
 type Repository struct {
 	Repotype string `json:"type"`
 	Url      string `json:"url"`
@@ -78,7 +72,7 @@ func stringInObject(key string, object map[string]interface{}) string {
 
 // Location of the package in the cdnjs repo
 func (p *Package) Path() string {
-	return path.Join(CDNJS_PACKAGES_PATH, p.Name)
+	return path.Join(util.GetCDNJSPackages(), p.Name)
 }
 
 func (p *Package) Versions() (versions []string) {
