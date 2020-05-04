@@ -1,0 +1,35 @@
+name: Publish tools
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: make
+      run: make all
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: algolia
+        path: ./bin/algolia
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: autoupdate
+        path: ./bin/autoupdate
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: checker
+        path: ./bin/checker
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: packages
+        path: ./bin/packages
