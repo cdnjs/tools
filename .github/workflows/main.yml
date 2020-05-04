@@ -9,27 +9,50 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: make
-      run: make all
+      - name: make
+        run: make all
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: algolia
-        path: ./bin/algolia
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: c${{ github.sha }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: autoupdate
-        path: ./bin/autoupdate
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/algolia
+          asset_name: algolia
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: checker
-        path: ./bin/checker
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/autoupdate
+          asset_name: autoupdate
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: packages
-        path: ./bin/packages
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/checker
+          asset_name: checker
+
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/packages
+          asset_name: packages
