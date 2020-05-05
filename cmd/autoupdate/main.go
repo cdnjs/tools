@@ -13,6 +13,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/cdnjs/tools/compress"
+	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
@@ -131,7 +132,6 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	// jpeg
 	{
 		files := filterByExt(files, compress.JpegExt)
-		util.Debugf(ctx, "found %d jpeg to compress\n", len(files))
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
 			compress.CompressJpeg(ctx, absfile)
@@ -144,7 +144,6 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 		_, err := os.Stat(path.Join(version.pckg.Path(), ".donotoptimizepng"))
 		if os.IsNotExist(err) {
 			files := filterByExt(files, compress.PngExt)
-			util.Debugf(ctx, "found %d png to compress\n", len(files))
 			for _, file := range files {
 				absfile := path.Join(version.versionPath, file)
 				compress.CompressPng(ctx, absfile)
@@ -154,7 +153,6 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	// js
 	{
 		files := filterByExt(files, compress.JsExt)
-		util.Debugf(ctx, "found %d js to compress\n", len(files))
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
 			compress.CompressJs(ctx, absfile)
@@ -163,7 +161,6 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	// css
 	{
 		files := filterByExt(files, compress.CssExt)
-		util.Debugf(ctx, "found %d css to compress\n", len(files))
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
 			compress.CompressCss(ctx, absfile)
@@ -193,6 +190,8 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		packages.GitCommit(ctx, CDNJS_PATH, commitMsg)
 
 		log(ctx, LogNewVersionCommit{Version: newVersionToCommit.newVersion})
+
+		metrics.ReportNewVersion()
 	}
 }
 
