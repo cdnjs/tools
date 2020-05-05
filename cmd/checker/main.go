@@ -13,7 +13,7 @@ import (
 
 var (
 	// Store the number of validation errors
-	validationErrorCount uint = 0
+	errCount uint = 0
 )
 
 func main() {
@@ -30,8 +30,7 @@ func main() {
 	if subcommand == "lint" {
 		lintPackage(flag.Arg(1))
 
-		if validationErrorCount > 0 {
-			fmt.Printf("%d linting error(s)\n", validationErrorCount)
+		if errCount > 0 {
 			os.Exit(1)
 		}
 		return
@@ -39,6 +38,10 @@ func main() {
 
 	if subcommand == "show-files" {
 		showFiles(flag.Arg(1))
+
+		if errCount > 0 {
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -128,7 +131,7 @@ func lintPackage(path string) {
 
 func err(ctx context.Context, s string) {
 	util.Printf(ctx, "error: "+s)
-	validationErrorCount += 1
+	errCount += 1
 }
 
 func warn(ctx context.Context, s string) {
