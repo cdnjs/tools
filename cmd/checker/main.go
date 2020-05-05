@@ -63,19 +63,19 @@ func showFiles(path string) {
 		return
 	}
 
-	// Import all the versions since we have none locally.
-	// Limit the number of version to an abrirary number to avoid publishing
-	// too many outdated versions.
 	sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
 	if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
 		npmVersions = npmVersions[len(npmVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
 	}
 
-	for _, npmVersion := range npmVersions {
-		util.Printf(ctx, "%s:\n", npmVersion.Version)
+	// print info for the last info
+	{
+		lastNpmVersion := npmVersions[len(npmVersions)-1]
 
-		tarballDir := npm.DownloadTar(ctx, npmVersion.Tarball)
+		util.Printf(ctx, "%s:\n", lastNpmVersion.Version)
+
+		tarballDir := npm.DownloadTar(ctx, lastNpmVersion.Tarball)
 		filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 		if len(filesToCopy) == 0 {
@@ -85,6 +85,16 @@ func showFiles(path string) {
 
 		for _, file := range filesToCopy {
 			util.Printf(ctx, "%s\n", file.To)
+		}
+	}
+
+	// aggregate info for the few last version
+	{
+		for _, version := range npmVersions {
+			tarballDir := npm.DownloadTar(ctx, version.Tarball)
+			filesToCopy := pckg.NpmFilesFrom(tarballDir)
+
+			util.Printf(ctx, "%s: %d file(s) matched\n", version.Version, len(filesToCopy))
 		}
 	}
 }
