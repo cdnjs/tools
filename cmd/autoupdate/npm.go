@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"sort"
@@ -92,7 +90,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 
 		util.Check(os.MkdirAll(pckgpath, os.ModePerm))
 
-		tarballDir := downloadTar(ctx, version.Tarball)
+		tarballDir := npm.DownloadTar(ctx, version.Tarball)
 		filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 		if len(filesToCopy) > 0 {
@@ -148,20 +146,4 @@ func npmVersionDiff(a []npm.NpmVersion, b []string) []npm.NpmVersion {
 	}
 
 	return diff
-}
-
-// Extract the tarball url in a temporary location
-func downloadTar(ctx context.Context, url string) string {
-	dest, err := ioutil.TempDir("", "npmtarball")
-	util.Check(err)
-
-	util.Debugf(ctx, "download %s in %s", url, dest)
-
-	resp, err := http.Get(url)
-	util.Check(err)
-
-	defer resp.Body.Close()
-
-	util.Check(npm.Untar(dest, resp.Body))
-	return dest
 }

@@ -3,10 +3,15 @@ package npm
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/cdnjs/tools/util"
 )
 
 func removePackageDir(path string) string {
@@ -92,4 +97,20 @@ func Untar(dst string, r io.Reader) error {
 			}
 		}
 	}
+}
+
+// Extract the tarball url in a temporary location
+func DownloadTar(ctx context.Context, url string) string {
+	dest, err := ioutil.TempDir("", "npmtarball")
+	util.Check(err)
+
+	util.Debugf(ctx, "download %s in %s", url, dest)
+
+	resp, err := http.Get(url)
+	util.Check(err)
+
+	defer resp.Body.Close()
+
+	util.Check(Untar(dest, resp.Body))
+	return dest
 }
