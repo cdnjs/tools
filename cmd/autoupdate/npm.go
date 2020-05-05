@@ -51,8 +51,8 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		// too many outdated versions.
 		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
-		if len(npmVersions) > IMPORT_ALL_MAX_VERSIONS {
-			npmVersions = npmVersions[len(npmVersions)-IMPORT_ALL_MAX_VERSIONS:]
+		if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
+			npmVersions = npmVersions[len(npmVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
 		}
 
 		npmVersionsStr := make([]string, len(npmVersions))

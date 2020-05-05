@@ -61,19 +61,25 @@ func showFiles(path string) {
 		err(ctx, "no version found on npm")
 		return
 	}
-	lastNpmVersion := npmVersions[len(npmVersions)-1]
-	util.Printf(ctx, "%s:\n", lastNpmVersion.Version)
 
-	tarballDir := npm.DownloadTar(ctx, lastNpmVersion.Tarball)
-	filesToCopy := pckg.NpmFilesFrom(tarballDir)
-
-	if len(filesToCopy) == 0 {
-		err(ctx, "no files to copy")
-		return
+	if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
+		npmVersions = npmVersions[len(npmVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
 	}
 
-	for _, file := range filesToCopy {
-		util.Printf(ctx, "%s\n", file.To)
+	for _, npmVersion := range npmVersions {
+		util.Printf(ctx, "%s:\n", npmVersion.Version)
+
+		tarballDir := npm.DownloadTar(ctx, npmVersion.Tarball)
+		filesToCopy := pckg.NpmFilesFrom(tarballDir)
+
+		if len(filesToCopy) == 0 {
+			err(ctx, "no files to copy")
+			return
+		}
+
+		for _, file := range filesToCopy {
+			util.Printf(ctx, "%s\n", file.To)
+		}
 	}
 }
 
