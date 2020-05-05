@@ -24,6 +24,9 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
+	// change output for readability in CI
+	util.SetLoggerFlag(0)
+
 	if subcommand == "lint" {
 		lintPackage(flag.Arg(1))
 
@@ -34,7 +37,17 @@ func main() {
 		return
 	}
 
+	if subcommand == "show-files" {
+		showFiles(flag.Arg(1))
+		return
+	}
+
 	panic("unknown subcommand")
+}
+
+func showFiles(path string) {
+	ctx := util.ContextWithName(path)
+	err(ctx, "not implemented yet")
 }
 
 func lintPackage(path string) {

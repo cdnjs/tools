@@ -24,3 +24,7 @@ func Debugf(ctx context.Context, format string, v ...interface{}) {
 		Printf(ctx, format, v...)
 	}
 }
+
+func SetLoggerFlag(f int) {
+	logger.SetFlags(f)
+}
