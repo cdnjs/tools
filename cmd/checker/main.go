@@ -92,7 +92,7 @@ func lintPackage(path string) {
 		err(ctx, shouldNotBeEmpty(".name"))
 	}
 
-	if pckg.Version == "" {
+	if pckg.Version != "" {
 		err(ctx, shouldBeEmpty(".version"))
 	}
 
