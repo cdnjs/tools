@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
@@ -61,6 +62,11 @@ func showFiles(path string) {
 		err(ctx, "no version found on npm")
 		return
 	}
+
+	// Import all the versions since we have none locally.
+	// Limit the number of version to an abrirary number to avoid publishing
+	// too many outdated versions.
+	sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
 	if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
 		npmVersions = npmVersions[len(npmVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
