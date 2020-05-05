@@ -15,7 +15,7 @@ func ListFilesGlob(base string, pattern string) []string {
 		return []string{}
 	}
 
-	fmt.Println("match", pattern, "in", base)
+	// fmt.Println("match", pattern, "in", base)
 
 	cmd := exec.Command(path.Join(GetBotBasePath(), "glob", "index.js"), pattern)
 	var out bytes.Buffer

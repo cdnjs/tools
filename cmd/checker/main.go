@@ -47,7 +47,29 @@ func main() {
 
 func showFiles(path string) {
 	ctx := util.ContextWithName(path)
-	err(ctx, "not implemented yet")
+	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+	if readerr != nil {
+		err(ctx, readerr.Error())
+		return
+	}
+
+	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+	if len(npmVersions) == 0 {
+		err(ctx, "no version found on npm")
+		return
+	}
+	lastNpmVersion := npmVersions[len(npmVersions)-1]
+	util.Printf(ctx, "%s:\n", lastNpmVersion)
+
+	tarballDir := npm.DownloadTar(ctx, lastNpmVersion.Tarball)
+	filesToCopy := pckg.NpmFilesFrom(tarballDir)
+
+	if len(filesToCopy) == 0 {
+		err(ctx, "no files to copy")
+		return
+	}
+
+	util.Printf(ctx, "%s\n", filesToCopy)
 }
 
 func lintPackage(path string) {
