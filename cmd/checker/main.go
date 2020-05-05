@@ -62,6 +62,7 @@ func showFiles(path string) {
 		return
 	}
 	lastNpmVersion := npmVersions[len(npmVersions)-1]
+	util.Printf(ctx, "%s:\n", lastNpmVersion.Version)
 
 	tarballDir := npm.DownloadTar(ctx, lastNpmVersion.Tarball)
 	filesToCopy := pckg.NpmFilesFrom(tarballDir)
@@ -72,7 +73,7 @@ func showFiles(path string) {
 	}
 
 	for _, file := range filesToCopy {
-		util.Printf(ctx, "%s - %s\n", lastNpmVersion.Version, file.To)
+		util.Printf(ctx, "%s\n", file.To)
 	}
 }
 
