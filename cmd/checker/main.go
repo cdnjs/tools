@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/cdnjs/tools/npm"
@@ -59,6 +61,12 @@ func showFiles(path string) {
 
 	fmt.Printf("Preview for `%s`\n", path)
 
+	if pckg.Autoupdate == nil || pckg.Autoupdate.Source != "npm" {
+		fmt.Println(pckg.Autoupdate)
+		err(ctx, "unsupported autoupdate")
+		return
+	}
+
 	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
 	if len(npmVersions) == 0 {
 		err(ctx, "no version found on npm")
@@ -74,34 +82,58 @@ func showFiles(path string) {
 	// print info for the first version
 	firstNpmVersion := npmVersions[0]
 	fmt.Printf("Last version (%s):\n", firstNpmVersion.Version)
-	fmt.Printf("```\n")
 	{
 		tarballDir := npm.DownloadTar(ctx, firstNpmVersion.Tarball)
 		filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 		if len(filesToCopy) == 0 {
-			err(ctx, "no files to copy")
-			return
+			err(ctx, "No files will be published for this version; you can debug using")
+
+			for _, filemap := range pckg.NpmFileMap {
+				for _, pattern := range filemap.Files {
+					fmt.Printf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, tarballDir))
+				}
+			}
+			goto moreversions
 		}
 
+		fmt.Printf("```\n")
 		for _, file := range filesToCopy {
 			fmt.Printf("%s\n", file.To)
 		}
+		fmt.Printf("```\n")
 	}
-	fmt.Printf("```\n")
 
+moreversions:
 	// aggregate info for the few last version
-	fmt.Printf("%d Last version:\n", util.IMPORT_ALL_MAX_VERSIONS)
-	fmt.Printf("```\n")
+	fmt.Printf("%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
 	{
 		for _, version := range npmVersions {
 			tarballDir := npm.DownloadTar(ctx, version.Tarball)
 			filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
-			fmt.Printf("%s: %d file(s) matched\n", version.Version, len(filesToCopy))
+			fmt.Printf("- %s: %d file(s) matched", version.Version, len(filesToCopy))
+			if len(filesToCopy) > 0 {
+				fmt.Printf(" :heavy_check_mark:\n")
+			} else {
+				fmt.Printf(" :heavy_exclamation_mark:\n")
+			}
 		}
 	}
-	fmt.Printf("```\n")
+}
+
+func makeGlobDebugLink(glob string, dir string) string {
+	encodedGlob := url.QueryEscape(glob)
+	allTests := ""
+
+	util.Check(filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			allTests += "&tests=" + url.QueryEscape(info.Name())
+		}
+		return nil
+	}))
+
+	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
 func lintPackage(path string) {
