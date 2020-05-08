@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,9 +10,9 @@ import (
 	"strings"
 )
 
-func ListFilesGlob(base string, pattern string) []string {
+func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 	if _, err := os.Stat(base); os.IsNotExist(err) {
-		fmt.Println("match", pattern, "in", base, "but doesn't exists")
+		Debugf(ctx, "match %s in %s but doesn't exists", pattern, base)
 		return []string{}
 	}
 

@@ -110,7 +110,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 		for _, pattern := range fileMap.Files {
 			basePath := path.Join(base, fileMap.BasePath)
 
-			for _, f := range util.ListFilesGlob(basePath, pattern) {
+			for _, f := range util.ListFilesGlob(p.ctx, basePath, pattern) {
 				out = append(out, NpmFileMoveOp{
 					From: path.Join(fileMap.BasePath, f),
 					To:   f,
@@ -127,7 +127,7 @@ func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
 	absPath := path.Join(p.Path(), version)
-	out = append(out, util.ListFilesGlob(absPath, "**")...)
+	out = append(out, util.ListFilesGlob(p.ctx, absPath, "**")...)
 
 	return out
 }

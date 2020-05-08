@@ -24,8 +24,8 @@ var (
 	CDNJS_PATH    = path.Join(BASE_PATH, "cdnjs")
 )
 
-func getPackages() []string {
-	return util.ListFilesGlob(PACKAGES_PATH, "*/*.json")
+func getPackages(ctx context.Context) []string {
+	return util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
 }
 
 type newVersionToCommit struct {
@@ -41,7 +41,7 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
-	for _, f := range getPackages() {
+	for _, f := range getPackages(context.Background()) {
 		ctx := util.ContextWithName(f)
 		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
 		util.Check(err)
