@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
@@ -87,13 +88,15 @@ func showFiles(path string) {
 		filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 		if len(filesToCopy) == 0 {
-			err(ctx, "No files will be published for this version; you can debug using")
+			errormsg := ""
+			errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
 
 			for _, filemap := range pckg.NpmFileMap {
 				for _, pattern := range filemap.Files {
-					fmt.Printf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, tarballDir))
+					errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, tarballDir))
 				}
 			}
+			err(ctx, errormsg)
 			goto moreversions
 		}
 
@@ -190,19 +193,26 @@ func lintPackage(path string) {
 
 func err(ctx context.Context, s string) {
 	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, s)
+		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
 	} else {
-		fmt.Printf("error: %s\n", s)
+		panic("unreachable")
 	}
 	errCount += 1
 }
 
 func warn(ctx context.Context, s string) {
 	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, s)
+		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
 	} else {
-		fmt.Printf("warning: %s\n", s)
+		panic("unreachable")
 	}
+}
+
+func escapeGitHub(s string) string {
+	s = strings.ReplaceAll(s, "%", "%25")
+	s = strings.ReplaceAll(s, "\n", "%0A")
+	s = strings.ReplaceAll(s, "\r", "%0D")
+	return s
 }
 
 func shouldBeEmpty(name string) string {
