@@ -106,7 +106,7 @@ func showFiles(path string) {
 
 moreversions:
 	// aggregate info for the few last version
-	fmt.Printf("%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
+	fmt.Printf("\n%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
 	{
 		for _, version := range npmVersions {
 			tarballDir := npm.DownloadTar(ctx, version.Tarball)
