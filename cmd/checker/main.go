@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
@@ -190,19 +191,26 @@ func lintPackage(path string) {
 
 func err(ctx context.Context, s string) {
 	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, s)
+		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
 	} else {
-		fmt.Printf("error: %s\n", s)
+		panic("unreachable")
 	}
 	errCount += 1
 }
 
 func warn(ctx context.Context, s string) {
 	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, s)
+		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
 	} else {
-		fmt.Printf("warning: %s\n", s)
+		panic("unreachable")
 	}
+}
+
+func escapeGitHub(s string) string {
+	s = strings.ReplaceAll(s, "%", "%25")
+	s = strings.ReplaceAll(s, "\n", "%0A")
+	s = strings.ReplaceAll(s, "\r", "%0D")
+	return s
 }
 
 func shouldBeEmpty(name string) string {
