@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -48,7 +51,31 @@ func main() {
 		return
 	}
 
+	if subcommand == "review" {
+		review(flag.Arg(1), flag.Arg(2))
+		return
+	}
+
 	panic("unknown subcommand")
+}
+
+func review(pr, run_id string) {
+	url := "https://github-ci.cdnjs.com/review"
+	var jsonStr = []byte(fmt.Sprintf(`{"pr":"%s", "run_id": "%s"}`, pr, run_id))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	util.Check(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	util.Check(err)
+
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+
 }
 
 func showFiles(path string) {
