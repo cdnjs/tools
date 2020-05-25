@@ -64,8 +64,6 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		// It matters when we will commit the updates
 		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
-		log(ctx, LogImportAllVersions{Versions: npmVersionsStr})
-
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 	}
 
@@ -76,7 +74,6 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 	newVersionsToCommit := make([]newVersionToCommit, 0)
 
 	if len(versions) == 0 {
-		log(ctx, LogNoNewVersion{})
 		return newVersionsToCommit
 	}
 
@@ -84,7 +81,6 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 		pckgpath := path.Join(pckg.Path(), version.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
-			log(ctx, LogNewVersionExistsLocally{Version: version.Version})
 			continue
 		}
 
@@ -113,15 +109,11 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 				}
 			}
 
-			log(ctx, LogCreatedNewVersion{Version: version.Version})
-
 			newVersionsToCommit = append(newVersionsToCommit, newVersionToCommit{
 				versionPath: pckgpath,
 				newVersion:  version.Version,
 				pckg:        pckg,
 			})
-		} else {
-			log(ctx, LogNoFilesMatchedThePattern{Version: version.Version})
 		}
 
 		// clean up temporary tarball dir

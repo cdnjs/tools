@@ -54,15 +54,12 @@ func main() {
 		var newVersionsToCommit []newVersionToCommit
 
 		if pckg.Autoupdate != nil {
-			log(ctx, LogAutoupdateStarted{Source: pckg.Autoupdate.Source})
-
 			if pckg.Autoupdate.Source == "npm" {
 				newVersionsToCommit = updateNpm(ctx, pckg)
 			}
 		}
 
 		commitNewVersions(ctx, newVersionsToCommit, f)
-		publishAutoupdateLog(ctx, pckg.Name)
 	}
 
 	packages.GitPush(context.Background(), CDNJS_PATH)
@@ -190,8 +187,6 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 
 		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, CDNJS_PATH, commitMsg)
-
-		log(ctx, LogNewVersionCommit{Version: newVersionToCommit.newVersion})
 
 		metrics.ReportNewVersion()
 	}
