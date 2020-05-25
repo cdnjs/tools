@@ -41,6 +41,8 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
+	util.UpdateGitRepo(context.Background(), PACKAGES_PATH)
+
 	for _, f := range getPackages(context.Background()) {
 		ctx := util.ContextWithName(f)
 		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
