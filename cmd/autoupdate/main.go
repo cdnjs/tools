@@ -48,14 +48,17 @@ func main() {
 		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
 		util.Check(err)
 
-		// Attach the autoupdate logger
-		ctx = util.WithLogger(ctx)
-
 		var newVersionsToCommit []newVersionToCommit
 
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
+				util.Debugf(ctx, "running npm update")
 				newVersionsToCommit = updateNpm(ctx, pckg)
+			}
+
+			if pckg.Autoupdate.Source == "git" && pckg.Name == "hi-sven-git" {
+				util.Debugf(ctx, "running git update")
+				newVersionsToCommit = updateGit(ctx, pckg)
 			}
 		}
 
@@ -173,6 +176,8 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 	}
 
 	for _, newVersionToCommit := range newVersionsToCommit {
+		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
+
 		// Compress assets
 		compressNewVersion(ctx, newVersionToCommit)
 

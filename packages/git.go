@@ -80,8 +80,46 @@ func GitCommit(ctx context.Context, gitpath string, msg string) {
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
+func GitFetch(ctx context.Context, gitpath string) {
+	args := []string{"fetch"}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	util.CheckCmd(cmd.CombinedOutput())
+}
+
 func GitPush(ctx context.Context, gitpath string) {
 	args := []string{"push"}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	util.CheckCmd(cmd.CombinedOutput())
+}
+
+func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error) {
+	args := []string{"clone", pckg.Autoupdate.Target, "."}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	out, err := cmd.CombinedOutput()
+	return out, err
+}
+
+func GitTags(ctx context.Context, pckg *Package, gitpath string) []string {
+	args := []string{"tag"}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	out := util.CheckCmd(cmd.CombinedOutput())
+	return strings.Split(out, "\n")
+}
+
+func GitCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
+	args := []string{"checkout", tag}
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath

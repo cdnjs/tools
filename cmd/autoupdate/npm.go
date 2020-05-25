@@ -16,12 +16,8 @@ import (
 
 func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
 	var newVersionsToCommit []newVersionToCommit
-	existingVersionSet := pckg.Versions()
 
-	// We currently ignore any non-semver versions
-	// FIXME: handle them?
-	existingVersionSet = getSemverOnly(existingVersionSet)
-
+	existingVersionSet := getSemverOnly(pckg.Versions())
 	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
 
 	if len(existingVersionSet) > 0 {
