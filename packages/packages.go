@@ -111,10 +111,12 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 			basePath := path.Join(base, fileMap.BasePath)
 
 			for _, f := range util.ListFilesGlob(p.ctx, basePath, pattern) {
-				out = append(out, NpmFileMoveOp{
-					From: path.Join(fileMap.BasePath, f),
-					To:   f,
-				})
+				if f != "package.json" {
+					out = append(out, NpmFileMoveOp{
+						From: path.Join(fileMap.BasePath, f),
+						To:   f,
+					})
+				}
 			}
 		}
 	}
