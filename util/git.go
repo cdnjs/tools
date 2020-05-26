@@ -10,6 +10,6 @@ func UpdateGitRepo(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	Debugf(ctx, "run %s\n", cmd)
+	Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	CheckCmd(cmd.CombinedOutput())
 }

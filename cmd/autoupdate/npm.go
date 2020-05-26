@@ -110,6 +110,8 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 				newVersion:  version.Version,
 				pckg:        pckg,
 			})
+		} else {
+			util.Debugf(ctx, "no files matched")
 		}
 
 		// clean up temporary tarball dir

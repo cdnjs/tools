@@ -16,8 +16,6 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 		return []string{}
 	}
 
-	// fmt.Println("match", pattern, "in", base)
-
 	cmd := exec.Command(path.Join(GetBotBasePath(), "glob", "index.js"), pattern)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -29,5 +27,13 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 		Check(err)
 	}
 
-	return strings.Split(out.String(), "\n")
+	list := make([]string, 0)
+
+	for _, line := range strings.Split(out.String(), "\n") {
+		if strings.Trim(line, " ") != "" {
+			list = append(list, line)
+		}
+
+	}
+	return list
 }

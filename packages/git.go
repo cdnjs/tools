@@ -103,7 +103,7 @@ func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	out, err := cmd.CombinedOutput()
 	return out, err
 }
