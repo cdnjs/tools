@@ -22,7 +22,8 @@ var (
 
 // Perform a compression of the file
 func CompressCss(ctx context.Context, file string) {
-	outfile := strings.ReplaceAll(file, ".css", ".min.css")
+	ext := path.Ext(file)
+	outfile := file[0:len(file)-len(ext)] + ".min.css"
 
 	// compressed file already exists, ignore
 	if _, err := os.Stat(outfile); !os.IsNotExist(err) {
