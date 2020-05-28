@@ -85,7 +85,7 @@ func GitFetch(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -115,11 +115,19 @@ func GitTags(ctx context.Context, pckg *Package, gitpath string) []string {
 	cmd.Dir = gitpath
 	util.Debugf(ctx, "run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
-	return strings.Split(out, "\n")
+
+	tags := make([]string, 0)
+	for _, line := range strings.Split(out, "\n") {
+		if strings.Trim(line, " ") != "" {
+			tags = append(tags, line)
+		}
+	}
+
+	return tags
 }
 
-func GitCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
-	args := []string{"checkout", tag}
+func GitForceCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
+	args := []string{"checkout", tag, "-f"}
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
