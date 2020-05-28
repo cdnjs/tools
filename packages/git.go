@@ -118,8 +118,8 @@ func GitTags(ctx context.Context, pckg *Package, gitpath string) []string {
 	return strings.Split(out, "\n")
 }
 
-func GitCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
-	args := []string{"checkout", tag}
+func GitForceCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
+	args := []string{"checkout", tag, "-f"}
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
