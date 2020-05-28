@@ -56,7 +56,7 @@ func main() {
 				newVersionsToCommit = updateNpm(ctx, pckg)
 			}
 
-			if pckg.Autoupdate.Source == "git" && pckg.Name == "hi-sven-git" {
+			if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
 				newVersionsToCommit = updateGit(ctx, pckg)
 			}

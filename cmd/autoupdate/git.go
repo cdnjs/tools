@@ -38,10 +38,19 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		packages.GitFetch(ctx, packageGitcache)
 	}
 
-	gitVersions := packages.GitTags(ctx, pckg, packageGitcache)
-	util.Debugf(ctx, "found versions in git: %s", gitVersions)
+	gitTags := packages.GitTags(ctx, pckg, packageGitcache)
+	util.Debugf(ctx, "found tags in git: %s", gitTags)
 
-	existingVersionSet := getSemverOnly(pckg.Versions())
+	gitVersions := make([]git.GitVersion, 0)
+	for _, tag := range gitTags {
+		gitVersions = append(gitVersions, git.GitVersion{
+			Tag:     tag,
+			Version: strings.TrimPrefix(tag, "v"),
+		})
+	}
+
+	existingVersionSet := pckg.Versions()
+
 	if len(existingVersionSet) > 0 {
 		lastExistingVersion, err := semver.Make(existingVersionSet[len(existingVersionSet)-1])
 		util.Check(err)
@@ -49,10 +58,10 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 		versionDiff := gitVersionDiff(gitVersions, existingVersionSet)
 
-		newGitVersions := make([]string, 0)
+		newGitVersions := make([]git.GitVersion, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
-			gitVersion, err := semver.Make(versionDiff[i])
+			gitVersion, err := semver.Make(versionDiff[i].Version)
 			if err != nil {
 				continue
 			}
@@ -63,6 +72,9 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		}
 
 		util.Debugf(ctx, "new versions: %s", newGitVersions)
+
+		sort.Sort(sort.Reverse(git.ByGitVersion(newGitVersions)))
+
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, newGitVersions)
 	} else {
 		// Import all the versions since we have none locally.
@@ -84,24 +96,21 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	return newVersionsToCommit
 }
 
-func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []string) []newVersionToCommit {
+func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.GitVersion) []newVersionToCommit {
 	newVersionsToCommit := make([]newVersionToCommit, 0)
 
 	if len(versions) == 0 {
 		return newVersionsToCommit
 	}
 
-	for _, version := range versions {
-		packages.GitCheckout(ctx, pckg, gitpath, version)
+	for _, gitversion := range versions {
+		packages.GitForceCheckout(ctx, pckg, gitpath, gitversion.Tag)
 		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
-		// Remove the v prefix in the version, for example v1.0.1
-		// Note that we do it after the checkout so the git tag is still valid
-		version = strings.TrimPrefix(version, "v")
-
-		pckgpath := path.Join(pckg.Path(), version)
+		pckgpath := path.Join(pckg.Path(), gitversion.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
+			util.Debugf(ctx, "%s already exists; aborting", pckgpath)
 			continue
 		}
 
@@ -129,17 +138,19 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 
 			newVersionsToCommit = append(newVersionsToCommit, newVersionToCommit{
 				versionPath: pckgpath,
-				newVersion:  version,
+				newVersion:  gitversion.Version,
 				pckg:        pckg,
 			})
+		} else {
+			util.Debugf(ctx, "no files matched")
 		}
 	}
 
 	return newVersionsToCommit
 }
 
-func gitVersionDiff(a []string, b []string) []string {
-	diff := make([]string, 0)
+func gitVersionDiff(a []git.GitVersion, b []string) []git.GitVersion {
+	diff := make([]git.GitVersion, 0)
 	m := make(map[string]bool)
 
 	for _, item := range b {
@@ -147,7 +158,7 @@ func gitVersionDiff(a []string, b []string) []string {
 	}
 
 	for _, item := range a {
-		if _, ok := m[item]; !ok {
+		if _, ok := m[item.Version]; !ok {
 			diff = append(diff, item)
 		}
 	}
