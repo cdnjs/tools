@@ -40,6 +40,8 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 			}
 		}
 
+		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
+
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {
 		// Import all the versions since we have none locally.
@@ -77,6 +79,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 		pckgpath := path.Join(pckg.Path(), version.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
+			util.Debugf(ctx, "%s already exists; aborting", pckgpath)
 			continue
 		}
 
