@@ -21,3 +21,19 @@ func (a ByVersionAsset) Less(i, j int) bool {
 	}
 	return left.Compare(right) == 1
 }
+
+type ByVersionString []string
+
+func (a ByVersionString) Len() int      { return len(a) }
+func (a ByVersionString) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByVersionString) Less(i, j int) bool {
+	left, leftErr := semver.Make(a[i])
+	if leftErr != nil {
+		return false
+	}
+	right, rightErr := semver.Make(a[j])
+	if rightErr != nil {
+		return true
+	}
+	return left.Compare(right) == 1
+}

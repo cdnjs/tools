@@ -59,14 +59,10 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	}
 
 	existingVersionSet := pckg.Versions()
+	lastExistingVersion := getLatestExistingVersion(existingVersionSet)
 
-	if len(existingVersionSet) > 0 {
-		lastExistingVersion, err := semver.Make(existingVersionSet[len(existingVersionSet)-1])
-		if err != nil {
-			util.Debugf(ctx, "error while getting the lastest version: %s\n", err)
-			return newVersionsToCommit
-		}
-		util.Debugf(ctx, "last exists version: %s\n", lastExistingVersion)
+	if lastExistingVersion != nil {
+		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
 
 		versionDiff := gitVersionDiff(gitVersions, existingVersionSet)
 
@@ -78,7 +74,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 				continue
 			}
 
-			if gitVersion.Compare(lastExistingVersion) == 1 {
+			if gitVersion.Compare(*lastExistingVersion) == 1 {
 				newGitVersions = append(newGitVersions, versionDiff[i])
 			}
 		}

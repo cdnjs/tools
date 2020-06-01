@@ -19,10 +19,10 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 	existingVersionSet := getSemverOnly(pckg.Versions())
 	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+	lastExistingVersion := getLatestExistingVersion(existingVersionSet)
 
-	if len(existingVersionSet) > 0 {
-		lastExistingVersion, err := semver.Make(existingVersionSet[len(existingVersionSet)-1])
-		util.Check(err)
+	if lastExistingVersion != nil {
+		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
 
 		versionDiff := npmVersionDiff(npmVersions, existingVersionSet)
 		sort.Sort(npm.ByNpmVersion(versionDiff))
@@ -35,7 +35,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 				continue
 			}
 
-			if npmVersion.Compare(lastExistingVersion) == 1 {
+			if npmVersion.Compare(*lastExistingVersion) == 1 {
 				newNpmVersions = append(newNpmVersions, versionDiff[i])
 			}
 		}
