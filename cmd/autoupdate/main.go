@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/blang/semver"
 
@@ -41,6 +42,7 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
+	util.UpdateGitRepo(context.Background(), CDNJS_PATH)
 	util.UpdateGitRepo(context.Background(), PACKAGES_PATH)
 
 	for _, f := range getPackages(context.Background()) {
@@ -208,4 +210,23 @@ func getSemverOnly(versions []string) []string {
 	}
 
 	return newVersions
+}
+
+func getLatestExistingVersion(existingVersionSet []string) *semver.Version {
+	if len(existingVersionSet) == 0 {
+		return nil
+	}
+
+	sort.Sort(packages.ByVersionString(existingVersionSet))
+
+	// get the first semver version
+	for i := 0; i < len(existingVersionSet); i++ {
+		v, err := semver.Make(existingVersionSet[i])
+		if err == nil {
+			return &v
+		}
+	}
+
+	// No semver version exist
+	return nil
 }
