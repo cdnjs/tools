@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"sort"
-	"strings"
 
 	"github.com/blang/semver"
 
@@ -47,16 +46,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		}
 	}
 
-	gitTags := packages.GitTags(ctx, pckg, packageGitcache)
-	util.Debugf(ctx, "found tags in git: %s\n", gitTags)
-
-	gitVersions := make([]git.GitVersion, 0)
-	for _, tag := range gitTags {
-		gitVersions = append(gitVersions, git.GitVersion{
-			Tag:     tag,
-			Version: strings.TrimPrefix(tag, "v"),
-		})
-	}
+	gitVersions := git.GetVersions(ctx, pckg, packageGitcache)
 
 	existingVersionSet := pckg.Versions()
 	lastExistingVersion := getLatestExistingVersion(existingVersionSet)

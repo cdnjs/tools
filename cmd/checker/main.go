@@ -4,12 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -60,62 +62,130 @@ func showFiles(path string) {
 		return
 	}
 
-	if pckg.Autoupdate == nil || pckg.Autoupdate.Source != "npm" {
-		err(ctx, "unsupported autoupdate")
+	if pckg.Autoupdate == nil {
+		err(ctx, "autoupdate not found")
 		return
 	}
 
-	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
-	if len(npmVersions) == 0 {
-		err(ctx, "no version found on npm")
-		return
-	}
-
-	sort.Sort(npm.ByNpmVersion(npmVersions))
-
-	if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
-		npmVersions = npmVersions[:util.IMPORT_ALL_MAX_VERSIONS]
-	}
-
-	// print info for the first version
-	firstNpmVersion := npmVersions[0]
-	{
-		tarballDir := npm.DownloadTar(ctx, firstNpmVersion.Tarball)
-		filesToCopy := pckg.NpmFilesFrom(tarballDir)
-
-		if len(filesToCopy) == 0 {
-			errormsg := ""
-			errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
-
-			for _, filemap := range pckg.NpmFileMap {
-				for _, pattern := range filemap.Files {
-					errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, tarballDir))
-				}
-			}
-			err(ctx, errormsg)
-			goto moreversions
+	if pckg.Autoupdate.Source == "npm" {
+		npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+		if len(npmVersions) == 0 {
+			err(ctx, "no version found on npm")
+			return
 		}
 
-		fmt.Printf("```\n")
-		for _, file := range filesToCopy {
-			fmt.Printf("%s\n", file.To)
-		}
-		fmt.Printf("```\n")
-	}
+		sort.Sort(npm.ByNpmVersion(npmVersions))
 
-moreversions:
-	// aggregate info for the few last version
-	fmt.Printf("\n%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
-	{
-		for _, version := range npmVersions {
-			tarballDir := npm.DownloadTar(ctx, version.Tarball)
+		if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
+			npmVersions = npmVersions[:util.IMPORT_ALL_MAX_VERSIONS]
+		}
+
+		// print info for the first version
+		firstNpmVersion := npmVersions[0]
+		{
+			tarballDir := npm.DownloadTar(ctx, firstNpmVersion.Tarball)
 			filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
-			fmt.Printf("- %s: %d file(s) matched", version.Version, len(filesToCopy))
-			if len(filesToCopy) > 0 {
-				fmt.Printf(" :heavy_check_mark:\n")
-			} else {
-				fmt.Printf(" :heavy_exclamation_mark:\n")
+			if len(filesToCopy) == 0 {
+				errormsg := ""
+				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
+
+				for _, filemap := range pckg.NpmFileMap {
+					for _, pattern := range filemap.Files {
+						errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, tarballDir))
+					}
+				}
+				err(ctx, errormsg)
+				goto moreNpmVersions
+			}
+
+			fmt.Printf("```\n")
+			for _, file := range filesToCopy {
+				fmt.Printf("%s\n", file.To)
+			}
+			fmt.Printf("```\n")
+		}
+
+	moreNpmVersions:
+		// aggregate info for the few last version
+		fmt.Printf("\n%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
+		{
+			for _, version := range npmVersions {
+				tarballDir := npm.DownloadTar(ctx, version.Tarball)
+				filesToCopy := pckg.NpmFilesFrom(tarballDir)
+
+				fmt.Printf("- %s: %d file(s) matched", version.Version, len(filesToCopy))
+				if len(filesToCopy) > 0 {
+					fmt.Printf(" :heavy_check_mark:\n")
+				} else {
+					fmt.Printf(" :heavy_exclamation_mark:\n")
+				}
+			}
+		}
+	}
+
+	if pckg.Autoupdate.Source == "git" {
+		packageGitDir, direrr := ioutil.TempDir("", "git")
+		util.Check(direrr)
+
+		out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
+		if cloneerr != nil {
+			err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
+			return
+		}
+
+		gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
+
+		if len(gitVersions) == 0 {
+			err(ctx, "no version found on npm")
+			return
+		}
+
+		sort.Sort(git.ByGitVersion(gitVersions))
+
+		if len(gitVersions) > util.IMPORT_ALL_MAX_VERSIONS {
+			gitVersions = gitVersions[:util.IMPORT_ALL_MAX_VERSIONS]
+		}
+
+		// print info for the first version
+		firstNpmVersion := gitVersions[0]
+		{
+			filesToCopy := pckg.NpmFilesFrom(packageGitDir)
+
+			if len(filesToCopy) == 0 {
+				errormsg := ""
+				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
+
+				for _, filemap := range pckg.NpmFileMap {
+					for _, pattern := range filemap.Files {
+						errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, packageGitDir))
+					}
+				}
+				err(ctx, errormsg)
+				goto moreGitVersions
+			}
+
+			fmt.Printf("```\n")
+			for _, file := range filesToCopy {
+				fmt.Printf("%s\n", file.To)
+			}
+			fmt.Printf("```\n")
+		}
+
+	moreGitVersions:
+		// aggregate info for the few last version
+		fmt.Printf("\n%d last versions:\n", util.IMPORT_ALL_MAX_VERSIONS)
+		{
+			for _, version := range gitVersions {
+				packages.GitForceCheckout(ctx, pckg, packageGitDir, version.Tag)
+				filesToCopy := pckg.NpmFilesFrom(packageGitDir)
+
+				fmt.Printf("- %s: %d file(s) matched", version.Version, len(filesToCopy))
+				if len(filesToCopy) > 0 {
+					fmt.Printf(" :heavy_check_mark:\n")
+				} else {
+					fmt.Printf(" :heavy_exclamation_mark:\n")
+				}
 			}
 		}
 	}
