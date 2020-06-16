@@ -263,7 +263,7 @@ func err(ctx context.Context, s string) {
 	} else {
 		panic("unreachable")
 	}
-	errCount += 1
+	errCount++
 }
 
 func warn(ctx context.Context, s string) {
