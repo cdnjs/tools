@@ -28,6 +28,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		sort.Sort(npm.ByNpmVersion(versionDiff))
 
 		newNpmVersions := make([]npm.NpmVersion, 0)
+		skippedVersions := make([]string, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			npmVersion, err := semver.Make(versionDiff[i].Version)
@@ -37,8 +38,12 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 			if npmVersion.Compare(*lastExistingVersion) == 1 {
 				newNpmVersions = append(newNpmVersions, versionDiff[i])
+			} else {
+				skippedVersions = append(skippedVersions, versionDiff[i].Version)
 			}
 		}
+
+		util.Debugf(ctx, "skipping versions %s because of semver", skippedVersions)
 
 		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
