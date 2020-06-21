@@ -43,7 +43,9 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 			}
 		}
 
-		util.Debugf(ctx, "skipping versions %s because of semver", skippedVersions)
+		if len(skippedVersions) > 0 {
+			util.Debugf(ctx, "skipping versions %s because of semver", skippedVersions)
+		}
 
 		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
 
