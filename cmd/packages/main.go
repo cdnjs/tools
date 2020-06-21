@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/packages"
@@ -19,9 +20,9 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-func encodeJson(packages []outputPackage) (string, error) {
+func encodeJson(packages []*outputPackage) (string, error) {
 	out := struct {
-		Packages []outputPackage `json:"packages"`
+		Packages []*outputPackage `json:"packages"`
 	}{
 		packages,
 	}
@@ -31,6 +32,49 @@ func encodeJson(packages []outputPackage) (string, error) {
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(&out)
 	return buffer.String(), err
+}
+
+func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
+	for f := range jobs {
+		ctx := util.ContextWithName(f)
+
+		p, err := packages.ReadPackageJSON(ctx, f)
+		if err != nil {
+			util.Printf(ctx, "error while processing package: %s\n", err)
+			results <- nil
+			return
+		}
+
+		if p.Version == "" {
+			util.Printf(ctx, "version is invalid\n")
+			results <- nil
+			return
+		}
+
+		for _, version := range p.Versions() {
+			if !hasSri(p, version) {
+				util.Printf(ctx, "version %s needs SRI calculation\n", version)
+
+				sriFileMap := p.CalculateVersionSris(version)
+				bytes, jsonErr := json.Marshal(sriFileMap)
+				util.Check(jsonErr)
+
+				writeSriJson(p, version, bytes)
+			}
+
+			// FIXME: reenable that once we don't run in debug mode anymore
+			// // In debug mode ensure that we still generate the same SRI;
+			// // compare with the existing ones (slow).
+			// if util.IsDebug() && hasSri(p, version) {
+			// 	expectedSriFileMap := getSriFileMap(p, version)
+			// 	actualSriFileMap := p.CalculateVersionSris(version)
+			// 	compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
+			// }
+		}
+
+		util.Printf(ctx, "OK\n")
+		results <- generatePackage(ctx, p)
+	}
 }
 
 func main() {
@@ -62,44 +106,29 @@ func main() {
 		files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
 		util.Check(err)
 
-		out := make([]outputPackage, 0)
+		numJobs := len(files)
+		if numJobs == 0 {
+			panic("cannot find packages")
+		}
 
+		jobs := make(chan string, numJobs)
+		results := make(chan *outputPackage, numJobs)
+
+		// spawn workers
+		for w := 1; w <= runtime.NumCPU()*10; w++ {
+			go generatePackageWorker(jobs, results)
+		}
+
+		// submit jobs; packages to encode
 		for _, f := range files {
-			ctx := util.ContextWithName(f)
+			jobs <- f
+		}
+		close(jobs)
 
-			p, err := packages.ReadPackageJSON(ctx, f)
-			if err != nil {
-				util.Printf(ctx, "error while processing package: %s\n", err)
-				continue
-			}
-
-			if p.Version == "" {
-				util.Printf(ctx, "version is invalid\n")
-				continue
-			}
-
-			for _, version := range p.Versions() {
-				if !hasSri(p, version) {
-					util.Printf(ctx, "version %s needs SRI calculation\n", version)
-
-					sriFileMap := p.CalculateVersionSris(version)
-					bytes, jsonErr := json.Marshal(sriFileMap)
-					util.Check(jsonErr)
-
-					writeSriJson(p, version, bytes)
-				}
-
-				// FIXME: reenable that once we don't run in debug mode anymore
-				// // In debug mode ensure that we still generate the same SRI;
-				// // compare with the existing ones (slow).
-				// if util.IsDebug() && hasSri(p, version) {
-				// 	expectedSriFileMap := getSriFileMap(p, version)
-				// 	actualSriFileMap := p.CalculateVersionSris(version)
-				// 	compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
-				// }
-			}
-
-			out = append(out, generatePackage(ctx, p))
+		// collect results
+		out := make([]*outputPackage, 0)
+		for i := 1; i <= numJobs; i++ {
+			out = append(out, <-results)
 		}
 
 		str, err := encodeJson(out)
@@ -129,7 +158,7 @@ type outputPackage struct {
 	Assets  interface{} `json:"assets"`
 }
 
-func generatePackage(ctx context.Context, p *packages.Package) outputPackage {
+func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	out := outputPackage{}
 
 	out.Name = p.Name
@@ -179,7 +208,7 @@ func generatePackage(ctx context.Context, p *packages.Package) outputPackage {
 
 	out.Assets = p.Assets()
 
-	return out
+	return &out
 }
 
 func hasSri(p *packages.Package, version string) bool {
