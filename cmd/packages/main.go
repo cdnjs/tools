@@ -128,7 +128,9 @@ func main() {
 		// collect results
 		out := make([]*outputPackage, 0)
 		for i := 1; i <= numJobs; i++ {
-			out = append(out, <-results)
+			if res := <-results; res != nil {
+				out = append(out, res)
+			}
 		}
 
 		str, err := encodeJson(out)
