@@ -17,13 +17,11 @@ import (
 func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 	list := make([]string, 0)
 
-	// Currently not ignoring hidden files, uncomment out to compare with ListFilesInVersion directly
-
-	// // check if the version is hidden
-	// if isHidden(base) {
-	// 	Debugf(ctx, "ignoring hidden version %s", base)
-	// 	return list
-	// }
+	// check if the version is hidden
+	if isHidden(base) {
+		Debugf(ctx, "ignoring hidden version %s", base)
+		return list
+	}
 
 	if _, err := os.Stat(base); os.IsNotExist(err) {
 		Debugf(ctx, "match %s in %s but doesn't exists", pattern, base)
@@ -51,7 +49,7 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 }
 
 // Determines if a file path contains a hidden file or directory.
-// Either it starts with . or or contains '/.' to be considered hidden.
+// Either it starts with . or contains '/.' to be considered hidden.
 func isHidden(fp string) bool {
 	return strings.HasPrefix(fp, ".") || strings.Contains(fp, "/.")
 }
@@ -85,12 +83,16 @@ func ListFilesInVersion(ctx context.Context, base string) []string {
 		FollowSymbolicLinks: true,
 	})
 
-	// if non-nil error, attempt to try with the legacy version
-	// for example, at least one package (history) has
+	// Uncomment if you want to attempt the legacy version if non-nil error,
+	// for example, at least one package (history version 3.0.0-1) has
 	// symlink js files that link to themselves due to case
-	// insensitivity on some operating systems, causing an error
-	if err != nil {
-		return ListFilesGlob(ctx, base, "**")
-	}
+	// insensitivity on some operating systems (macOS), causing an error
+
+	// if err != nil {
+	// 	Debugf(ctx, "list files in version: %s", err)
+	// 	return ListFilesGlob(ctx, base, "**")
+	// }
+
+	Check(err)
 	return list
 }
