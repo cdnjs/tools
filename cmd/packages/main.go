@@ -113,7 +113,7 @@ func main() {
 		results := make(chan *outputPackage, numJobs)
 
 		// spawn workers
-		for w := 1; w <= runtime.NumCPU(); w++ {
+		for w := 1; w <= runtime.NumCPU()*10; w++ {
 			go generatePackageWorker(jobs, results)
 		}
 
