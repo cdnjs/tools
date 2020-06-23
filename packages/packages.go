@@ -127,7 +127,7 @@ func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
 	absPath := path.Join(p.Path(), version)
-	out = append(out, util.ListFilesGlob(p.ctx, absPath, "**")...)
+	out = append(out, util.ListFilesInVersion(p.ctx, absPath)...)
 
 	return out
 }

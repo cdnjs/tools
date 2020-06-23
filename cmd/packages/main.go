@@ -85,16 +85,14 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
-	ctx := context.Background()
-
-	bkt, err := cloudstorage.GetAssetsBucket(ctx)
-	util.Check(err)
-
-	obj := bkt.Object("package.min.js")
-
 	if subcommand == "set" {
+		ctx := context.Background()
+		bkt, err := cloudstorage.GetAssetsBucket(ctx)
+		util.Check(err)
+		obj := bkt.Object("package.min.js")
+
 		w := obj.NewWriter(ctx)
-		_, err := io.Copy(w, os.Stdin)
+		_, err = io.Copy(w, os.Stdin)
 		util.Check(err)
 		util.Check(w.Close())
 		util.Check(obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader))
@@ -115,7 +113,7 @@ func main() {
 		results := make(chan *outputPackage, numJobs)
 
 		// spawn workers
-		for w := 1; w <= runtime.NumCPU()*10; w++ {
+		for w := 1; w <= runtime.NumCPU(); w++ {
 			go generatePackageWorker(jobs, results)
 		}
 
