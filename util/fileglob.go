@@ -83,16 +83,6 @@ func ListFilesInVersion(ctx context.Context, base string) []string {
 		FollowSymbolicLinks: true,
 	})
 
-	// Uncomment if you want to attempt the legacy version if non-nil error,
-	// for example, at least one package (history version 3.0.0-1) has
-	// symlink js files that link to themselves due to case
-	// insensitivity on some operating systems (macOS), causing an error
-
-	// if err != nil {
-	// 	Debugf(ctx, "list files in version: %s", err)
-	// 	return ListFilesGlob(ctx, base, "**")
-	// }
-
 	Check(err)
 	return list
 }
