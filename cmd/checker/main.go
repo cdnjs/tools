@@ -296,7 +296,7 @@ func lintPackage(pckgPath string) {
 					warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
 				} else {
 					atLeastOneFile = true
-					util.Debugf(ctx, fp, "ok")
+					util.Debugf(ctx, fp+" ok")
 				}
 			}
 		}
