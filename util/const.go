@@ -7,5 +7,5 @@ const (
 	IMPORT_ALL_MAX_VERSIONS = 10
 
 	// Maximum file size in bytes accepted by cdnjs.
-	MAX_FILE_SIZE int = 1e7
+	MAX_FILE_SIZE int64 = 1e7
 )
