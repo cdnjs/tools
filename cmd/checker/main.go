@@ -264,6 +264,9 @@ func lintPackage(pckgPath string) {
 		panic("unexpected package json path")
 	}
 
+	// used to determine if there is at least one file
+	var atLeastOneFile bool
+
 	// check file sizes
 	versionDir := path.Join(pckgPath[:len(pckgPath)-len(pkgJSON)], pckg.Version)
 	for _, fileMap := range pckg.NpmFileMap {
@@ -292,10 +295,16 @@ func lintPackage(pckgPath string) {
 				if size > util.MAX_FILE_SIZE {
 					warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
 				} else {
+					atLeastOneFile = true
 					util.Debugf(ctx, fp, "ok")
 				}
 			}
 		}
+	}
+
+	// fail if not least one file
+	if !atLeastOneFile {
+		err(ctx, "all files ignored due to size")
 	}
 
 }
