@@ -114,6 +114,11 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 			util.Check(err)
 
 			for _, f := range list {
+
+				// TODO: check file size, if > util.MAX_FILE_SIZE
+				// then output warning and ignore.
+				// Will be similar to main.go's function.
+
 				out = append(out, NpmFileMoveOp{
 					From: path.Join(fileMap.BasePath, f),
 					To:   f,

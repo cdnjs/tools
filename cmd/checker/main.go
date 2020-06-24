@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -54,9 +55,9 @@ func main() {
 	panic("unknown subcommand")
 }
 
-func showFiles(path string) {
-	ctx := util.ContextWithName(path)
-	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+func showFiles(pckgPath string) {
+	ctx := util.ContextWithName(pckgPath)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -205,12 +206,12 @@ func makeGlobDebugLink(glob string, dir string) string {
 	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
-func lintPackage(path string) {
-	ctx := util.ContextWithName(path)
+func lintPackage(pckgPath string) {
+	ctx := util.ContextWithName(pckgPath)
 
-	util.Debugf(ctx, "Linting %s...\n", path)
+	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -251,6 +252,48 @@ func lintPackage(path string) {
 			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
 			if counts.Downloads < 800 {
 				err(ctx, "package download per month on npm is under 800")
+			}
+		}
+	}
+
+	const (
+		pkgJSON = "package.json"
+	)
+
+	if ok := strings.HasSuffix(pckgPath, pkgJSON); !ok {
+		panic("unexpected package json path")
+	}
+
+	// check file sizes
+	versionDir := path.Join(pckgPath[:len(pckgPath)-len(pkgJSON)], pckg.Version)
+	for _, fileMap := range pckg.NpmFileMap {
+		for _, pattern := range fileMap.Files {
+			basePath := path.Join(versionDir, fileMap.BasePath)
+
+			// find files that match glob
+			pkgCtx := util.ContextWithName(basePath)
+			list, listerr := util.ListFilesGlob(pkgCtx, basePath, pattern)
+			if listerr != nil {
+				err(ctx, "glob: "+listerr.Error())
+				return
+			}
+
+			// warn for files with sizes exceeding max file size
+			for _, f := range list {
+				fp := path.Join(basePath, f)
+
+				info, staterr := os.Stat(fp)
+				if staterr != nil {
+					err(ctx, "stat: "+staterr.Error())
+					return
+				}
+
+				size := info.Size()
+				if size > util.MAX_FILE_SIZE {
+					warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+				} else {
+					util.Debugf(ctx, fp, "ok")
+				}
 			}
 		}
 	}
