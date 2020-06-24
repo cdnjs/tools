@@ -127,7 +127,9 @@ func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
 	absPath := path.Join(p.Path(), version)
-	out = append(out, util.ListFilesInVersion(p.ctx, absPath)...)
+	list, err := util.ListFilesInVersion(p.ctx, absPath)
+	util.Check(err)
+	out = append(out, list...)
 
 	return out
 }
