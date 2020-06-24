@@ -26,7 +26,9 @@ var (
 )
 
 func getPackages(ctx context.Context) []string {
-	return util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
+	list, err := util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
+	util.Check(err)
+	return list
 }
 
 type newVersionToCommit struct {
