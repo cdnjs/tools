@@ -242,48 +242,54 @@ func lintPackage(pckgPath string) {
 
 		switch pckg.Autoupdate.Source {
 		case "npm":
-			// check that it exists
-			if !npm.Exists(pckg.Autoupdate.Target) {
-				err(ctx, "package doesn't exist on npm")
-				goto checkRepoType
-			}
+			{
+				// check that it exists
+				if !npm.Exists(pckg.Autoupdate.Target) {
+					err(ctx, "package doesn't exist on npm")
+					goto checkRepoType
+				}
 
-			// check if it has enough downloads
-			// note: there is no goto here since an admin may still
-			// approve the library despite the download requirement
-			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
-			if counts.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
-				err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
-			}
+				// check if it has enough downloads
+				// note: there is no goto here since an admin may still
+				// approve the library despite the download requirement
+				counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
+				if counts.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
+					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
+				}
 
-			// get all versions on npm
-			for _, npmVersion := range npm.GetVersions(pckg.Autoupdate.Target) {
-				if npmVersion.Version == pckg.Version {
-					tmpDir = npm.DownloadTar(ctx, npmVersion.Tarball)
-					break
+				// get all versions on npm
+				for _, npmVersion := range npm.GetVersions(pckg.Autoupdate.Target) {
+					if npmVersion.Version == pckg.Version {
+						tmpDir = npm.DownloadTar(ctx, npmVersion.Tarball)
+						break
+					}
+				}
+
+				// check if version was found
+				if tmpDir == "" {
+					err(ctx, fmt.Sprintf("npm version %s for package %s does not exist", pckg.Version, pckg.Autoupdate.Target))
+					goto checkRepoType
 				}
 			}
-
-			// check if version was found
-			if tmpDir == "" {
-				err(ctx, fmt.Sprintf("npm version %s for package %s does not exist", pckg.Version, pckg.Autoupdate.Target))
-				goto checkRepoType
-			}
 		case "git":
-			// create temp dir
-			dir, direrr := ioutil.TempDir("", "git")
-			util.Check(direrr)
-			tmpDir = dir
+			{
+				// create temp dir
+				dir, direrr := ioutil.TempDir("", "git")
+				util.Check(direrr)
+				tmpDir = dir
 
-			// download from git into temp dir
-			out, cloneerr := packages.GitClone(ctx, pckg, tmpDir)
-			if cloneerr != nil {
-				err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
-				goto checkRepoType
+				// download from git into temp dir
+				out, cloneerr := packages.GitClone(ctx, pckg, tmpDir)
+				if cloneerr != nil {
+					err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
+					goto checkRepoType
+				}
 			}
 		default:
-			err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
-			goto checkRepoType
+			{
+				err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
+				goto checkRepoType
+			}
 		}
 
 		// clean up temp dir
