@@ -235,88 +235,122 @@ func lintPackage(pckgPath string) {
 	// }
 
 	if pckg.Autoupdate != nil {
-		if pckg.Autoupdate.Source != "npm" && pckg.Autoupdate.Source != "git" {
-			err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
-		}
-	} else {
-		warn(ctx, ".autoupdate should not be null. Package will never auto-update")
-	}
 
-	if pckg.Repository.Repotype != "git" {
-		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
-	} else {
-		packageGitDir, direrr := ioutil.TempDir("", "git")
-		util.Check(direrr)
-		defer os.RemoveAll(packageGitDir) // clean up temp dir
+		// temporary directory holding the downloaded package contents
+		// that will be cleaned when the program exits
+		var tmpDir string
 
-		out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
-		if cloneerr != nil {
-			err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
-		} else {
-
-			// used to determine if there is at least one file that does not
-			// exceed the size limit
-			var atLeastOneFile bool
-
-			// map used to determine if a file path has already been processed
-			seen := make(map[string]bool)
-
-			for _, fileMap := range pckg.NpmFileMap {
-				for _, pattern := range fileMap.Files {
-					basePath := path.Join(packageGitDir, fileMap.BasePath)
-
-					// find files that match glob
-					pkgCtx := util.ContextWithName(basePath)
-					list, listerr := util.ListFilesGlob(pkgCtx, basePath, pattern)
-					if listerr != nil {
-						err(ctx, "glob: "+listerr.Error())
-						continue
-					}
-
-					// check each file
-					for _, f := range list {
-						fp := path.Join(basePath, f)
-
-						// check if file has been processed before
-						if _, ok := seen[fp]; ok {
-							continue
-						}
-						seen[fp] = true
-
-						info, staterr := os.Stat(fp)
-						if staterr != nil {
-							err(ctx, "stat: "+staterr.Error())
-							continue
-						}
-
-						// warn for files with sizes exceeding max file size
-						size := info.Size()
-						if size > util.MAX_FILE_SIZE {
-							warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
-						} else {
-							atLeastOneFile = true
-							util.Debugf(ctx, fp+" ok")
-						}
-					}
-				}
+		switch pckg.Autoupdate.Source {
+		case "npm":
+			// check that it exists
+			if !npm.Exists(pckg.Autoupdate.Target) {
+				err(ctx, "package doesn't exist on npm")
+				goto checkRepoType
 			}
 
-			// fail if not least one file
-			if !atLeastOneFile {
-				err(ctx, "all files ignored due to size")
-			}
-		}
-	}
-
-	if pckg.Autoupdate != nil && pckg.Autoupdate.Source == "npm" {
-		if !npm.Exists(pckg.Autoupdate.Target) {
-			err(ctx, "package doesn't exists on npm")
-		} else {
+			// check if it has enough downloads
+			// note: there is no goto here since an admin may still
+			// approve the library despite the download requirement
 			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
 			if counts.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
 				err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
 			}
+
+			// get all versions on npm
+			for _, npmVersion := range npm.GetVersions(pckg.Autoupdate.Target) {
+				if npmVersion.Version == pckg.Version {
+					tmpDir = npm.DownloadTar(ctx, npmVersion.Tarball)
+					break
+				}
+			}
+
+			// check if version was found
+			if tmpDir == "" {
+				err(ctx, fmt.Sprintf("npm version %s for package %s does not exist", pckg.Version, pckg.Autoupdate.Target))
+				goto checkRepoType
+			}
+		case "git":
+			// create temp dir
+			dir, direrr := ioutil.TempDir("", "git")
+			util.Check(direrr)
+			tmpDir = dir
+
+			// download from git into temp dir
+			out, cloneerr := packages.GitClone(ctx, pckg, tmpDir)
+			if cloneerr != nil {
+				err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
+				goto checkRepoType
+			}
+		default:
+			err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
+			goto checkRepoType
 		}
+
+		// clean up temp dir
+		defer os.RemoveAll(tmpDir)
+
+		// used to determine if there is at least one file that does not
+		// exceed the size limit
+		var atLeastOneFile bool
+
+		// map used to determine if a file path has already been processed
+		seen := make(map[string]bool)
+
+		for _, fileMap := range pckg.NpmFileMap {
+			for _, pattern := range fileMap.Files {
+				basePath := path.Join(tmpDir, fileMap.BasePath)
+
+				fmt.Println("TMPDIR", tmpDir)
+
+				// find files that match glob
+				pkgCtx := util.ContextWithName(basePath)
+				list, listerr := util.ListFilesGlob(pkgCtx, basePath, pattern)
+				if listerr != nil {
+					err(ctx, "glob: "+listerr.Error())
+					continue
+				}
+
+				// check each file
+				for _, f := range list {
+					fp := path.Join(basePath, f)
+
+					// check if file has been processed before
+					if _, ok := seen[fp]; ok {
+						continue
+					}
+					seen[fp] = true
+
+					info, staterr := os.Stat(fp)
+					if staterr != nil {
+						err(ctx, "stat: "+staterr.Error())
+						continue
+					}
+
+					// warn for files with sizes exceeding max file size
+					size := info.Size()
+					if size > util.MAX_FILE_SIZE {
+						warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+					} else {
+						atLeastOneFile = true
+						util.Debugf(ctx, fp+" ok")
+					}
+				}
+			}
+		}
+
+		// fail if not least one valid file
+		if !atLeastOneFile {
+			err(ctx, "need at least one valid file in the package")
+		}
+
+	} else {
+		err(ctx, ".autoupdate should not be null. Package will never auto-update")
+	}
+
+checkRepoType:
+	// ensure repo type is git
+	if pckg.Repository.Repotype != "git" {
+		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
 	}
 
 }
