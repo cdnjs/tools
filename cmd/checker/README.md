@@ -4,8 +4,8 @@ Tools for our CI.
 
 ## `lint`
 
-Check that a package is correctly configured.
+Checks that a package is correctly configured based on its JSON.
 
 ## `show-files`
 
-Output how many package files match for a number of latest npm/git versions.
+Output how many package files match and whether they will be ignored for a number of latest npm/git versions.
