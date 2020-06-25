@@ -150,13 +150,13 @@ func showFiles(pckgPath string) {
 		}
 
 		// print info for the first version
-		firstNpmVersion := gitVersions[0]
+		firstGitVersion := gitVersions[0]
 		{
 			filesToCopy := pckg.NpmFilesFrom(packageGitDir)
 
 			if len(filesToCopy) == 0 {
 				errormsg := ""
-				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
+				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstGitVersion.Version)
 
 				for _, filemap := range pckg.NpmFileMap {
 					for _, pattern := range filemap.Files {
@@ -299,8 +299,6 @@ func lintPackage(pckgPath string) {
 		for _, fileMap := range pckg.NpmFileMap {
 			for _, pattern := range fileMap.Files {
 				basePath := path.Join(tmpDir, fileMap.BasePath)
-
-				fmt.Println("TMPDIR", tmpDir)
 
 				// find files that match glob
 				pkgCtx := util.ContextWithName(basePath)
