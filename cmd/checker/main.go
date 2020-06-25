@@ -258,15 +258,17 @@ func lintPackage(pckgPath string) {
 				}
 
 				// get all versions on npm
+				var found bool
 				for _, npmVersion := range npm.GetVersions(pckg.Autoupdate.Target) {
 					if npmVersion.Version == pckg.Version {
 						tmpDir = npm.DownloadTar(ctx, npmVersion.Tarball)
+						found = true
 						break
 					}
 				}
 
 				// check if version was found
-				if tmpDir == "" {
+				if !found {
 					err(ctx, fmt.Sprintf("npm version %s for package %s does not exist", pckg.Version, pckg.Autoupdate.Target))
 					goto checkRepoType
 				}
@@ -281,7 +283,23 @@ func lintPackage(pckgPath string) {
 				// download from git into temp dir
 				out, cloneerr := packages.GitClone(ctx, pckg, tmpDir)
 				if cloneerr != nil {
-					err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
+					err(ctx, fmt.Sprintf("could not git clone repo: %s: %s\n", cloneerr, out))
+					goto checkRepoType
+				}
+
+				// get all git versions
+				var found bool
+				for _, gitVersion := range git.GetVersions(ctx, pckg, tmpDir) {
+					if gitVersion.Version == pckg.Version {
+						packages.GitForceCheckout(ctx, pckg, tmpDir, gitVersion.Tag)
+						found = true
+						break
+					}
+				}
+
+				// check if version was found
+				if !found {
+					err(ctx, fmt.Sprintf("git version %s for package %s does not exist", pckg.Version, pckg.Autoupdate.Target))
 					goto checkRepoType
 				}
 			}
