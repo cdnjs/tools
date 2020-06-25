@@ -54,9 +54,9 @@ func main() {
 	panic("unknown subcommand")
 }
 
-func showFiles(path string) {
-	ctx := util.ContextWithName(path)
-	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+func showFiles(pckgPath string) {
+	ctx := util.ContextWithName(pckgPath)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -84,6 +84,8 @@ func showFiles(path string) {
 		firstNpmVersion := npmVersions[0]
 		{
 			tarballDir := npm.DownloadTar(ctx, firstNpmVersion.Tarball)
+			defer os.RemoveAll(tarballDir) // clean up temp dir
+
 			filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 			if len(filesToCopy) == 0 {
@@ -127,6 +129,7 @@ func showFiles(path string) {
 	if pckg.Autoupdate.Source == "git" {
 		packageGitDir, direrr := ioutil.TempDir("", "git")
 		util.Check(direrr)
+		defer os.RemoveAll(packageGitDir) // clean up temp dir
 
 		out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
 		if cloneerr != nil {
@@ -137,7 +140,7 @@ func showFiles(path string) {
 		gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
 
 		if len(gitVersions) == 0 {
-			err(ctx, "no version found on npm")
+			err(ctx, "no version found on git")
 			return
 		}
 
@@ -148,13 +151,13 @@ func showFiles(path string) {
 		}
 
 		// print info for the first version
-		firstNpmVersion := gitVersions[0]
+		firstGitVersion := gitVersions[0]
 		{
 			filesToCopy := pckg.NpmFilesFrom(packageGitDir)
 
 			if len(filesToCopy) == 0 {
 				errormsg := ""
-				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstNpmVersion.Version)
+				errormsg += fmt.Sprintf("No files will be published for version %s.\n", firstGitVersion.Version)
 
 				for _, filemap := range pckg.NpmFileMap {
 					for _, pattern := range filemap.Files {
@@ -205,12 +208,12 @@ func makeGlobDebugLink(glob string, dir string) string {
 	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
-func lintPackage(path string) {
-	ctx := util.ContextWithName(path)
+func lintPackage(pckgPath string) {
+	ctx := util.ContextWithName(pckgPath)
 
-	util.Debugf(ctx, "Linting %s...\n", path)
+	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, path)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -233,26 +236,33 @@ func lintPackage(path string) {
 	// }
 
 	if pckg.Autoupdate != nil {
-		if pckg.Autoupdate.Source != "npm" && pckg.Autoupdate.Source != "git" {
-			err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
-		}
-	} else {
-		warn(ctx, ".autoupdate should not be null. Package will never auto-update")
-	}
+		switch pckg.Autoupdate.Source {
+		case "npm":
+			{
+				// check that it exists
+				if !npm.Exists(pckg.Autoupdate.Target) {
+					err(ctx, "package doesn't exist on npm")
+					break
+				}
 
-	if pckg.Repository.Repotype != "git" {
-		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
-	}
-
-	if pckg.Autoupdate != nil && pckg.Autoupdate.Source == "npm" {
-		if !npm.Exists(pckg.Autoupdate.Target) {
-			err(ctx, "package doesn't exists on npm")
-		} else {
-			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
-			if counts.Downloads < 800 {
-				err(ctx, "package download per month on npm is under 800")
+				// check if it has enough downloads
+				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
+					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
+				}
+			}
+		case "git":
+		default:
+			{
+				err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
 			}
 		}
+	} else {
+		err(ctx, ".autoupdate should not be null. Package will never auto-update")
+	}
+
+	// ensure repo type is git
+	if pckg.Repository.Repotype != "git" {
+		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
 	}
 
 }

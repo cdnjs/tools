@@ -14,18 +14,18 @@ import (
 
 // ListFilesGlob is the legacy, slower version that uses
 // the node glob tool found here: https://github.com/cdnjs/glob
-func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
+func ListFilesGlob(ctx context.Context, base string, pattern string) ([]string, error) {
 	list := make([]string, 0)
 
 	// check if the version is hidden
 	if isHidden(base) {
 		Debugf(ctx, "ignoring hidden version %s", base)
-		return list
+		return list, nil
 	}
 
 	if _, err := os.Stat(base); os.IsNotExist(err) {
 		Debugf(ctx, "match %s in %s but doesn't exists", pattern, base)
-		return list
+		return list, nil
 	}
 
 	cmd := exec.Command(path.Join(GetBotBasePath(), "glob", "index.js"), pattern)
@@ -36,7 +36,7 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 	err := cmd.Run()
 	if err != nil {
 		fmt.Printf("%s: %s\n", err, out.String())
-		Check(err)
+		return list, err
 	}
 
 	for _, line := range strings.Split(out.String(), "\n") {
@@ -45,7 +45,7 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) []string {
 		}
 
 	}
-	return list
+	return list, nil
 }
 
 // Determines if a file path contains a hidden file or directory.
@@ -59,13 +59,13 @@ func isHidden(fp string) bool {
 // the same manner as ListFilesGlob with a '**' glob pattern.
 // Note that hidden cdnjs versions and hidden files/directories are ignored.
 // It utilizes the fast godirwalk library found here: https://github.com/karrick/godirwalk
-func ListFilesInVersion(ctx context.Context, base string) []string {
+func ListFilesInVersion(ctx context.Context, base string) ([]string, error) {
 	list := make([]string, 0)
 
 	// check if the version is hidden
 	if isHidden(base) {
 		Debugf(ctx, "ignoring hidden version %s", base)
-		return list
+		return list, nil
 	}
 
 	// walk the files recursively within the cdnjs package version directory
@@ -83,6 +83,5 @@ func ListFilesInVersion(ctx context.Context, base string) []string {
 		FollowSymbolicLinks: true,
 	})
 
-	Check(err)
-	return list
+	return list, err
 }

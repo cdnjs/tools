@@ -26,7 +26,9 @@ var (
 )
 
 func getPackages(ctx context.Context) []string {
-	return util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
+	list, err := util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
+	util.Check(err)
+	return list
 }
 
 type newVersionToCommit struct {
@@ -36,10 +38,12 @@ type newVersionToCommit struct {
 }
 
 func main() {
+	var noUpdate bool
+	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.Parse()
 
 	if util.IsDebug() {
-		fmt.Println("Running in debug mode")
+		fmt.Println("Running in debug mode", noUpdate)
 	}
 
 	util.UpdateGitRepo(context.Background(), CDNJS_PATH)
@@ -64,10 +68,14 @@ func main() {
 			}
 		}
 
-		commitNewVersions(ctx, newVersionsToCommit, f)
+		if !noUpdate {
+			commitNewVersions(ctx, newVersionsToCommit, f)
+		}
 	}
 
-	packages.GitPush(context.Background(), CDNJS_PATH)
+	if !noUpdate {
+		packages.GitPush(context.Background(), CDNJS_PATH)
+	}
 }
 
 func packageJsonToString(packageJson map[string]interface{}) ([]byte, error) {
