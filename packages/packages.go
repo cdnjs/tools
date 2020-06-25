@@ -2,6 +2,8 @@ package packages
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path"
 	"sort"
 
@@ -101,30 +103,57 @@ type NpmFileMoveOp struct {
 	To   string
 }
 
-// List files that match the npm glob pattern in the `base` directory
+// NpmFilesFrom lists files that match the npm glob pattern in the `base` directory
 // Returns a struct that represent the move semantics
 func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	out := make([]NpmFileMoveOp, 0)
+
+	// map used to determine if a file path has already been processed
+	seen := make(map[string]bool)
 
 	for _, fileMap := range p.NpmFileMap {
 		for _, pattern := range fileMap.Files {
 			basePath := path.Join(base, fileMap.BasePath)
 
+			// find files that match glob
 			list, err := util.ListFilesGlob(p.ctx, basePath, pattern)
 			util.Check(err)
 
 			for _, f := range list {
+				fp := path.Join(basePath, f)
 
-				// TODO: check file size, if > util.MAX_FILE_SIZE
-				// then output warning and ignore.
-				// Will be similar to main.go's function.
+				// check if file has been processed before
+				if _, ok := seen[fp]; ok {
+					continue
+				}
+				seen[fp] = true
 
+				info, staterr := os.Stat(fp)
+				if staterr != nil {
+					util.Debugf(p.ctx, "stat: "+staterr.Error())
+					continue
+				}
+
+				// warn for files with sizes exceeding max file size
+				size := info.Size()
+				if size > util.MAX_FILE_SIZE {
+					util.Debugf(p.ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+					continue
+				}
+
+				// file is ok
+				util.Debugf(p.ctx, fp+" ok")
 				out = append(out, NpmFileMoveOp{
 					From: path.Join(fileMap.BasePath, f),
 					To:   f,
 				})
 			}
 		}
+	}
+
+	// check if any results
+	if len(out) == 0 {
+		util.Debugf(p.ctx, "glob(s) found no matching files")
 	}
 
 	return out
