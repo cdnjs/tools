@@ -117,7 +117,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 			// find files that match glob
 			list, err := util.ListFilesGlob(p.ctx, basePath, pattern)
-			util.Check(err)
+			util.Check(err) // should have already run before in checker so panic if glob invalid
 
 			for _, f := range list {
 				fp := path.Join(basePath, f)
@@ -131,6 +131,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 				info, staterr := os.Stat(fp)
 				if staterr != nil {
 					util.Debugf(p.ctx, "stat: "+staterr.Error())
+					// TODO: warn if in checker err(ctx, "stat: "+staterr.Error())
 					continue
 				}
 
@@ -138,6 +139,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 				size := info.Size()
 				if size > util.MAX_FILE_SIZE {
 					util.Debugf(p.ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+					// TODO: warn if in checker warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
 					continue
 				}
 
@@ -149,11 +151,6 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 				})
 			}
 		}
-	}
-
-	// check if any results
-	if len(out) == 0 {
-		util.Debugf(p.ctx, "glob(s) found no matching files")
 	}
 
 	return out
