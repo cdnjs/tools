@@ -47,20 +47,19 @@ type Package struct {
 	// Cache list of versions for the package
 	versions []string
 
-	Title          string
-	Name           string
-	Description    string
-	Version        string
-	Author         Author
-	Homepage       string
-	Keywords       []string
-	Repository     Repository
-	Filename       string
-	NpmName        *string
-	NpmFileMap     []FileMap
-	License        *License
-	Autoupdate     *Autoupdate
-	RunFromChecker bool // if the program is run from the checker's main method
+	Title       string
+	Name        string
+	Description string
+	Version     string
+	Author      Author
+	Homepage    string
+	Keywords    []string
+	Repository  Repository
+	Filename    string
+	NpmName     *string
+	NpmFileMap  []FileMap
+	License     *License
+	Autoupdate  *Autoupdate
 }
 
 func stringInObject(key string, object map[string]interface{}) string {
@@ -130,14 +129,14 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				info, staterr := os.Stat(fp)
 				if staterr != nil {
-					util.Warnf(p.ctx, p.RunFromChecker, "stat: "+staterr.Error())
+					util.Warnf(p.ctx, "stat: "+staterr.Error())
 					continue
 				}
 
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
 				if size > util.MAX_FILE_SIZE {
-					util.Warnf(p.ctx, p.RunFromChecker, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
+					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
 					continue
 				}
 

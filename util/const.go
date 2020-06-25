@@ -6,8 +6,8 @@ const (
 	// versions.
 	IMPORT_ALL_MAX_VERSIONS = 10
 
-	// Maximum file size in bytes accepted by cdnjs.
-	MAX_FILE_SIZE int64 = 1e7
+	// Maximum file size in bytes accepted by cdnjs (10MiB).
+	MAX_FILE_SIZE int64 = 10485760
 
 	// Minimum number of monthly downloads from npm needed
 	// for a library to be accepted into cdnjs.

@@ -20,6 +20,11 @@ import (
 	"cloud.google.com/go/storage"
 )
 
+var (
+	// initialize standard debug logger
+	logger = util.GetStandardLogger()
+)
+
 func encodeJson(packages []*outputPackage) (string, error) {
 	out := struct {
 		Packages []*outputPackage `json:"packages"`
@@ -36,9 +41,11 @@ func encodeJson(packages []*outputPackage) (string, error) {
 
 func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 	for f := range jobs {
-		ctx := util.ContextWithName(f)
 
-		p, err := packages.ReadPackageJSON(ctx, f, false)
+		// create context with file path prefix, standard debug logger
+		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		p, err := packages.ReadPackageJSON(ctx, f)
 		if err != nil {
 			util.Printf(ctx, "error while processing package: %s\n", err)
 			results <- nil

@@ -23,6 +23,9 @@ var (
 	BASE_PATH     = util.GetEnv("BOT_BASE_PATH")
 	PACKAGES_PATH = path.Join(BASE_PATH, "packages", "packages")
 	CDNJS_PATH    = path.Join(BASE_PATH, "cdnjs")
+
+	// initialize standard debug logger
+	logger = util.GetStandardLogger()
 )
 
 func getPackages(ctx context.Context) []string {
@@ -50,8 +53,11 @@ func main() {
 	util.UpdateGitRepo(context.Background(), PACKAGES_PATH)
 
 	for _, f := range getPackages(context.Background()) {
-		ctx := util.ContextWithName(f)
-		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f), false)
+
+		// create context with file path prefix, standard debug logger
+		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit

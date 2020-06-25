@@ -19,6 +19,9 @@ import (
 var (
 	// Store the number of validation errors
 	errCount uint = 0
+
+	// initialize standard debug logger
+	logger = util.GetCheckerLogger()
 )
 
 func main() {
@@ -28,9 +31,6 @@ func main() {
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
-
-	// change output for readability in CI
-	util.SetLoggerFlag(0)
 
 	if subcommand == "lint" {
 		lintPackage(flag.Arg(1))
@@ -54,8 +54,11 @@ func main() {
 }
 
 func showFiles(pckgPath string) {
-	ctx := util.ContextWithName(pckgPath)
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath, true)
+
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
+
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -208,11 +211,13 @@ func makeGlobDebugLink(glob string, dir string) string {
 }
 
 func lintPackage(pckgPath string) {
-	ctx := util.ContextWithName(pckgPath)
+
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath, true)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -266,13 +271,15 @@ func lintPackage(pckgPath string) {
 
 }
 
+// wrapper around outputting a checker error
 func err(ctx context.Context, s string) {
-	util.CheckerErr(ctx, s)
+	util.Errf(ctx, s)
 	errCount++
 }
 
+// wrapper around outputting a checker warning
 func warn(ctx context.Context, s string) {
-	util.CheckerWarn(ctx, s)
+	util.Warnf(ctx, s)
 }
 
 func shouldBeEmpty(name string) string {
