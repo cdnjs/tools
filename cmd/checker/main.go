@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
@@ -268,20 +267,12 @@ func lintPackage(pckgPath string) {
 }
 
 func err(ctx context.Context, s string) {
-	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
-	} else {
-		panic("unreachable")
-	}
+	util.CheckerErr(ctx, s)
 	errCount++
 }
 
 func warn(ctx context.Context, s string) {
-	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
-	} else {
-		panic("unreachable")
-	}
+	util.CheckerWarn(ctx, s)
 }
 
 func shouldBeEmpty(name string) string {
@@ -290,11 +281,4 @@ func shouldBeEmpty(name string) string {
 
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)
-}
-
-func escapeGitHub(s string) string {
-	s = strings.ReplaceAll(s, "%", "%25")
-	s = strings.ReplaceAll(s, "\n", "%0A")
-	s = strings.ReplaceAll(s, "\r", "%0D")
-	return s
 }
