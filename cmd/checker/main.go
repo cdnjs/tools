@@ -128,6 +128,7 @@ func showFiles(pckgPath string) {
 	if pckg.Autoupdate.Source == "git" {
 		packageGitDir, direrr := ioutil.TempDir("", "git")
 		util.Check(direrr)
+		defer os.RemoveAll(packageGitDir) // clean up temp dir
 
 		out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
 		if cloneerr != nil {
@@ -138,7 +139,7 @@ func showFiles(pckgPath string) {
 		gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
 
 		if len(gitVersions) == 0 {
-			err(ctx, "no version found on npm")
+			err(ctx, "no version found on git")
 			return
 		}
 
@@ -243,6 +244,68 @@ func lintPackage(pckgPath string) {
 
 	if pckg.Repository.Repotype != "git" {
 		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
+	} else {
+		packageGitDir, direrr := ioutil.TempDir("", "git")
+		util.Check(direrr)
+		defer os.RemoveAll(packageGitDir) // clean up temp dir
+
+		out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
+		if cloneerr != nil {
+			err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
+		} else {
+
+			// used to determine if there is at least one file that does not
+			// exceed the size limit
+			var atLeastOneFile bool
+
+			// map used to determine if a file path has already been processed
+			seen := make(map[string]bool)
+
+			for _, fileMap := range pckg.NpmFileMap {
+				for _, pattern := range fileMap.Files {
+					basePath := path.Join(packageGitDir, fileMap.BasePath)
+
+					// find files that match glob
+					pkgCtx := util.ContextWithName(basePath)
+					list, listerr := util.ListFilesGlob(pkgCtx, basePath, pattern)
+					if listerr != nil {
+						err(ctx, "glob: "+listerr.Error())
+						continue
+					}
+
+					// check each file
+					for _, f := range list {
+						fp := path.Join(basePath, f)
+
+						// check if file has been processed before
+						if _, ok := seen[fp]; ok {
+							continue
+						}
+						seen[fp] = true
+
+						info, staterr := os.Stat(fp)
+						if staterr != nil {
+							err(ctx, "stat: "+staterr.Error())
+							continue
+						}
+
+						// warn for files with sizes exceeding max file size
+						size := info.Size()
+						if size > util.MAX_FILE_SIZE {
+							warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+						} else {
+							atLeastOneFile = true
+							util.Debugf(ctx, fp+" ok")
+						}
+					}
+				}
+			}
+
+			// fail if not least one file
+			if !atLeastOneFile {
+				err(ctx, "all files ignored due to size")
+			}
+		}
 	}
 
 	if pckg.Autoupdate != nil && pckg.Autoupdate.Source == "npm" {
@@ -250,61 +313,10 @@ func lintPackage(pckgPath string) {
 			err(ctx, "package doesn't exists on npm")
 		} else {
 			counts := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
-			if counts.Downloads < 800 {
-				err(ctx, "package download per month on npm is under 800")
+			if counts.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
+				err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
 			}
 		}
-	}
-
-	const (
-		pkgJSON = "package.json"
-	)
-
-	if ok := strings.HasSuffix(pckgPath, pkgJSON); !ok {
-		panic("unexpected package json path")
-	}
-
-	// used to determine if there is at least one file
-	var atLeastOneFile bool
-
-	// check file sizes
-	versionDir := path.Join(pckgPath[:len(pckgPath)-len(pkgJSON)], pckg.Version)
-	for _, fileMap := range pckg.NpmFileMap {
-		for _, pattern := range fileMap.Files {
-			basePath := path.Join(versionDir, fileMap.BasePath)
-
-			// find files that match glob
-			pkgCtx := util.ContextWithName(basePath)
-			list, listerr := util.ListFilesGlob(pkgCtx, basePath, pattern)
-			if listerr != nil {
-				err(ctx, "glob: "+listerr.Error())
-				return
-			}
-
-			// warn for files with sizes exceeding max file size
-			for _, f := range list {
-				fp := path.Join(basePath, f)
-
-				info, staterr := os.Stat(fp)
-				if staterr != nil {
-					err(ctx, "stat: "+staterr.Error())
-					return
-				}
-
-				size := info.Size()
-				if size > util.MAX_FILE_SIZE {
-					warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
-				} else {
-					atLeastOneFile = true
-					util.Debugf(ctx, fp+" ok")
-				}
-			}
-		}
-	}
-
-	// fail if not least one file
-	if !atLeastOneFile {
-		err(ctx, "all files ignored due to size")
 	}
 
 }
