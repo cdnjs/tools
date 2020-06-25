@@ -51,7 +51,7 @@ func main() {
 
 	for _, f := range getPackages(context.Background()) {
 		ctx := util.ContextWithName(f)
-		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
+		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f), false)
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit

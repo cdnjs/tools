@@ -38,7 +38,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 	for f := range jobs {
 		ctx := util.ContextWithName(f)
 
-		p, err := packages.ReadPackageJSON(ctx, f)
+		p, err := packages.ReadPackageJSON(ctx, f, false)
 		if err != nil {
 			util.Printf(ctx, "error while processing package: %s\n", err)
 			results <- nil

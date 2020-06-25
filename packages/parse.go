@@ -11,7 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
+// ReadPackageJSON parses a JSON file into a Package.
+// Note that runFromChecker is used in to determine if the program was run from
+// the checker's main method, which logs differently from the other programs.
+func ReadPackageJSON(ctx context.Context, file string, runFromChecker bool) (*Package, error) {
 	var jsondata map[string]interface{}
 
 	data, err := ioutil.ReadFile(file)
@@ -26,6 +29,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 
 	var p Package
 	p.ctx = ctx
+	p.RunFromChecker = runFromChecker
 
 	for key, value := range jsondata {
 		switch key {

@@ -56,7 +56,7 @@ func main() {
 
 func showFiles(pckgPath string) {
 	ctx := util.ContextWithName(pckgPath)
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath, true)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -213,7 +213,7 @@ func lintPackage(pckgPath string) {
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath, true)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
