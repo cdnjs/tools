@@ -2,7 +2,6 @@ package packages
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"sort"
@@ -138,7 +137,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
 				if size > util.MAX_FILE_SIZE {
-					util.Warnf(p.ctx, p.RunFromChecker, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+					util.Warnf(p.ctx, p.RunFromChecker, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
 					continue
 				}
 
