@@ -21,7 +21,6 @@ import (
 	"github.com/cdnjs/tools/util"
 
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
-	"golang.org/x/net/context"
 )
 
 type PackagesJSON struct {
@@ -72,7 +71,7 @@ type GitHubMeta struct {
 }
 
 func getPackagesBuffer() bytes.Buffer {
-	ctx := context.Background()
+	ctx := util.ContextWithEntries()
 
 	bkt, err := cloudstorage.GetAssetsBucket(ctx)
 	util.Check(err)
@@ -202,7 +201,7 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	}
 
 	client := github.GetClient()
-	api, _, err := client.Repositories.Get(context.Background(), res[0][1], strings.ReplaceAll(res[0][2], ".git", ""))
+	api, _, err := client.Repositories.Get(util.ContextWithEntries(), res[0][1], strings.ReplaceAll(res[0][2], ".git", ""))
 	if err != nil {
 		return nil, err
 	}

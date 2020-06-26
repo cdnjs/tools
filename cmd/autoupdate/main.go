@@ -49,10 +49,10 @@ func main() {
 		fmt.Println("Running in debug mode", noUpdate)
 	}
 
-	util.UpdateGitRepo(context.Background(), CDNJS_PATH)
-	util.UpdateGitRepo(context.Background(), PACKAGES_PATH)
+	util.UpdateGitRepo(util.ContextWithEntries(), CDNJS_PATH)
+	util.UpdateGitRepo(util.ContextWithEntries(), PACKAGES_PATH)
 
-	for _, f := range getPackages(context.Background()) {
+	for _, f := range getPackages(util.ContextWithEntries()) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
@@ -79,7 +79,7 @@ func main() {
 	}
 
 	if !noUpdate {
-		packages.GitPush(context.Background(), CDNJS_PATH)
+		packages.GitPush(util.ContextWithEntries(), CDNJS_PATH)
 	}
 }
 
