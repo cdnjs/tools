@@ -1,9 +1,11 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -13,8 +15,26 @@ type NpmRegistryPackage struct {
 }
 
 type NpmVersion struct {
+	tarballDir string
+
 	Version string
 	Tarball string
+}
+
+// Get gets the version of a particular NpmVersion.
+func (n *NpmVersion) Get() string {
+	return n.Version
+}
+
+// Download will download a particular npm version.
+func (n *NpmVersion) Download(args ...interface{}) {
+	ctx := args[0].(context.Context)
+	n.tarballDir = DownloadTar(ctx, n.Tarball)
+}
+
+// Clean is used to satisfy the checker's version interface.
+func (n *NpmVersion) Clean() {
+	os.RemoveAll(n.tarballDir) // clean up temp tarball dir
 }
 
 type MonthlyDownload struct {
