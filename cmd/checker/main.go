@@ -107,7 +107,6 @@ func showFiles(pckgPath string) {
 				err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
 				return
 			}
-			downloadDir = packageGitDir
 
 			// get git versions and sort
 			gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
@@ -118,6 +117,8 @@ func showFiles(pckgPath string) {
 				versions = append(versions, &v)
 			}
 
+			// set download dir
+			downloadDir = packageGitDir
 		}
 	default:
 		{
@@ -175,7 +176,7 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 // Each previous version will be downloaded and cleaned up if necessary.
 // For example, a temporary directory may be downloaded and then removed later.
 func printLastVersions(ctx context.Context, p *packages.Package, dir string, versions []version) {
-	fmt.Printf("\n%d last versions:\n", len(versions))
+	fmt.Printf("\n%d last version(s):\n", len(versions))
 	for _, version := range versions {
 		version.Download(ctx, p, dir)
 		defer version.Clean()

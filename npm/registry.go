@@ -10,43 +10,51 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-type NpmRegistryPackage struct {
+// RegistryPackage contains metadata about the versions for
+// a particular npm package.
+type RegistryPackage struct {
 	Versions map[string]interface{} `json:"versions"`
 }
 
-type NpmVersion struct {
+// Version represents a version of an npm package.
+type Version struct {
 	tarballDir string
 
 	Version string
 	Tarball string
 }
 
-// Get gets the version of a particular NpmVersion.
-func (n *NpmVersion) Get() string {
+// Get gets the version of a particular Version.
+func (n *Version) Get() string {
 	return n.Version
 }
 
 // Download will download a particular npm version.
-func (n *NpmVersion) Download(args ...interface{}) {
+func (n *Version) Download(args ...interface{}) {
 	ctx := args[0].(context.Context)
 	n.tarballDir = DownloadTar(ctx, n.Tarball)
 }
 
 // Clean is used to satisfy the checker's version interface.
-func (n *NpmVersion) Clean() {
+func (n *Version) Clean() {
 	os.RemoveAll(n.tarballDir) // clean up temp tarball dir
 }
 
+// MonthlyDownload holds the number of monthly downloads
+// for an npm package.
 type MonthlyDownload struct {
 	Downloads uint `json:"downloads"`
 }
 
+// Exists determines if an npm package exists.
 func Exists(name string) bool {
 	resp, err := http.Get("https://registry.npmjs.org/" + name)
 	util.Check(err)
 	return resp.StatusCode == http.StatusOK
 }
 
+// GetMonthlyDownload uses the npm API to get the MonthlyDownload
+// for a particular npm package.
 func GetMonthlyDownload(name string) MonthlyDownload {
 	resp, err := http.Get("https://api.npmjs.org/downloads/point/last-month/" + name)
 	util.Check(err)
@@ -60,7 +68,8 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 	return counts
 }
 
-func GetVersions(name string) []NpmVersion {
+// GetVersions gets all of the versions associated with an npm package.
+func GetVersions(name string) []Version {
 	resp, err := http.Get("https://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -68,16 +77,16 @@ func GetVersions(name string) []NpmVersion {
 	body, err := ioutil.ReadAll(resp.Body)
 	util.Check(err)
 
-	var npmRegistryPackage NpmRegistryPackage
+	var npmRegistryPackage RegistryPackage
 	util.Check(json.Unmarshal(body, &npmRegistryPackage))
 
-	versions := make([]NpmVersion, 0)
+	versions := make([]Version, 0)
 
 	for k, v := range npmRegistryPackage.Versions {
 		if v, ok := v.(map[string]interface{}); ok {
 			dist := v["dist"].(map[string]interface{})
 
-			versions = append(versions, NpmVersion{
+			versions = append(versions, Version{
 				Version: k,
 				Tarball: dist["tarball"].(string),
 			})

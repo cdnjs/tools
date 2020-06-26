@@ -4,7 +4,8 @@ import (
 	"github.com/blang/semver"
 )
 
-type ByGitVersion []GitVersion
+// ByGitVersion implements sort.Interface for []Version
+type ByGitVersion []Version
 
 func (a ByGitVersion) Len() int      { return len(a) }
 func (a ByGitVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
