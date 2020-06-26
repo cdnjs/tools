@@ -4,8 +4,8 @@ import (
 	"github.com/blang/semver"
 )
 
-// ByNpmVersion implements sort.Interface for []NpmVersion
-type ByNpmVersion []NpmVersion
+// ByNpmVersion implements sort.Interface for []Version
+type ByNpmVersion []Version
 
 func (a ByNpmVersion) Len() int      { return len(a) }
 func (a ByNpmVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
