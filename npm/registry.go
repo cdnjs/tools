@@ -25,19 +25,19 @@ type Version struct {
 }
 
 // Get gets the version of a particular Version.
-func (n *Version) Get() string {
+func (n Version) Get() string {
 	return n.Version
 }
 
 // Download will download a particular npm version.
-func (n *Version) Download(args ...interface{}) {
+func (n Version) Download(args ...interface{}) string {
 	ctx := args[0].(context.Context)
-	n.tarballDir = DownloadTar(ctx, n.Tarball)
+	return DownloadTar(ctx, n.Tarball) // return download dir
 }
 
-// Clean is used to satisfy the checker's version interface.
-func (n *Version) Clean() {
-	os.RemoveAll(n.tarballDir) // clean up temp tarball dir
+// Clean is used to clean up a download directory.
+func (n Version) Clean(downloadDir string) {
+	os.RemoveAll(downloadDir) // clean up temp tarball dir
 }
 
 // MonthlyDownload holds the number of monthly downloads

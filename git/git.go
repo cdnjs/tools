@@ -15,18 +15,19 @@ type Version struct {
 }
 
 // Get gets the version of a particular Version.
-func (g *Version) Get() string {
+func (g Version) Get() string {
 	return g.Version
 }
 
 // Download will git check out a particular version.
-func (g *Version) Download(args ...interface{}) {
+func (g Version) Download(args ...interface{}) string {
 	ctx, p, dir := args[0].(context.Context), args[1].(*packages.Package), args[2].(string)
 	packages.GitForceCheckout(ctx, p, dir, g.Tag)
+	return dir // download dir is the same as original dir
 }
 
 // Clean is used to satisfy the checker's version interface.
-func (g *Version) Clean() {
+func (g Version) Clean(_ string) {
 }
 
 // GetVersions gets all of the versions associated with a git repo.
