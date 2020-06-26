@@ -156,8 +156,15 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 		errormsg := ""
 		errormsg += fmt.Sprintf("No files will be published for version %s.\n", v.Get())
 
+		// determine if a pattern has been seen before
+		seen := make(map[string]bool)
+
 		for _, filemap := range p.NpmFileMap {
 			for _, pattern := range filemap.Files {
+				if _, ok := seen[pattern]; ok {
+					continue // skip duplicate pattern
+				}
+				seen[pattern] = true
 				errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, dir))
 			}
 		}
