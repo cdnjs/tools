@@ -54,7 +54,6 @@ func main() {
 }
 
 func showFiles(pckgPath string) {
-
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
@@ -211,7 +210,6 @@ func makeGlobDebugLink(glob string, dir string) string {
 }
 
 func lintPackage(pckgPath string) {
-
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 

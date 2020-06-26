@@ -53,7 +53,6 @@ func main() {
 	util.UpdateGitRepo(context.Background(), PACKAGES_PATH)
 
 	for _, f := range getPackages(context.Background()) {
-
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 

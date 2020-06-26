@@ -41,7 +41,6 @@ func encodeJson(packages []*outputPackage) (string, error) {
 
 func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 	for f := range jobs {
-
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
