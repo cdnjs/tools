@@ -56,9 +56,9 @@ func main() {
 // Represents a version of a package,
 // which could be a git version, npm version, etc.
 type version interface {
-	Get() string
-	Download(...interface{})
-	Clean()
+	Get() string                    // Get a version
+	Download(...interface{}) string // Download a version, returning the download dir
+	Clean(string)                   // Clean a download dir
 }
 
 func showFiles(pckgPath string) {
@@ -91,7 +91,7 @@ func showFiles(pckgPath string) {
 
 			// cast to interface
 			for _, v := range npmVersions {
-				versions = append(versions, &v)
+				versions = append(versions, v)
 			}
 
 			// download into temp dir
@@ -114,7 +114,7 @@ func showFiles(pckgPath string) {
 
 			// cast to interface
 			for _, v := range gitVersions {
-				versions = append(versions, &v)
+				versions = append(versions, v)
 			}
 
 			// set download dir
@@ -178,8 +178,8 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 func printLastVersions(ctx context.Context, p *packages.Package, dir string, versions []version) {
 	fmt.Printf("\n%d last version(s):\n", len(versions))
 	for _, version := range versions {
-		version.Download(ctx, p, dir)
-		defer version.Clean()
+		downloadDir := version.Download(ctx, p, dir)
+		defer version.Clean(downloadDir)
 
 		filesToCopy := p.NpmFilesFrom(dir)
 
