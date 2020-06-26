@@ -92,7 +92,7 @@ func main() {
 	}
 
 	if subcommand == "set" {
-		ctx := context.Background()
+		ctx := util.ContextWithEntries()
 		bkt, err := cloudstorage.GetAssetsBucket(ctx)
 		util.Check(err)
 		obj := bkt.Object("package.min.js")
