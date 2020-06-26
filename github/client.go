@@ -1,6 +1,8 @@
 package github
 
 import (
+	"context"
+
 	"github.com/cdnjs/tools/util"
 
 	githubapi "github.com/google/go-github/github"
@@ -10,7 +12,7 @@ import (
 
 func GetClient() *githubapi.Client {
 	token := util.GetEnv("GITHUB_REPO_API_KEY")
-	ctx := util.ContextWithEntries()
+	ctx := context.Background()
 	conf := &oauth2.Config{
 		Endpoint: githuboauth2.Endpoint,
 	}

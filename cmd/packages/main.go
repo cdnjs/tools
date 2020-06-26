@@ -23,6 +23,9 @@ import (
 var (
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
+
+	// default context (no logger prefix)
+	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
 
 func encodeJson(packages []*outputPackage) (string, error) {
@@ -92,7 +95,7 @@ func main() {
 	}
 
 	if subcommand == "set" {
-		ctx := util.ContextWithEntries()
+		ctx := defaultCtx
 		bkt, err := cloudstorage.GetAssetsBucket(ctx)
 		util.Check(err)
 		obj := bkt.Object("package.min.js")
