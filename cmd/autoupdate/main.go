@@ -26,6 +26,9 @@ var (
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
+
+	// default context (no logger prefix)
+	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
 
 func getPackages(ctx context.Context) []string {
@@ -49,10 +52,10 @@ func main() {
 		fmt.Println("Running in debug mode", noUpdate)
 	}
 
-	util.UpdateGitRepo(util.ContextWithEntries(), CDNJS_PATH)
-	util.UpdateGitRepo(util.ContextWithEntries(), PACKAGES_PATH)
+	util.UpdateGitRepo(defaultCtx, CDNJS_PATH)
+	util.UpdateGitRepo(defaultCtx, PACKAGES_PATH)
 
-	for _, f := range getPackages(util.ContextWithEntries()) {
+	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
@@ -79,7 +82,7 @@ func main() {
 	}
 
 	if !noUpdate {
-		packages.GitPush(util.ContextWithEntries(), CDNJS_PATH)
+		packages.GitPush(defaultCtx, CDNJS_PATH)
 	}
 }
 

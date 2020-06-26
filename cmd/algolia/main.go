@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -71,7 +72,7 @@ type GitHubMeta struct {
 }
 
 func getPackagesBuffer() bytes.Buffer {
-	ctx := util.ContextWithEntries()
+	ctx := context.Background()
 
 	bkt, err := cloudstorage.GetAssetsBucket(ctx)
 	util.Check(err)
