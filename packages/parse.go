@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ReadPackageJSON parses a JSON file into a Package.
 func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 	var jsondata map[string]interface{}
 

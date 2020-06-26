@@ -2,7 +2,6 @@ package packages
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"sort"
@@ -130,16 +129,14 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				info, staterr := os.Stat(fp)
 				if staterr != nil {
-					util.Debugf(p.ctx, "stat: "+staterr.Error())
-					// TODO: warn if in checker err(ctx, "stat: "+staterr.Error())
+					util.Warnf(p.ctx, "stat: "+staterr.Error())
 					continue
 				}
 
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
 				if size > util.MAX_FILE_SIZE {
-					util.Debugf(p.ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
-					// TODO: warn if in checker warn(ctx, fmt.Sprintf("file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE))
+					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
 					continue
 				}
 

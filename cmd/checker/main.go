@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
@@ -20,6 +19,9 @@ import (
 var (
 	// Store the number of validation errors
 	errCount uint = 0
+
+	// initialize standard debug logger
+	logger = util.GetCheckerLogger()
 )
 
 func main() {
@@ -29,9 +31,6 @@ func main() {
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
-
-	// change output for readability in CI
-	util.SetLoggerFlag(0)
 
 	if subcommand == "lint" {
 		lintPackage(flag.Arg(1))
@@ -55,7 +54,9 @@ func main() {
 }
 
 func showFiles(pckgPath string) {
-	ctx := util.ContextWithName(pckgPath)
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
+
 	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
@@ -209,7 +210,8 @@ func makeGlobDebugLink(glob string, dir string) string {
 }
 
 func lintPackage(pckgPath string) {
-	ctx := util.ContextWithName(pckgPath)
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
@@ -267,21 +269,15 @@ func lintPackage(pckgPath string) {
 
 }
 
+// wrapper around outputting a checker error
 func err(ctx context.Context, s string) {
-	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::error file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
-	} else {
-		panic("unreachable")
-	}
+	util.Errf(ctx, s)
 	errCount++
 }
 
+// wrapper around outputting a checker warning
 func warn(ctx context.Context, s string) {
-	if prefix, ok := ctx.Value("loggerPrefix").(string); ok {
-		fmt.Printf("::warning file=%s,line=1,col=1::%s\n", prefix, escapeGitHub(s))
-	} else {
-		panic("unreachable")
-	}
+	util.Warnf(ctx, s)
 }
 
 func shouldBeEmpty(name string) string {
@@ -290,11 +286,4 @@ func shouldBeEmpty(name string) string {
 
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)
-}
-
-func escapeGitHub(s string) string {
-	s = strings.ReplaceAll(s, "%", "%25")
-	s = strings.ReplaceAll(s, "\n", "%0A")
-	s = strings.ReplaceAll(s, "\r", "%0D")
-	return s
 }
