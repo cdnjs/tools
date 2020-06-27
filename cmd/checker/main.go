@@ -122,7 +122,8 @@ func showFiles(pckgPath string) {
 		}
 	default:
 		{
-			panic(fmt.Sprintf("unknown autoupdate source: %s", src))
+			err(ctx, fmt.Sprintf("unknown autoupdate source: %s", src))
+			return
 		}
 	}
 
