@@ -81,7 +81,7 @@ func showFiles(pckgPath string) {
 	// autoupdate exists, download latest versions based on source
 	src := pckg.Autoupdate.Source
 	var versions []version
-	var downloadDir string
+	var downloadDir, noVersionsErr string
 	switch src {
 	case "npm":
 		{
@@ -96,6 +96,9 @@ func showFiles(pckgPath string) {
 
 			// download into temp dir
 			downloadDir = npm.DownloadTar(ctx, npmVersions[0].Tarball)
+
+			// set err string if no versions
+			noVersionsErr = "no version found on npm"
 		}
 	case "git":
 		{
@@ -119,6 +122,9 @@ func showFiles(pckgPath string) {
 
 			// set download dir
 			downloadDir = packageGitDir
+
+			// set err string if no versions
+			noVersionsErr = "no tagged version found in git"
 		}
 	default:
 		{
@@ -132,7 +138,7 @@ func showFiles(pckgPath string) {
 
 	// enforce at least one version
 	if len(versions) == 0 {
-		err(ctx, fmt.Sprintf("no version found on %s", src))
+		err(ctx, noVersionsErr)
 		return
 	}
 
