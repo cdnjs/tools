@@ -188,7 +188,7 @@ func printLastVersions(ctx context.Context, p *packages.Package, dir string, ver
 		downloadDir := version.Download(ctx, p, dir)
 		defer version.Clean(downloadDir)
 
-		filesToCopy := p.NpmFilesFrom(dir)
+		filesToCopy := p.NpmFilesFrom(downloadDir)
 
 		fmt.Printf("- %s: %d file(s) matched", version.Get(), len(filesToCopy))
 		if len(filesToCopy) > 0 {
