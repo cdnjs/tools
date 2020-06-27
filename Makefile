@@ -1,4 +1,6 @@
 GO_BUILD_ARGS = -mod=readonly -v -ldflags="-s -w"
+
+.PHONY: all
 all: algolia checker packages autoupdate
 
 .PHONY: algolia
@@ -16,3 +18,7 @@ packages:
 .PHONY: autoupdate
 autoupdate:
 	go build $(GO_BUILD_ARGS) -o bin/autoupdate ./cmd/autoupdate
+
+.PHONY: test
+test:
+	go test -v ./test/...
