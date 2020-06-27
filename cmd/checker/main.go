@@ -56,7 +56,7 @@ func main() {
 // Represents a version of a package,
 // which could be a git version, npm version, etc.
 type version interface {
-	Get() string                    // Get a version
+	Get() string                    // Get the version as a string
 	Download(...interface{}) string // Download a version, returning the download dir
 	Clean(string)                   // Clean a download dir
 }

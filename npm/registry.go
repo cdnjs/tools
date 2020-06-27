@@ -18,8 +18,6 @@ type RegistryPackage struct {
 
 // Version represents a version of an npm package.
 type Version struct {
-	tarballDir string
-
 	Version string
 	Tarball string
 }
