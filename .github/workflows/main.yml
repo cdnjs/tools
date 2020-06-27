@@ -11,8 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: make
+      - name: compile tools
         run: make all
+
+      - name: run tests
+        run: make test
 
       - name: Create Release
         id: create_release

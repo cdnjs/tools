@@ -29,3 +29,7 @@ func GetBotBasePath() string {
 func GetCDNJSPackages() string {
 	return path.Join(GetBotBasePath(), "cdnjs", "ajax", "libs")
 }
+
+func HasHTTProxy() bool {
+	return os.Getenv("HTTP_PROXY") != ""
+}

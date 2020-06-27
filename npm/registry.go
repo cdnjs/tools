@@ -21,14 +21,22 @@ type MonthlyDownload struct {
 	Downloads uint `json:"downloads"`
 }
 
+func getProtocol() string {
+	if util.HasHTTProxy() {
+		return "http"
+	} else {
+		return "https"
+	}
+}
+
 func Exists(name string) bool {
-	resp, err := http.Get("https://registry.npmjs.org/" + name)
+	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 	return resp.StatusCode == http.StatusOK
 }
 
 func GetMonthlyDownload(name string) MonthlyDownload {
-	resp, err := http.Get("https://api.npmjs.org/downloads/point/last-month/" + name)
+	resp, err := http.Get(getProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
@@ -41,7 +49,7 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 }
 
 func GetVersions(name string) []NpmVersion {
-	resp, err := http.Get("https://registry.npmjs.org/" + name)
+	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
