@@ -56,7 +56,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 		versionDiff := gitVersionDiff(gitVersions, existingVersionSet)
 
-		newGitVersions := make([]git.GitVersion, 0)
+		newGitVersions := make([]git.Version, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			gitVersion, err := semver.Make(versionDiff[i].Version)
@@ -94,7 +94,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	return newVersionsToCommit
 }
 
-func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.GitVersion) []newVersionToCommit {
+func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {
 	newVersionsToCommit := make([]newVersionToCommit, 0)
 
 	if len(versions) == 0 {
@@ -147,8 +147,8 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 	return newVersionsToCommit
 }
 
-func gitVersionDiff(a []git.GitVersion, b []string) []git.GitVersion {
-	diff := make([]git.GitVersion, 0)
+func gitVersionDiff(a []git.Version, b []string) []git.Version {
+	diff := make([]git.Version, 0)
 	m := make(map[string]bool)
 
 	for _, item := range b {
