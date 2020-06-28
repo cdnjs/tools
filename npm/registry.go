@@ -3,23 +3,26 @@ package npm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/cdnjs/tools/util"
 )
 
-// RegistryPackage contains metadata about the versions for
-// a particular npm package.
-type RegistryPackage struct {
-	Versions map[string]interface{} `json:"versions"`
+// Registry contains metadata about a particular npm package.
+type Registry struct {
+	Versions   map[string]interface{} `json:"versions"` // Versions contains metadata about each npm version.
+	TimeStamps map[string]string      `json:"time"`     // TimeStamps contains times for each versions as well as the created/modified time.
 }
 
 // Version represents a version of an npm package.
 type Version struct {
-	Version string
-	Tarball string
+	Version   string
+	Tarball   string
+	TimeStamp time.Time
 }
 
 // Get gets the version of a particular Version.
@@ -75,19 +78,28 @@ func GetVersions(name string) []Version {
 	body, err := ioutil.ReadAll(resp.Body)
 	util.Check(err)
 
-	var npmRegistryPackage RegistryPackage
-	util.Check(json.Unmarshal(body, &npmRegistryPackage))
+	var r Registry
+	util.Check(json.Unmarshal(body, &r))
 
 	versions := make([]Version, 0)
-
-	for k, v := range npmRegistryPackage.Versions {
+	for k, v := range r.Versions {
 		if v, ok := v.(map[string]interface{}); ok {
-			dist := v["dist"].(map[string]interface{})
+			if timeStr, ok := r.TimeStamps[k]; ok {
 
-			versions = append(versions, Version{
-				Version: k,
-				Tarball: dist["tarball"].(string),
-			})
+				// parse time.Time from time stamp
+				timeStamp, err := time.Parse(time.RFC3339, timeStr)
+				util.Check(err)
+
+				dist := v["dist"].(map[string]interface{})
+
+				versions = append(versions, Version{
+					Version:   k,
+					Tarball:   dist["tarball"].(string),
+					TimeStamp: timeStamp,
+				})
+				continue
+			}
+			panic(fmt.Sprintf("no time stamp for npm version %s", k))
 		}
 	}
 

@@ -157,6 +157,7 @@ func showFiles(pckgPath string) {
 // Prints the files of a package version, outputting debug
 // messages if no valid files are present.
 func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v version) {
+	fmt.Printf("\ncurrent version: %s\n", v.Get())
 	filesToCopy := p.NpmFilesFrom(dir)
 
 	if len(filesToCopy) == 0 {
@@ -179,7 +180,7 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 		return
 	}
 
-	fmt.Printf("```\n")
+	fmt.Printf("\n```\n")
 	for _, file := range filesToCopy {
 		fmt.Printf("%s\n", file.To)
 	}
