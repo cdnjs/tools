@@ -26,39 +26,39 @@ var (
 
 func main() {
 	flag.Parse()
-	subcommand := flag.Arg(0)
 
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
 
-	if subcommand == "lint" {
-		lintPackage(flag.Arg(1))
+	switch subcommand := flag.Arg(0); subcommand {
+	case "lint":
+		{
+			lintPackage(flag.Arg(1))
 
-		if errCount > 0 {
-			os.Exit(1)
+			if errCount > 0 {
+				os.Exit(1)
+			}
 		}
-		return
-	}
+	case "show-files":
+		{
+			showFiles(flag.Arg(1))
 
-	if subcommand == "show-files" {
-		showFiles(flag.Arg(1))
-
-		if errCount > 0 {
-			os.Exit(1)
+			if errCount > 0 {
+				os.Exit(1)
+			}
 		}
-		return
+	default:
+		panic(fmt.Sprintf("unknown subcommand: '%s'", subcommand))
 	}
-
-	panic("unknown subcommand")
 }
 
 // Represents a version of a package,
 // which could be a git version, npm version, etc.
 type version interface {
-	Get() string                    // Get the version as a string
-	Download(...interface{}) string // Download a version, returning the download dir
-	Clean(string)                   // Clean a download dir
+	Get() string                    // Get the version as a string.
+	Download(...interface{}) string // Download a version, returning the download dir.
+	Clean(string)                   // Clean a download dir.
 }
 
 func showFiles(pckgPath string) {
@@ -87,7 +87,7 @@ func showFiles(pckgPath string) {
 		{
 			// get npm versions and sort
 			npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
-			sort.Sort(npm.ByNpmVersion(npmVersions))
+			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
 			for _, v := range npmVersions {
@@ -113,7 +113,7 @@ func showFiles(pckgPath string) {
 
 			// get git versions and sort
 			gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
-			sort.Sort(git.ByGitVersion(gitVersions))
+			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface
 			for _, v := range gitVersions {
@@ -193,7 +193,7 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 func printLastVersions(ctx context.Context, p *packages.Package, dir string, versions []version) {
 	fmt.Printf("\n%d last version(s):\n", len(versions))
 	for _, version := range versions {
-		downloadDir := version.Download(ctx, p, dir)
+		downloadDir := version.Download(ctx, dir)
 		defer version.Clean(downloadDir)
 
 		filesToCopy := p.NpmFilesFrom(downloadDir)

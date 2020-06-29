@@ -7,8 +7,6 @@ import (
 	"path"
 	"sort"
 
-	"github.com/blang/semver"
-
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -17,44 +15,33 @@ import (
 func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
 	var newVersionsToCommit []newVersionToCommit
 
-	existingVersionSet := getSemverOnly(pckg.Versions())
+	existingVersionSet := pckg.Versions()
 	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
-	lastExistingVersion := getLatestExistingVersion(existingVersionSet)
+	lastExistingVersion := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	if lastExistingVersion != nil {
-		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
+		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion.Version)
 
 		versionDiff := npmVersionDiff(npmVersions, existingVersionSet)
-		sort.Sort(npm.ByNpmVersion(versionDiff))
+		sort.Sort(npm.ByTimeStamp(versionDiff))
 
 		newNpmVersions := make([]npm.Version, 0)
-		skippedVersions := make([]string, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
-			npmVersion, err := semver.Make(versionDiff[i].Version)
-			if err != nil {
-				continue
-			}
-
-			if npmVersion.Compare(*lastExistingVersion) == 1 {
-				newNpmVersions = append(newNpmVersions, versionDiff[i])
-			} else {
-				skippedVersions = append(skippedVersions, versionDiff[i].Version)
+			v := versionDiff[i]
+			if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+				newNpmVersions = append(newNpmVersions, v)
 			}
 		}
 
-		if len(skippedVersions) > 0 {
-			util.Debugf(ctx, "skipping versions %s because of semver", skippedVersions)
-		}
-
-		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {
 		// Import all the versions since we have none locally.
 		// Limit the number of version to an abrirary number to avoid publishing
 		// too many outdated versions.
-		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
 		if len(npmVersions) > util.IMPORT_ALL_MAX_VERSIONS {
 			npmVersions = npmVersions[len(npmVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
@@ -67,7 +54,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 		// Reverse the array to have the older versions first
 		// It matters when we will commit the updates
-		sort.Sort(sort.Reverse(npm.ByNpmVersion(npmVersions)))
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 	}

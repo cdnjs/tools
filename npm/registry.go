@@ -47,12 +47,12 @@ type MonthlyDownload struct {
 	Downloads uint `json:"downloads"`
 }
 
+// Gets the protocol, either http or https.
 func getProtocol() string {
 	if util.HasHTTProxy() {
 		return "http"
-	} else {
-		return "https"
 	}
+	return "https"
 }
 
 // Exists determines if an npm package exists.

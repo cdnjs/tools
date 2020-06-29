@@ -1,22 +1,41 @@
 package git
 
 import (
-	"github.com/blang/semver"
+	"context"
+	"fmt"
 )
 
-// ByGitVersion implements sort.Interface for []Version
-type ByGitVersion []Version
+// ByTimeStamp implements the sort.Interface for []Version,
+// ordering from most recent to least recent time stamps.
+type ByTimeStamp []Version
 
-func (a ByGitVersion) Len() int      { return len(a) }
-func (a ByGitVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByGitVersion) Less(i, j int) bool {
-	left, leftErr := semver.Make(a[i].Version)
-	if leftErr != nil {
-		return false
+func (a ByTimeStamp) Len() int      { return len(a) }
+func (a ByTimeStamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTimeStamp) Less(i, j int) bool {
+	return a[i].TimeStamp.After(a[j].TimeStamp)
+}
+
+// GetMostRecentExistingVersion gets the most recent git.Version based on time stamp
+// that is currently downloaded.
+func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string, gitVersions []Version) *Version {
+	// create map for fast lookups
+	gitMap := make(map[string]Version)
+	for _, v := range gitVersions {
+		gitMap[v.Version] = v
 	}
-	right, rightErr := semver.Make(a[j].Version)
-	if rightErr != nil {
-		return true
+
+	// find most recent version
+	var mostRecent *Version
+	for _, existingVersion := range existingVersions {
+		if version, ok := gitMap[existingVersion]; ok {
+			if mostRecent == nil || version.TimeStamp.After(mostRecent.TimeStamp) {
+				mostRecent = &version // new most recent found
+			}
+			continue
+		}
+		// util.Debugf(ctx, "existing version not found on git: %s", existingVersion)
+		panic(fmt.Sprintf("existing version not found on npm: %s", existingVersion))
 	}
-	return left.Compare(right) == 1
+
+	return mostRecent
 }

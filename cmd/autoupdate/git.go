@@ -7,15 +7,13 @@ import (
 	"path"
 	"sort"
 
-	"github.com/blang/semver"
-
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
 
 var (
-	GIT_CACHE = path.Join(BASE_PATH, "git-cache")
+	gitCache = path.Join(basePath, "git-cache")
 )
 
 func isValidGit(ctx context.Context, pckgdir string) bool {
@@ -26,7 +24,7 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
 	var newVersionsToCommit []newVersionToCommit
 
-	packageGitcache := path.Join(GIT_CACHE, pckg.Name)
+	packageGitcache := path.Join(gitCache, pckg.Name)
 	// If the local copy of the package's git doesn't exists, Clone it. If it does
 	// just fetch new tags
 	if _, err := os.Stat(packageGitcache); os.IsNotExist(err) {
@@ -47,9 +45,8 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	}
 
 	gitVersions := git.GetVersions(ctx, pckg, packageGitcache)
-
 	existingVersionSet := pckg.Versions()
-	lastExistingVersion := getLatestExistingVersion(existingVersionSet)
+	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
 	if lastExistingVersion != nil {
 		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
@@ -59,26 +56,22 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		newGitVersions := make([]git.Version, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
-			gitVersion, err := semver.Make(versionDiff[i].Version)
-			if err != nil {
-				continue
-			}
-
-			if gitVersion.Compare(*lastExistingVersion) == 1 {
-				newGitVersions = append(newGitVersions, versionDiff[i])
+			v := versionDiff[i]
+			if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+				newGitVersions = append(newGitVersions, v)
 			}
 		}
 
 		util.Debugf(ctx, "new versions: %s\n", newGitVersions)
 
-		sort.Sort(sort.Reverse(git.ByGitVersion(newGitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(newGitVersions)))
 
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, newGitVersions)
 	} else {
 		// Import all the versions since we have none locally.
 		// Limit the number of version to an abrirary number to avoid publishing
 		// too many outdated versions.
-		sort.Sort(sort.Reverse(git.ByGitVersion(gitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
 		if len(gitVersions) > util.IMPORT_ALL_MAX_VERSIONS {
 			gitVersions = gitVersions[len(gitVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
@@ -86,7 +79,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 		// Reverse the array to have the older versions first
 		// It matters when we will commit the updates
-		sort.Sort(sort.Reverse(git.ByGitVersion(gitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 	}
@@ -102,7 +95,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 	}
 
 	for _, gitversion := range versions {
-		packages.GitForceCheckout(ctx, pckg, gitpath, gitversion.Tag)
+		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
 		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
 		pckgpath := path.Join(pckg.Path(), gitversion.Version)

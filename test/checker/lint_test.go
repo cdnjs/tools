@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,30 +17,34 @@ type LintTestCase struct {
 	expected string
 }
 
-const NOT_POPULAR_PACKAGE = "notpopular"
-const NOT_EXISTING_PACKAGE = "noexistingpackage"
+const (
+	unpopularPkg   = "unpopular"
+	nonexistentPkg = "nonexistent"
+)
 
 // fakes the npm api for testing purposes
 func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/"+NOT_EXISTING_PACKAGE {
-		w.WriteHeader(404)
-		fmt.Fprint(w, `{"error":"Not found"}`)
-		return
+	switch r.URL.Path {
+	case "/" + nonexistentPkg:
+		{
+			w.WriteHeader(404)
+			fmt.Fprint(w, `{"error":"Not found"}`)
+		}
+	case "/" + unpopularPkg:
+		{
+			fmt.Fprint(w, `{}`)
+		}
+	case "/downloads/point/last-month/" + unpopularPkg:
+		{
+			fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, unpopularPkg)
+		}
+	default:
+		panic(fmt.Sprintf("unknown path: %s", r.URL.Path))
 	}
-	if r.URL.Path == "/"+NOT_POPULAR_PACKAGE {
-		fmt.Fprint(w, `{}`)
-		return
-	}
-	if r.URL.Path == "/downloads/point/last-month/"+NOT_POPULAR_PACKAGE {
-		fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, NOT_POPULAR_PACKAGE)
-		return
-	}
-
-	panic("unreachable")
 }
 
 func TestCheckerLint(t *testing.T) {
-	const HTTP_TEST_PROXY = "localhost:8667"
+	const httpTestProxy = "localhost:8667"
 	const file = "/tmp/input-lint.json"
 
 	cases := []LintTestCase{
@@ -97,7 +102,7 @@ func TestCheckerLint(t *testing.T) {
 				},
 				"autoupdate": {
 					"source": "npm",
-					"target": "` + NOT_EXISTING_PACKAGE + `"
+					"target": "` + nonexistentPkg + `"
 				}
 			}`,
 			expected: ciError(file, "package doesn't exist on npm"),
@@ -112,7 +117,7 @@ func TestCheckerLint(t *testing.T) {
 				},
 				"autoupdate": {
 					"source": "npm",
-					"target": "` + NOT_POPULAR_PACKAGE + `"
+					"target": "` + unpopularPkg + `"
 				}
 			}`,
 			expected: ciError(file, "package download per month on npm is under 800"),
@@ -120,12 +125,12 @@ func TestCheckerLint(t *testing.T) {
 	}
 
 	testproxy := &http.Server{
-		Addr:    HTTP_TEST_PROXY,
+		Addr:    httpTestProxy,
 		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerLint)),
 	}
 
 	go func() {
-		if err := testproxy.ListenAndServe(); err != nil {
+		if err := testproxy.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
@@ -135,13 +140,16 @@ func TestCheckerLint(t *testing.T) {
 
 		// since all tests share the same input, this needs to run sequentially
 		t.Run(tc.name, func(t *testing.T) {
+
 			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker(HTTP_TEST_PROXY, "lint", file)
+			out := runChecker(httpTestProxy, "lint", file)
 			assert.Equal(t, tc.expected, out)
 
 			os.Remove(file)
 		})
 	}
+
+	testproxy.Shutdown(context.Background())
 }
