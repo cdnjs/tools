@@ -1,40 +1,69 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/cdnjs/tools/util"
 )
 
-type NpmRegistryPackage struct {
-	Versions map[string]interface{} `json:"versions"`
+// Registry contains metadata about a particular npm package.
+type Registry struct {
+	Versions   map[string]interface{} `json:"versions"` // Versions contains metadata about each npm version.
+	TimeStamps map[string]string      `json:"time"`     // TimeStamps contains times for each versions as well as the created/modified time.
 }
 
-type NpmVersion struct {
-	Version string
-	Tarball string
+// Version represents a version of an npm package.
+type Version struct {
+	Version   string
+	Tarball   string
+	TimeStamp time.Time
 }
 
+// Get gets the version of a particular Version.
+func (n Version) Get() string {
+	return n.Version
+}
+
+// Download will download a particular npm version.
+func (n Version) Download(args ...interface{}) string {
+	ctx := args[0].(context.Context)
+	return DownloadTar(ctx, n.Tarball) // return download dir
+}
+
+// Clean is used to clean up a download directory.
+func (n Version) Clean(downloadDir string) {
+	os.RemoveAll(downloadDir) // clean up temp tarball dir
+}
+
+// MonthlyDownload holds the number of monthly downloads
+// for an npm package.
 type MonthlyDownload struct {
 	Downloads uint `json:"downloads"`
 }
 
+// Gets the protocol, either http or https.
 func getProtocol() string {
 	if util.HasHTTProxy() {
 		return "http"
-	} else {
-		return "https"
 	}
+	return "https"
 }
 
+// Exists determines if an npm package exists.
 func Exists(name string) bool {
 	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 	return resp.StatusCode == http.StatusOK
 }
 
+// GetMonthlyDownload uses the npm API to get the MonthlyDownload
+// for a particular npm package.
 func GetMonthlyDownload(name string) MonthlyDownload {
 	resp, err := http.Get(getProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
 	util.Check(err)
@@ -48,7 +77,8 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 	return counts
 }
 
-func GetVersions(name string) []NpmVersion {
+// GetVersions gets all of the versions associated with an npm package.
+func GetVersions(name string) []Version {
 	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -56,19 +86,28 @@ func GetVersions(name string) []NpmVersion {
 	body, err := ioutil.ReadAll(resp.Body)
 	util.Check(err)
 
-	var npmRegistryPackage NpmRegistryPackage
-	util.Check(json.Unmarshal(body, &npmRegistryPackage))
+	var r Registry
+	util.Check(json.Unmarshal(body, &r))
 
-	versions := make([]NpmVersion, 0)
-
-	for k, v := range npmRegistryPackage.Versions {
+	versions := make([]Version, 0)
+	for k, v := range r.Versions {
 		if v, ok := v.(map[string]interface{}); ok {
-			dist := v["dist"].(map[string]interface{})
+			if timeStr, ok := r.TimeStamps[k]; ok {
 
-			versions = append(versions, NpmVersion{
-				Version: k,
-				Tarball: dist["tarball"].(string),
-			})
+				// parse time.Time from time stamp
+				timeStamp, err := time.Parse(time.RFC3339, timeStr)
+				util.Check(err)
+
+				dist := v["dist"].(map[string]interface{})
+
+				versions = append(versions, Version{
+					Version:   k,
+					Tarball:   dist["tarball"].(string),
+					TimeStamp: timeStamp,
+				})
+				continue
+			}
+			panic(fmt.Sprintf("no time stamp for npm version %s", k))
 		}
 	}
 

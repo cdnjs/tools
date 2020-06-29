@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	if util.IsDebug() {
-		fmt.Println("Running in debug mode", noUpdate)
+		fmt.Printf("Running in debug mode (no-update=%t)\n", noUpdate)
 	}
 
 	util.UpdateGitRepo(defaultCtx, CDNJS_PATH)
