@@ -75,7 +75,7 @@ func TestCheckerLint(t *testing.T) {
 					"target": "git://ff"
 				}
 			}`,
-			expected: ciError(file, ".version should be empty"),
+			expected: ciError(file, ".version should not exist"),
 		},
 
 		{
