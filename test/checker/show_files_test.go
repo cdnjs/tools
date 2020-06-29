@@ -17,8 +17,15 @@ import (
 )
 
 const (
-	jsFilesPkg        = "jsfilespackage"
-	oversizedFilesPkg = "oversizedfilespackage"
+	jsFilesPkg          = "jsfilespackage"
+	oversizedFilesPkg   = "oversizedfilespackage"
+	unpublishedFieldPkg = "unpublishedfieldpackage"
+	sortByTimeStampPkg  = "sortbytimestamppackage"
+	timeStamp1          = "1.0"
+	timeStamp2          = "2.0"
+	timeStamp3          = "3.0"
+	timeStamp4          = "4.0"
+	timeStamp5          = "5.0"
 )
 
 type ShowFilesTestCase struct {
@@ -101,6 +108,65 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 			},
 			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
 		}`)
+	case "/" + unpublishedFieldPkg:
+		fmt.Fprint(w, `{
+			"versions": {
+				"1.3.1": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+unpublishedFieldPkg+`.tgz"
+					}
+				}
+			},
+			 "time": {
+    			"modified": "2014-12-30T19:39:27.425Z",
+    			"created": "2014-12-30T19:39:27.425Z",
+    			"1.3.1": "2014-12-30T19:39:27.425Z",
+    			"unpublished": {
+      				"name": "username",
+      				"time": "2015-01-08T20:31:29.361Z",
+      				"tags": {
+        				"latest": "1.3.1"
+					}
+				}
+			}
+		}`)
+	case "/" + sortByTimeStampPkg:
+		fmt.Fprint(w, `{
+			"versions": {
+				"1.0": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+timeStamp1+`.tgz"
+					}
+				},
+				"2.0": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+timeStamp2+`.tgz"
+					}
+				},
+				"3.0": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+timeStamp3+`.tgz"
+					}
+				},
+				"4.0": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+timeStamp4+`.tgz"
+					}
+				},
+				"5.0": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+timeStamp5+`.tgz"
+					}
+				}
+			},
+			 "time": {
+				"2.0": "2019-12-30T19:39:27.425Z",
+				"3.0": "2019-12-30T19:38:27.425Z",
+				"1.0": "2018-12-30T19:39:27.425Z",
+				"5.0": "2017-12-30T19:39:27.425Z",
+    			"4.0": "2017-11-30T19:39:27.425Z"
+			}
+		}`)
 	case "/" + jsFilesPkg + ".tgz":
 		servePackage(w, r, map[string]string{
 			"a.js": "a",
@@ -110,6 +176,32 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 		servePackage(w, r, map[string]string{
 			"a.js": strings.Repeat("a", int(util.MAX_FILE_SIZE)+100),
 			"b.js": "ok",
+		})
+	case "/" + unpublishedFieldPkg + ".tgz":
+		servePackage(w, r, map[string]string{
+			"a.js": "a",
+			"b.js": "b",
+			"c.js": "c",
+		})
+	case "/" + timeStamp2 + ".tgz":
+		servePackage(w, r, map[string]string{
+			"2.js": "most recent version",
+		})
+	case "/" + timeStamp3 + ".tgz":
+		servePackage(w, r, map[string]string{
+			"3.js": "2nd most recent version",
+		})
+	case "/" + timeStamp1 + ".tgz":
+		servePackage(w, r, map[string]string{
+			"1.js": "3rd most recent version",
+		})
+	case "/" + timeStamp5 + ".tgz":
+		servePackage(w, r, map[string]string{
+			"5.js": "4th most recent version",
+		})
+	case "/" + timeStamp4 + ".tgz":
+		servePackage(w, r, map[string]string{
+			"4.js": "5th most recent version",
 		})
 	default:
 		panic("unreachable: " + r.URL.Path)
@@ -175,6 +267,66 @@ b.js
 ` + "```" + `
 
 0 last version(s):
+`,
+		},
+
+		{
+			name: "unpublished field",
+			input: `{
+				"name": "foo",
+				"repository": {
+					"type": "git"
+				},
+				"autoupdate": {
+					"source": "npm",
+					"target": "` + unpublishedFieldPkg + `",
+					"fileMap": [
+						{ "basePath":"", "files":["*.js"] }
+					]
+				}
+			}`,
+			expected: `
+
+current version: 1.3.1
+
+` + "```" + `
+a.js
+b.js
+c.js
+` + "```" + `
+
+0 last version(s):
+`,
+		},
+
+		{
+			name: "sort by time stamp",
+			input: `{
+				"name": "foo",
+				"repository": {
+					"type": "git"
+				},
+				"autoupdate": {
+					"source": "npm",
+					"target": "` + sortByTimeStampPkg + `",
+					"fileMap": [
+						{ "basePath":"", "files":["*.js"] }
+					]
+				}
+			}`,
+			expected: `
+
+current version: 2.0
+
+` + "```" + `
+2.js
+` + "```" + `
+
+4 last version(s):
+- 3.0: 1 file(s) matched :heavy_check_mark:
+- 1.0: 1 file(s) matched :heavy_check_mark:
+- 5.0: 1 file(s) matched :heavy_check_mark:
+- 4.0: 1 file(s) matched :heavy_check_mark:
 `,
 		},
 	}
