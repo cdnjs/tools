@@ -1,18 +1,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type TestCase struct {
+type LintTestCase struct {
 	name     string
 	input    string
 	expected string
@@ -20,10 +18,9 @@ type TestCase struct {
 
 const NOT_POPULAR_PACKAGE = "notpopular"
 const NOT_EXISTING_PACKAGE = "noexistingpackage"
-const HTTP_TEST_PROXY = "localhost:8666"
 
 // fakes the npm api for testing purposes
-func fakeNpmHandler(w http.ResponseWriter, r *http.Request) {
+func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/"+NOT_EXISTING_PACKAGE {
 		w.WriteHeader(404)
 		fmt.Fprint(w, `{"error":"Not found"}`)
@@ -41,36 +38,23 @@ func fakeNpmHandler(w http.ResponseWriter, r *http.Request) {
 	panic("unreachable")
 }
 
-// start a local proxy server and run the checker binary
-func runChecker(args ...string) string {
-	cmd := exec.Command("../bin/checker", args...)
-	cmd.Env = append(os.Environ(),
-		"HTTP_PROXY="+HTTP_TEST_PROXY,
-	)
-
-	out, _ := cmd.CombinedOutput()
-
-	return string(out)
-}
-
-func CIError(err string) string {
-	return fmt.Sprintf("::error file=/tmp/input.json,line=1,col=1::%s\n", err)
-}
-
 func TestCheckerLint(t *testing.T) {
-	cases := []TestCase{
+	const HTTP_TEST_PROXY = "localhost:8667"
+	const file = "/tmp/input-lint.json"
+
+	cases := []LintTestCase{
 		{
 			name:     "error when invalid JSON",
 			input:    `{ "package":, }`,
-			expected: CIError("failed to parse /tmp/input.json: invalid character ',' looking for beginning of value"),
+			expected: ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
 		},
 
 		{
 			name:  "show required fields",
 			input: `{}`,
-			expected: CIError(".name should be specified") +
-				CIError(".autoupdate should not be null. Package will never auto-update") +
-				CIError("Unsupported .repository.type: "),
+			expected: ciError(file, ".name should be specified") +
+				ciError(file, ".autoupdate should not be null. Package will never auto-update") +
+				ciError(file, "Unsupported .repository.type: "),
 		},
 
 		{
@@ -86,7 +70,7 @@ func TestCheckerLint(t *testing.T) {
 					"target": "git://ff"
 				}
 			}`,
-			expected: CIError(".version should be empty"),
+			expected: ciError(file, ".version should be empty"),
 		},
 
 		{
@@ -101,7 +85,7 @@ func TestCheckerLint(t *testing.T) {
 					"target": "lol"
 				}
 			}`,
-			expected: CIError("Unsupported .autoupdate.source: ftp"),
+			expected: ciError(file, "Unsupported .autoupdate.source: ftp"),
 		},
 
 		{
@@ -116,7 +100,7 @@ func TestCheckerLint(t *testing.T) {
 					"target": "` + NOT_EXISTING_PACKAGE + `"
 				}
 			}`,
-			expected: CIError("package doesn't exist on npm"),
+			expected: ciError(file, "package doesn't exist on npm"),
 		},
 
 		{
@@ -131,13 +115,13 @@ func TestCheckerLint(t *testing.T) {
 					"target": "` + NOT_POPULAR_PACKAGE + `"
 				}
 			}`,
-			expected: CIError("package download per month on npm is under 800"),
+			expected: ciError(file, "package download per month on npm is under 800"),
 		},
 	}
 
 	testproxy := &http.Server{
 		Addr:    HTTP_TEST_PROXY,
-		Handler: http.Handler(http.HandlerFunc(fakeNpmHandler)),
+		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerLint)),
 	}
 
 	go func() {
@@ -151,17 +135,13 @@ func TestCheckerLint(t *testing.T) {
 
 		// since all tests share the same input, this needs to run sequentially
 		t.Run(tc.name, func(t *testing.T) {
-			tmpfile := "/tmp/input.json"
-
-			err := ioutil.WriteFile(tmpfile, []byte(tc.input), 0644)
+			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker("lint", tmpfile)
+			out := runChecker(HTTP_TEST_PROXY, "lint", file)
 			assert.Equal(t, tc.expected, out)
 
-			os.Remove(tmpfile)
+			os.Remove(file)
 		})
 	}
-
-	testproxy.Shutdown(context.Background())
 }
