@@ -19,6 +19,10 @@ packages:
 autoupdate:
 	go build $(GO_BUILD_ARGS) -o bin/autoupdate ./cmd/autoupdate
 
+.PHONY: clean
+clean:
+	rm -rfv bin/*
+
 .PHONY: test
-test:
+test: clean checker
 	go test -v ./test/...
