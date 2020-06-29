@@ -13,7 +13,7 @@ import (
 
 // GitListPackageVersions first lists all the versions (and top-level package.json)
 // in the package and passes the list to git ls-tree which filters out
-// those not in the tree
+// those not in the tree.
 func GitListPackageVersions(ctx context.Context, basePath string) []string {
 	filesOnFs, err := filepath.Glob(path.Join(basePath, "*"))
 	util.Check(err)

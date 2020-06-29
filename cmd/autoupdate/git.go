@@ -7,8 +7,6 @@ import (
 	"path"
 	"sort"
 
-	"github.com/blang/semver"
-
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -47,9 +45,8 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	}
 
 	gitVersions := git.GetVersions(ctx, pckg, packageGitcache)
-
 	existingVersionSet := pckg.Versions()
-	lastExistingVersion := getLatestExistingVersion(existingVersionSet)
+	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
 	if lastExistingVersion != nil {
 		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
@@ -59,26 +56,22 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		newGitVersions := make([]git.Version, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
-			gitVersion, err := semver.Make(versionDiff[i].Version)
-			if err != nil {
-				continue
-			}
-
-			if gitVersion.Compare(*lastExistingVersion) == 1 {
-				newGitVersions = append(newGitVersions, versionDiff[i])
+			v := versionDiff[i]
+			if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+				newGitVersions = append(newGitVersions, v)
 			}
 		}
 
 		util.Debugf(ctx, "new versions: %s\n", newGitVersions)
 
-		sort.Sort(sort.Reverse(git.ByGitVersion(newGitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(newGitVersions)))
 
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, newGitVersions)
 	} else {
 		// Import all the versions since we have none locally.
 		// Limit the number of version to an abrirary number to avoid publishing
 		// too many outdated versions.
-		sort.Sort(sort.Reverse(git.ByGitVersion(gitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
 		if len(gitVersions) > util.IMPORT_ALL_MAX_VERSIONS {
 			gitVersions = gitVersions[len(gitVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
@@ -86,7 +79,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 
 		// Reverse the array to have the older versions first
 		// It matters when we will commit the updates
-		sort.Sort(sort.Reverse(git.ByGitVersion(gitVersions)))
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 	}

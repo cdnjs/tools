@@ -9,9 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"sort"
-
-	"github.com/blang/semver"
 
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/metrics"
@@ -213,36 +210,4 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 
 		metrics.ReportNewVersion()
 	}
-}
-
-func getSemverOnly(versions []string) []string {
-	newVersions := make([]string, 0)
-
-	for _, v := range versions {
-		_, err := semver.Make(v)
-		if err == nil {
-			newVersions = append(newVersions, v)
-		}
-	}
-
-	return newVersions
-}
-
-func getLatestExistingVersion(existingVersionSet []string) *semver.Version {
-	if len(existingVersionSet) == 0 {
-		return nil
-	}
-
-	sort.Sort(packages.ByVersionString(existingVersionSet))
-
-	// get the first semver version
-	for i := 0; i < len(existingVersionSet); i++ {
-		v, err := semver.Make(existingVersionSet[i])
-		if err == nil {
-			return &v
-		}
-	}
-
-	// No semver version exist
-	return nil
 }
