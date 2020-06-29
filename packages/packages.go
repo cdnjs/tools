@@ -141,7 +141,6 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 				}
 
 				// file is ok
-				util.Debugf(p.ctx, fp+" ok")
 				out = append(out, NpmFileMoveOp{
 					From: path.Join(fileMap.BasePath, f),
 					To:   f,
