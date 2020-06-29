@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	BASE_PATH     = util.GetEnv("BOT_BASE_PATH")
-	PACKAGES_PATH = path.Join(BASE_PATH, "packages", "packages")
-	CDNJS_PATH    = path.Join(BASE_PATH, "cdnjs")
+	basePath     = util.GetEnv("BOT_BASE_PATH")
+	packagesPath = path.Join(basePath, "packages", "packages")
+	cdnjsPath    = path.Join(basePath, "cdnjs")
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
@@ -32,7 +32,7 @@ var (
 )
 
 func getPackages(ctx context.Context) []string {
-	list, err := util.ListFilesGlob(ctx, PACKAGES_PATH, "*/*.json")
+	list, err := util.ListFilesGlob(ctx, packagesPath, "*/*.json")
 	util.Check(err)
 	return list
 }
@@ -52,14 +52,14 @@ func main() {
 		fmt.Printf("Running in debug mode (no-update=%t)\n", noUpdate)
 	}
 
-	util.UpdateGitRepo(defaultCtx, CDNJS_PATH)
-	util.UpdateGitRepo(defaultCtx, PACKAGES_PATH)
+	util.UpdateGitRepo(defaultCtx, cdnjsPath)
+	util.UpdateGitRepo(defaultCtx, packagesPath)
 
 	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
-		pckg, err := packages.ReadPackageJSON(ctx, path.Join(PACKAGES_PATH, f))
+		pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
@@ -82,15 +82,15 @@ func main() {
 	}
 
 	if !noUpdate {
-		packages.GitPush(defaultCtx, CDNJS_PATH)
+		packages.GitPush(defaultCtx, cdnjsPath)
 	}
 }
 
-func packageJsonToString(packageJson map[string]interface{}) ([]byte, error) {
+func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(packageJson)
+	err := encoder.Encode(packageJSON)
 	return buffer.Bytes(), err
 }
 
@@ -106,31 +106,31 @@ func addDoNotAddFile(ctx context.Context, pckg *packages.Package) {
 	f.Close()
 
 	// Add .do_not_update to git and it will be commited later
-	packages.GitAdd(ctx, CDNJS_PATH, dest)
+	packages.GitAdd(ctx, cdnjsPath, dest)
 }
 
 // Copy the package.json to the cdnjs repo and update its version
 // TODO: this probaly needs ordering the versions to make sure to not
 // accidentally put an older version of a package in the json
-func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion string, packageJsonPath string) {
-	var packageJson map[string]interface{}
+func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion string, packageJSONPath string) {
+	var packageJSON map[string]interface{}
 
-	packageJsonData, err := ioutil.ReadFile(path.Join(PACKAGES_PATH, packageJsonPath))
+	packageJSONData, err := ioutil.ReadFile(path.Join(packagesPath, packageJSONPath))
 	util.Check(err)
 
-	util.Check(json.Unmarshal(packageJsonData, &packageJson))
+	util.Check(json.Unmarshal(packageJSONData, &packageJSON))
 
 	// Rewrite the version of the package.json to the latest update from the bot
-	packageJson["version"] = newVersion
+	packageJSON["version"] = newVersion
 
-	newPackageJsonData, err := packageJsonToString(packageJson)
+	newPackageJSONData, err := packageJSONToString(packageJSON)
 	util.Check(err)
 
 	dest := path.Join(pckg.Path(), "package.json")
 	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	util.Check(err)
 
-	_, err = file.WriteString(string(newPackageJsonData))
+	_, err = file.WriteString(string(newPackageJSONData))
 	util.Check(err)
 }
 
@@ -188,7 +188,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	}
 }
 
-func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, packageJsonPath string) {
+func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, packageJSONPath string) {
 	if len(newVersionsToCommit) == 0 {
 		return
 	}
@@ -200,16 +200,16 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		compressNewVersion(ctx, newVersionToCommit)
 
 		// Add to git the new version directory
-		packages.GitAdd(ctx, CDNJS_PATH, newVersionToCommit.versionPath)
+		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
-		updateVersionInCdnjs(ctx, newVersionToCommit.pckg, newVersionToCommit.newVersion, packageJsonPath)
+		updateVersionInCdnjs(ctx, newVersionToCommit.pckg, newVersionToCommit.newVersion, packageJSONPath)
 		addDoNotAddFile(ctx, newVersionToCommit.pckg)
 
 		// Add to git the update package.json
-		packages.GitAdd(ctx, CDNJS_PATH, path.Join(newVersionToCommit.pckg.Path(), "package.json"))
+		packages.GitAdd(ctx, cdnjsPath, path.Join(newVersionToCommit.pckg.Path(), "package.json"))
 
 		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
-		packages.GitCommit(ctx, CDNJS_PATH, commitMsg)
+		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 		metrics.ReportNewVersion()
 	}

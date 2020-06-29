@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	GIT_CACHE = path.Join(BASE_PATH, "git-cache")
+	gitCache = path.Join(basePath, "git-cache")
 )
 
 func isValidGit(ctx context.Context, pckgdir string) bool {
@@ -26,7 +26,7 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
 	var newVersionsToCommit []newVersionToCommit
 
-	packageGitcache := path.Join(GIT_CACHE, pckg.Name)
+	packageGitcache := path.Join(gitCache, pckg.Name)
 	// If the local copy of the package's git doesn't exists, Clone it. If it does
 	// just fetch new tags
 	if _, err := os.Stat(packageGitcache); os.IsNotExist(err) {
