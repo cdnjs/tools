@@ -292,12 +292,10 @@ func warn(ctx context.Context, s string) {
 	util.Warnf(ctx, s)
 }
 
-// a tag should not be empty
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)
 }
 
-// a tag should not exist
 func shouldNotExist(name string) string {
 	return fmt.Sprintf("%s should not exist", name)
 }
