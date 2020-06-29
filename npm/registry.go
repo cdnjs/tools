@@ -15,7 +15,7 @@ import (
 // Registry contains metadata about a particular npm package.
 type Registry struct {
 	Versions   map[string]interface{} `json:"versions"` // Versions contains metadata about each npm version.
-	TimeStamps map[string]string      `json:"time"`     // TimeStamps contains times for each versions as well as the created/modified time.
+	TimeStamps map[string]interface{} `json:"time"`     // TimeStamps contains times for each versions as well as the created/modified time.
 }
 
 // Version represents a version of an npm package.
@@ -92,20 +92,21 @@ func GetVersions(name string) []Version {
 	versions := make([]Version, 0)
 	for k, v := range r.Versions {
 		if v, ok := v.(map[string]interface{}); ok {
-			if timeStr, ok := r.TimeStamps[k]; ok {
+			if timeInt, ok := r.TimeStamps[k]; ok {
+				if timeStr, ok := timeInt.(string); ok {
+					// parse time.Time from time stamp
+					timeStamp, err := time.Parse(time.RFC3339, timeStr)
+					util.Check(err)
 
-				// parse time.Time from time stamp
-				timeStamp, err := time.Parse(time.RFC3339, timeStr)
-				util.Check(err)
+					dist := v["dist"].(map[string]interface{})
 
-				dist := v["dist"].(map[string]interface{})
-
-				versions = append(versions, Version{
-					Version:   k,
-					Tarball:   dist["tarball"].(string),
-					TimeStamp: timeStamp,
-				})
-				continue
+					versions = append(versions, Version{
+						Version:   k,
+						Tarball:   dist["tarball"].(string),
+						TimeStamp: timeStamp,
+					})
+					continue
+				}
 			}
 			panic(fmt.Sprintf("no time stamp for npm version %s", k))
 		}
