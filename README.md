@@ -26,3 +26,4 @@ We are going to create the home at `/tmp/cdnjs` and do the following in the dire
 In glob run `npm install`.
 
 Finally pass the `BOT_BASE_PATH` to the tool, for example: `BOT_BASE_PATH=/tmp/cdnjs bin/autoupdate -no-update`.
+
