@@ -37,7 +37,8 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 		case "description":
 			p.Description = value.(string)
 		case "version":
-			p.Version = value.(string)
+			s := value.(string)
+			p.Version = &s
 		case "author":
 			{
 				if str, ok := value.(string); ok {

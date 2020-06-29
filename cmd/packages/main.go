@@ -54,7 +54,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 			return
 		}
 
-		if p.Version == "" {
+		if p.Version == nil || *p.Version == "" {
 			util.Printf(ctx, "version is invalid\n")
 			results <- nil
 			return
@@ -171,7 +171,7 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	out := outputPackage{}
 
 	out.Name = p.Name
-	out.Version = p.Version
+	out.Version = *p.Version
 	out.Description = p.Description
 	out.Filename = p.Filename
 	out.Repository = map[string]string{
