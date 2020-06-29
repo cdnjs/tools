@@ -26,19 +26,12 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		sort.Sort(npm.ByTimeStamp(versionDiff))
 
 		newNpmVersions := make([]npm.Version, 0)
-		skippedVersions := make([]string, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			v := versionDiff[i]
 			if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
 				newNpmVersions = append(newNpmVersions, v)
-			} else {
-				skippedVersions = append(skippedVersions, v.Version)
 			}
-		}
-
-		if len(skippedVersions) > 0 {
-			util.Debugf(ctx, "skipping versions %s because of time stamp", skippedVersions)
 		}
 
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
