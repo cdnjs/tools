@@ -1,21 +1,17 @@
 name: Publish tools
-
-on:
-  push:
-    branches:
-      - master
+on: push
 
 jobs:
-  build:
+  release:
+    name: Release
+    needs: [test]
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
       - name: compile tools
         run: make all
-
-      - name: run tests
-        run: make test
 
       - name: Create Release
         id: create_release
@@ -63,3 +59,15 @@ jobs:
           asset_path: ./bin/packages
           asset_name: packages
           asset_content_type: application/octet-stream
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: compile tools
+        run: make all
+
+      - name: run tests
+        run: make test
