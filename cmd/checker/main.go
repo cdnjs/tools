@@ -237,8 +237,8 @@ func lintPackage(pckgPath string) {
 		err(ctx, shouldNotBeEmpty(".name"))
 	}
 
-	if pckg.Version != "" {
-		err(ctx, shouldBeEmpty(".version"))
+	if pckg.Version != nil {
+		err(ctx, shouldNotExist(".version"))
 	}
 
 	// if pckg.NpmName != nil && *pckg.NpmName == "" {
@@ -292,10 +292,10 @@ func warn(ctx context.Context, s string) {
 	util.Warnf(ctx, s)
 }
 
-func shouldBeEmpty(name string) string {
-	return fmt.Sprintf("%s should be empty", name)
-}
-
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)
+}
+
+func shouldNotExist(name string) string {
+	return fmt.Sprintf("%s should not exist", name)
 }

@@ -50,7 +50,7 @@ type Package struct {
 	Title       string
 	Name        string
 	Description string
-	Version     string
+	Version     *string
 	Author      Author
 	Homepage    string
 	Keywords    []string
