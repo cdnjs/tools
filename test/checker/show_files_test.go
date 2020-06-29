@@ -83,7 +83,8 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 						"tarball": "http://registry.npmjs.org/`+JS_FILES_PACKAGE+`.tgz"
 					}
 				}
-			}
+			},
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
 		}`)
 		return
 	}
@@ -95,7 +96,8 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 						"tarball": "http://registry.npmjs.org/`+OVERSIZED_FILES_PACKAGE+`.tgz"
 					}
 				}
-			}
+			},
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
 		}`)
 		return
 	}
@@ -140,13 +142,15 @@ func TestCheckerShowFiles(t *testing.T) {
 				}
 			}`,
 			expected: `
+
+current version: 0.0.2
+
 ` + "```" + `
 a.js
 b.js
 ` + "```" + `
 
-10 last versions:
-- 0.0.2: 2 file(s) matched :heavy_check_mark:
+0 last version(s):
 `,
 		},
 
@@ -166,14 +170,14 @@ b.js
 				}
 			}`,
 			expected: `
-` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") +
-				"```" + `
+
+current version: 0.0.2
+` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
+` + "```" + `
 b.js
 ` + "```" + `
 
-10 last versions:
-` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") +
-				`- 0.0.2: 1 file(s) matched :heavy_check_mark:
+0 last version(s):
 `,
 		},
 	}
