@@ -3,6 +3,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,8 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const JS_FILES_PACKAGE = "jsfilespackage"
-const OVERSIZED_FILES_PACKAGE = "oversizedfilespackage"
+const (
+	jsFilesPkg        = "jsfilespackage"
+	oversizedFilesPkg = "oversizedfilespackage"
+)
 
 type ShowFilesTestCase struct {
 	name     string
@@ -75,55 +78,49 @@ func servePackage(w http.ResponseWriter, r *http.Request, filemap map[string]str
 
 // fakes the npm api for testing purposes
 func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/"+JS_FILES_PACKAGE {
+	switch r.URL.Path {
+	case "/" + jsFilesPkg:
 		fmt.Fprint(w, `{
 			"versions": {
 				"0.0.2": {
 					"dist": {
-						"tarball": "http://registry.npmjs.org/`+JS_FILES_PACKAGE+`.tgz"
+						"tarball": "http://registry.npmjs.org/`+jsFilesPkg+`.tgz"
 					}
 				}
 			},
 			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
 		}`)
-		return
-	}
-	if r.URL.Path == "/"+OVERSIZED_FILES_PACKAGE {
+	case "/" + oversizedFilesPkg:
 		fmt.Fprint(w, `{
 			"versions": {
 				"0.0.2": {
 					"dist": {
-						"tarball": "http://registry.npmjs.org/`+OVERSIZED_FILES_PACKAGE+`.tgz"
+						"tarball": "http://registry.npmjs.org/`+oversizedFilesPkg+`.tgz"
 					}
 				}
 			},
 			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
 		}`)
-		return
-	}
-
-	if r.URL.Path == "/"+JS_FILES_PACKAGE+".tgz" {
+	case "/" + jsFilesPkg + ".tgz":
 		servePackage(w, r, map[string]string{
 			"a.js": "a",
 			"b.js": "b",
 		})
-		return
-	}
-
-	if r.URL.Path == "/"+OVERSIZED_FILES_PACKAGE+".tgz" {
+	case "/" + oversizedFilesPkg + ".tgz":
 		servePackage(w, r, map[string]string{
 			"a.js": strings.Repeat("a", int(util.MAX_FILE_SIZE)+100),
 			"b.js": "ok",
 		})
-		return
+	default:
+		panic("unreachable: " + r.URL.Path)
 	}
-
-	panic("unreachable: " + r.URL.Path)
 }
 
 func TestCheckerShowFiles(t *testing.T) {
-	const HTTP_TEST_PROXY = "localhost:8666"
-	const file = "/tmp/input-show-files.json"
+	const (
+		httpTestProxy = "localhost:8666"
+		file          = "/tmp/input-show-files.json"
+	)
 
 	cases := []ShowFilesTestCase{
 		{
@@ -135,7 +132,7 @@ func TestCheckerShowFiles(t *testing.T) {
 				},
 				"autoupdate": {
 					"source": "npm",
-					"target": "` + JS_FILES_PACKAGE + `",
+					"target": "` + jsFilesPkg + `",
 					"fileMap": [
 						{ "basePath":"", "files":["*.js"] }
 					]
@@ -163,7 +160,7 @@ b.js
 				},
 				"autoupdate": {
 					"source": "npm",
-					"target": "` + OVERSIZED_FILES_PACKAGE + `",
+					"target": "` + oversizedFilesPkg + `",
 					"fileMap": [
 						{ "basePath":"", "files":["*.js"] }
 					]
@@ -183,12 +180,12 @@ b.js
 	}
 
 	testproxy := &http.Server{
-		Addr:    HTTP_TEST_PROXY,
+		Addr:    httpTestProxy,
 		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerShowFiles)),
 	}
 
 	go func() {
-		if err := testproxy.ListenAndServe(); err != nil {
+		if err := testproxy.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
@@ -201,10 +198,12 @@ b.js
 			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker(HTTP_TEST_PROXY, "show-files", file)
+			out := runChecker(httpTestProxy, "show-files", file)
 			assert.Equal(t, tc.expected, "\n"+out)
 
 			os.Remove(file)
 		})
 	}
+
+	testproxy.Shutdown(context.Background())
 }

@@ -2,8 +2,7 @@ package git
 
 import (
 	"context"
-
-	"github.com/cdnjs/tools/util"
+	"fmt"
 )
 
 // ByTimeStamp implements the sort.Interface for []Version,
@@ -34,7 +33,8 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 			}
 			continue
 		}
-		util.Debugf(ctx, "existing version not found on git: %s", existingVersion)
+		// util.Debugf(ctx, "existing version not found on git: %s", existingVersion)
+		panic(fmt.Sprintf("existing version not found on npm: %s", existingVersion))
 	}
 
 	return mostRecent

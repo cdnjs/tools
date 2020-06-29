@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -143,10 +144,12 @@ func TestCheckerLint(t *testing.T) {
 			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker("lint", file)
+			out := runChecker(httpTestProxy, "lint", file)
 			assert.Equal(t, tc.expected, out)
 
 			os.Remove(file)
 		})
 	}
+
+	testproxy.Shutdown(context.Background())
 }

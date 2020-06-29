@@ -26,31 +26,31 @@ var (
 
 func main() {
 	flag.Parse()
-	subcommand := flag.Arg(0)
 
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
 
-	if subcommand == "lint" {
-		lintPackage(flag.Arg(1))
+	switch subcommand := flag.Arg(0); subcommand {
+	case "lint":
+		{
+			lintPackage(flag.Arg(1))
 
-		if errCount > 0 {
-			os.Exit(1)
+			if errCount > 0 {
+				os.Exit(1)
+			}
 		}
-		return
-	}
+	case "show-files":
+		{
+			showFiles(flag.Arg(1))
 
-	if subcommand == "show-files" {
-		showFiles(flag.Arg(1))
-
-		if errCount > 0 {
-			os.Exit(1)
+			if errCount > 0 {
+				os.Exit(1)
+			}
 		}
-		return
+	default:
+		panic(fmt.Sprintf("unknown subcommand: '%s'", subcommand))
 	}
-
-	panic("unknown subcommand")
 }
 
 // Represents a version of a package,
