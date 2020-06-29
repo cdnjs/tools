@@ -27,7 +27,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		versionDiff := npmVersionDiff(npmVersions, existingVersionSet)
 		sort.Sort(npm.ByNpmVersion(versionDiff))
 
-		newNpmVersions := make([]npm.NpmVersion, 0)
+		newNpmVersions := make([]npm.Version, 0)
 		skippedVersions := make([]string, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
@@ -75,7 +75,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	return newVersionsToCommit
 }
 
-func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.NpmVersion) []newVersionToCommit {
+func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Version) []newVersionToCommit {
 	newVersionsToCommit := make([]newVersionToCommit, 0)
 
 	if len(versions) == 0 {
@@ -131,8 +131,8 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Npm
 	return newVersionsToCommit
 }
 
-func npmVersionDiff(a []npm.NpmVersion, b []string) []npm.NpmVersion {
-	diff := make([]npm.NpmVersion, 0)
+func npmVersionDiff(a []npm.Version, b []string) []npm.Version {
+	diff := make([]npm.Version, 0)
 	m := make(map[string]bool)
 
 	for _, item := range b {
