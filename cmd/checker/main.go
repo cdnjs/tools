@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
@@ -56,9 +55,9 @@ func main() {
 // Represents a version of a package,
 // which could be a git version, npm version, etc.
 type version interface {
-	Get() string                    // Get the version as a string
-	Download(...interface{}) string // Download a version, returning the download dir
-	Clean(string)                   // Clean a download dir
+	Get() string                    // Get the version as a string.
+	Download(...interface{}) string // Download a version, returning the download dir.
+	Clean(string)                   // Clean a download dir.
 }
 
 func showFiles(pckgPath string) {
@@ -87,7 +86,7 @@ func showFiles(pckgPath string) {
 		{
 			// get npm versions and sort
 			npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
-			sort.Sort(npm.ByNpmVersion(npmVersions))
+			npm.SortByTimeStamp(npmVersions)
 
 			// cast to interface
 			for _, v := range npmVersions {
@@ -113,7 +112,7 @@ func showFiles(pckgPath string) {
 
 			// get git versions and sort
 			gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
-			sort.Sort(git.ByGitVersion(gitVersions))
+			git.SortByTimeStamp(gitVersions)
 
 			// cast to interface
 			for _, v := range gitVersions {

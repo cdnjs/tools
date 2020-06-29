@@ -1,8 +1,18 @@
 package git
 
 import (
+	"sort"
+
 	"github.com/blang/semver"
 )
+
+// SortByTimeStamp sorts a []Version, ordering
+// from most recent to least recent time stamps.
+func SortByTimeStamp(vs []Version) {
+	sort.Slice(vs, func(i, j int) bool {
+		return vs[i].TimeStamp.After(vs[j].TimeStamp)
+	})
+}
 
 // ByGitVersion implements sort.Interface for []Version
 type ByGitVersion []Version
