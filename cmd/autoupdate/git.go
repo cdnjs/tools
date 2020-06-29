@@ -102,7 +102,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 	}
 
 	for _, gitversion := range versions {
-		packages.GitForceCheckout(ctx, pckg, gitpath, gitversion.Tag)
+		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
 		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
 		pckgpath := path.Join(pckg.Path(), gitversion.Version)

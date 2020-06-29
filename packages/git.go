@@ -6,13 +6,14 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cdnjs/tools/util"
 )
 
-// We first list all the versions (and top-level package.json)
-// in the package and pass the list to git ls-tree which is
-// going to filter out those not in the tree
+// GitListPackageVersions first lists all the versions (and top-level package.json)
+// in the package and passes the list to git ls-tree which filters out
+// those not in the tree
 func GitListPackageVersions(ctx context.Context, basePath string) []string {
 	filesOnFs, err := filepath.Glob(path.Join(basePath, "*"))
 	util.Check(err)
@@ -62,7 +63,8 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 	return filteredOutFiles
 }
 
-func GitAdd(ctx context.Context, gitpath string, relpath string) {
+// GitAdd adds to the next commit.
+func GitAdd(ctx context.Context, gitpath, relpath string) {
 	args := []string{"add", relpath}
 
 	cmd := exec.Command("git", args...)
@@ -71,7 +73,8 @@ func GitAdd(ctx context.Context, gitpath string, relpath string) {
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
-func GitCommit(ctx context.Context, gitpath string, msg string) {
+// GitCommit makes a new commit.
+func GitCommit(ctx context.Context, gitpath, msg string) {
 	args := []string{"commit", "-m", msg}
 
 	cmd := exec.Command("git", args...)
@@ -80,6 +83,7 @@ func GitCommit(ctx context.Context, gitpath string, msg string) {
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
+// GitFetch fetches objs/refs to the repository.
 func GitFetch(ctx context.Context, gitpath string) {
 	args := []string{"fetch"}
 
@@ -89,6 +93,7 @@ func GitFetch(ctx context.Context, gitpath string) {
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
+// GitPush pushes to a git repository.
 func GitPush(ctx context.Context, gitpath string) {
 	args := []string{"push"}
 
@@ -98,6 +103,7 @@ func GitPush(ctx context.Context, gitpath string) {
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
+// GitClone clones a git repository.
 func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error) {
 	args := []string{"clone", pckg.Autoupdate.Target, "."}
 
@@ -108,7 +114,8 @@ func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error
 	return out, err
 }
 
-func GitTags(ctx context.Context, pckg *Package, gitpath string) []string {
+// GitTags returns the []string of git tags for a package.
+func GitTags(ctx context.Context, gitpath string) []string {
 	args := []string{"tag"}
 
 	cmd := exec.Command("git", args...)
@@ -126,7 +133,23 @@ func GitTags(ctx context.Context, pckg *Package, gitpath string) []string {
 	return tags
 }
 
-func GitForceCheckout(ctx context.Context, pckg *Package, gitpath string, tag string) {
+// GitTimeStamp gets the time stamp for a particular tag (ex. v1.0).
+func GitTimeStamp(ctx context.Context, gitpath, tag string) time.Time {
+	args := []string{"log", "-1", "--format=%aI", tag}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = gitpath
+	util.Debugf(ctx, "run %s\n", cmd)
+	out := util.CheckCmd(cmd.CombinedOutput())
+
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(out))
+	util.Check(err)
+
+	return t
+}
+
+// GitForceCheckout force checkouts a particular tag.
+func GitForceCheckout(ctx context.Context, gitpath, tag string) {
 	args := []string{"checkout", tag, "-f"}
 
 	cmd := exec.Command("git", args...)

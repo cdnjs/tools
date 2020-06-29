@@ -193,7 +193,7 @@ func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v
 func printLastVersions(ctx context.Context, p *packages.Package, dir string, versions []version) {
 	fmt.Printf("\n%d last version(s):\n", len(versions))
 	for _, version := range versions {
-		downloadDir := version.Download(ctx, p, dir)
+		downloadDir := version.Download(ctx, dir)
 		defer version.Clean(downloadDir)
 
 		filesToCopy := p.NpmFilesFrom(downloadDir)
