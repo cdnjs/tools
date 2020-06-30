@@ -176,7 +176,7 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	out.Filename = p.Filename
 	out.Repository = map[string]string{
 		"type": p.Repository.Repotype,
-		"url":  p.Repository.Url,
+		"url":  p.Repository.URL,
 	}
 	out.Keywords = p.Keywords
 
@@ -189,10 +189,10 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 			"name":  p.Author.Name,
 			"email": p.Author.Email,
 		}
-	} else if p.Author.Url != nil && p.Author.Name != "" {
+	} else if p.Author.URL != nil && p.Author.Name != "" {
 		out.Author = map[string]string{
 			"name": p.Author.Name,
-			"url":  *p.Author.Url,
+			"url":  *p.Author.URL,
 		}
 	} else if p.Author.Name != "" {
 		out.Author = p.Author.Name
@@ -205,10 +205,10 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	}
 
 	if p.License != nil {
-		if p.License.Url != "" {
+		if p.License.URL != "" {
 			out.License = map[string]string{
 				"name": p.License.Name,
-				"url":  p.License.Url,
+				"url":  p.License.URL,
 			}
 		} else {
 			out.License = p.License.Name

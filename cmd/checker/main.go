@@ -260,8 +260,8 @@ func lintPackage(pckgPath string) {
 				}
 
 				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNPMMonthlyDownloads {
-					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNPMMonthlyDownloads))
+				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
+					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
 				}
 			}
 		case "git":

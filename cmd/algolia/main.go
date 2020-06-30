@@ -160,7 +160,7 @@ func parseRepository(p *Package) (*packages.Repository, error) {
 		{
 			return &packages.Repository{
 				Repotype: "",
-				Url:      v,
+				URL:      v,
 			}, nil
 		}
 	case map[string]interface{}:
@@ -168,7 +168,7 @@ func parseRepository(p *Package) (*packages.Repository, error) {
 			if v["type"] != nil && v["url"] != nil {
 				return &packages.Repository{
 					Repotype: v["type"].(string),
-					Url:      v["url"].(string),
+					URL:      v["url"].(string),
 				}, nil
 			}
 			return nil, nil
@@ -195,9 +195,9 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 		return nil, fmt.Errorf("unsupported repo type `%s`", repo.Repotype)
 	}
 
-	res := githubURL.FindAllStringSubmatch(repo.Url, -1)
+	res := githubURL.FindAllStringSubmatch(repo.URL, -1)
 	if len(res) == 0 {
-		return nil, fmt.Errorf("could not parse repo URL `%s`", repo.Url)
+		return nil, fmt.Errorf("could not parse repo URL `%s`", repo.URL)
 	}
 
 	client := github.GetClient()
