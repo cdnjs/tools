@@ -81,12 +81,13 @@ func showFiles(pckgPath string) {
 	// autoupdate exists, download latest versions based on source
 	src := pckg.Autoupdate.Source
 	var versions []version
-	var downloadDir, noVersionsErr string
+	var downloadDir, noVersionsErr, latestStableVersion string
 	switch src {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions, _ := npm.GetVersions(pckg.Autoupdate.Target)
+			npmVersions, latest := npm.GetVersions(pckg.Autoupdate.Target)
+			latestStableVersion = latest
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -112,7 +113,8 @@ func showFiles(pckgPath string) {
 			}
 
 			// get git versions and sort
-			gitVersions, _ := git.GetVersions(ctx, pckg, packageGitDir)
+			gitVersions, latest := git.GetVersions(ctx, pckg, packageGitDir)
+			latestStableVersion = latest
 			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface
@@ -146,6 +148,9 @@ func showFiles(pckgPath string) {
 	if len(versions) > util.ImportAllMaxVersions {
 		versions = versions[:util.ImportAllMaxVersions]
 	}
+
+	// print latest stable version
+	fmt.Printf("\nlatest stable version: %s\n", latestStableVersion)
 
 	// print info for first src version
 	printCurrentVersion(ctx, pckg, downloadDir, versions[0])

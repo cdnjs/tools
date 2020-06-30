@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	jsFilesPkg          = "jsfilespackage"
-	oversizedFilesPkg   = "oversizedfilespackage"
-	unpublishedFieldPkg = "unpublishedfieldpackage"
-	sortByTimeStampPkg  = "sortbytimestamppackage"
+	jsFilesPkg          = "jsPkg"
+	oversizedFilesPkg   = "oversizePkg"
+	unpublishedFieldPkg = "unpublishedPkg"
+	sortByTimeStampPkg  = "sortByTimePkg"
 	timeStamp1          = "1.0"
 	timeStamp2          = "2.0"
 	timeStamp3          = "3.0"
@@ -95,7 +95,10 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			},
-			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" },
+			"dist-tags": {
+				"latest": "0.0.2"
+			}
 		}`)
 	case "/" + oversizedFilesPkg:
 		fmt.Fprint(w, `{
@@ -106,7 +109,10 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			},
-			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" }
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" },
+			"dist-tags": {
+				"latest": "0.0.2"
+			}
 		}`)
 	case "/" + unpublishedFieldPkg:
 		fmt.Fprint(w, `{
@@ -128,6 +134,9 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
         				"latest": "1.3.1"
 					}
 				}
+			},
+			"dist-tags": {
+				"latest": "1.3.1"
 			}
 		}`)
 	case "/" + sortByTimeStampPkg:
@@ -165,6 +174,9 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 				"1.0": "2018-12-30T19:39:27.425Z",
 				"5.0": "2017-12-30T19:39:27.425Z",
     			"4.0": "2017-11-30T19:39:27.425Z"
+			},
+			"dist-tags": {
+				"latest": "3.0"
 			}
 		}`)
 	case "/" + jsFilesPkg + ".tgz":
@@ -232,6 +244,8 @@ func TestCheckerShowFiles(t *testing.T) {
 			}`,
 			expected: `
 
+latest stable version: 0.0.2
+
 current version: 0.0.2
 
 ` + "```" + `
@@ -260,6 +274,8 @@ b.js
 			}`,
 			expected: `
 
+latest stable version: 0.0.2
+
 current version: 0.0.2
 ` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
 ` + "```" + `
@@ -286,6 +302,8 @@ b.js
 				}
 			}`,
 			expected: `
+
+latest stable version: 1.3.1
 
 current version: 1.3.1
 
@@ -315,6 +333,8 @@ c.js
 				}
 			}`,
 			expected: `
+
+latest stable version: 3.0
 
 current version: 2.0
 
