@@ -10,6 +10,7 @@ import (
 	githuboauth2 "golang.org/x/oauth2/github"
 )
 
+// GetClient gets a GitHub client to interact with its API.
 func GetClient() *githubapi.Client {
 	token := util.GetEnv("GITHUB_REPO_API_KEY")
 	ctx := context.Background()
