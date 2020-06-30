@@ -86,7 +86,7 @@ func showFiles(pckgPath string) {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(pckg.Autoupdate.Target)
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -112,7 +112,7 @@ func showFiles(pckgPath string) {
 			}
 
 			// get git versions and sort
-			gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
+			gitVersions, _ := git.GetVersions(ctx, pckg, packageGitDir)
 			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface

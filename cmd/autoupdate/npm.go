@@ -12,11 +12,11 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
+func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, string) {
 	var newVersionsToCommit []newVersionToCommit
 
 	existingVersionSet := pckg.Versions()
-	npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+	npmVersions, latestNpmVersion := npm.GetVersions(pckg.Autoupdate.Target)
 	lastExistingVersion := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	if lastExistingVersion != nil {
@@ -65,7 +65,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		}
 	}
 
-	return newVersionsToCommit
+	return newVersionsToCommit, latestNpmVersion
 }
 
 func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Version) []newVersionToCommit {

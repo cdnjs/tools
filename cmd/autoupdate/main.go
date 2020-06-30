@@ -60,21 +60,22 @@ func main() {
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
+		var latestVersion string
 
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit = updateNpm(ctx, pckg)
+				newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
 			}
 
 			if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
-				newVersionsToCommit = updateGit(ctx, pckg)
+				newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
 			}
 		}
 
 		if !noUpdate {
-			commitNewVersions(ctx, newVersionsToCommit, f)
+			commitNewVersions(ctx, newVersionsToCommit, latestVersion, f)
 		}
 	}
 
@@ -106,10 +107,8 @@ func addDoNotAddFile(ctx context.Context, pckg *packages.Package) {
 	packages.GitAdd(ctx, cdnjsPath, dest)
 }
 
-// Copy the package.json to the cdnjs repo and update its version
-// TODO: this probaly needs ordering the versions to make sure to not
-// accidentally put an older version of a package in the json
-func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion string, packageJSONPath string) {
+// Copy the package.json to the cdnjs repo and update its version.
+func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion, packageJSONPath string) {
 	var packageJSON map[string]interface{}
 
 	packageJSONData, err := ioutil.ReadFile(path.Join(packagesPath, packageJSONPath))
@@ -185,10 +184,12 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	}
 }
 
-func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, packageJSONPath string) {
+func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, latestVersion, packageJSONPath string) {
 	if len(newVersionsToCommit) == 0 {
 		return
 	}
+
+	updateVersionInCdnjs(ctx, newVersionsToCommit[0].pckg, latestVersion, packageJSONPath)
 
 	for _, newVersionToCommit := range newVersionsToCommit {
 		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
@@ -199,7 +200,6 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		// Add to git the new version directory
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
-		updateVersionInCdnjs(ctx, newVersionToCommit.pckg, newVersionToCommit.newVersion, packageJSONPath)
 		addDoNotAddFile(ctx, newVersionToCommit.pckg)
 
 		// Add to git the update package.json
