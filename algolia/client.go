@@ -11,6 +11,11 @@ import (
 )
 
 var (
+	// The Algolia temporary index was used by the previous bot
+	// and I just copied it over because I didn't know how it worked.
+	// I don't see the value of building a temporary index and at the
+	// end renaming it to the production index. I would rather maintain
+	// a single index and only update entries when the bot pushed a new update.
 	tmpIndex  = "libraries.tmp" // temp Algolia index
 	prodIndex = "libraries"     // production Algolia index
 )
