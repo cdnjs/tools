@@ -91,21 +91,6 @@ func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {
 	return buffer.Bytes(), err
 }
 
-// During the bot migration, to ensure that both bots are not running at the
-// same time on the same package we rely on a file
-func addDoNotAddFile(ctx context.Context, pckg *packages.Package) {
-	dest := path.Join(pckg.Path(), ".do_not_update")
-	util.Debugf(ctx, "create %s\n", dest)
-
-	f, err := os.Create(dest)
-	util.Check(err)
-
-	f.Close()
-
-	// Add .do_not_update to git and it will be commited later
-	packages.GitAdd(ctx, cdnjsPath, dest)
-}
-
 // Copy the package.json to the cdnjs repo and update its version
 // TODO: this probaly needs ordering the versions to make sure to not
 // accidentally put an older version of a package in the json
@@ -200,7 +185,6 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
 		updateVersionInCdnjs(ctx, newVersionToCommit.pckg, newVersionToCommit.newVersion, packageJSONPath)
-		addDoNotAddFile(ctx, newVersionToCommit.pckg)
 
 		// Add to git the update package.json
 		packages.GitAdd(ctx, cdnjsPath, path.Join(newVersionToCommit.pckg.Path(), "package.json"))
