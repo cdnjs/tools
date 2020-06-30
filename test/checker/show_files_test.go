@@ -186,7 +186,7 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 		})
 	case "/" + oversizedFilesPkg + ".tgz":
 		servePackage(w, r, map[string]string{
-			"a.js": strings.Repeat("a", int(util.MAX_FILE_SIZE)+100),
+			"a.js": strings.Repeat("a", int(util.MaxFileSize)+100),
 			"b.js": "ok",
 		})
 	case "/" + unpublishedFieldPkg + ".tgz":
@@ -377,5 +377,5 @@ current version: 2.0
 		})
 	}
 
-	testproxy.Shutdown(context.Background())
+	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }

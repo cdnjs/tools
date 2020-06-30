@@ -16,12 +16,12 @@ var (
 		".js": true,
 	}
 
-	UGLIFYJS = path.Join(BASE_PATH, "tools", "node_modules/uglify-js/bin/uglifyjs")
-	UGLIFYES = path.Join(BASE_PATH, "tools", "node_modules/uglify-es/bin/uglifyjs")
+	UGLIFYJS = path.Join(basePath, "tools", "node_modules/uglify-js/bin/uglifyjs")
+	UGLIFYES = path.Join(basePath, "tools", "node_modules/uglify-es/bin/uglifyjs")
 )
 
-// Perform a compression of the file
-func CompressJs(ctx context.Context, file string) {
+// Js performs a compression of the file.
+func Js(ctx context.Context, file string) {
 	ext := path.Ext(file)
 	outfile := file[0:len(file)-len(ext)] + ".min.js"
 

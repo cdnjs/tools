@@ -59,7 +59,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 				if valuemap, ok := value.(map[string]interface{}); ok {
 					p.Repository = Repository{
 						Repotype: stringInObject("type", valuemap),
-						Url:      stringInObject("url", valuemap),
+						URL:      stringInObject("url", valuemap),
 					}
 				} else {
 					return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported Repository", file))
@@ -113,12 +113,12 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 				if name, ok := value.(string); ok {
 					p.License = &License{
 						Name: name,
-						Url:  "",
+						URL:  "",
 					}
 				} else if valuemap, ok := value.(map[string]interface{}); ok {
 					p.License = &License{
 						Name: stringInObject("name", valuemap),
-						Url:  stringInObject("url", valuemap),
+						URL:  stringInObject("url", valuemap),
 					}
 				} else {
 					return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported Autoupdate", file))

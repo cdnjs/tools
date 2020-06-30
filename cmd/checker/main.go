@@ -49,7 +49,7 @@ func main() {
 			}
 		}
 	default:
-		panic(fmt.Sprintf("unknown subcommand: '%s'", subcommand))
+		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
 }
 
@@ -145,8 +145,8 @@ func showFiles(pckgPath string) {
 	}
 
 	// limit versions
-	if len(versions) > util.IMPORT_ALL_MAX_VERSIONS {
-		versions = versions[:util.IMPORT_ALL_MAX_VERSIONS]
+	if len(versions) > util.ImportAllMaxVersions {
+		versions = versions[:util.ImportAllMaxVersions]
 	}
 
 	// print latest stable version
@@ -265,8 +265,8 @@ func lintPackage(pckgPath string) {
 				}
 
 				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
-					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
+				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
+					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
 				}
 			}
 		case "git":
@@ -293,9 +293,9 @@ func err(ctx context.Context, s string) {
 }
 
 // wrapper around outputting a checker warning
-func warn(ctx context.Context, s string) {
-	util.Warnf(ctx, s)
-}
+// func warn(ctx context.Context, s string) {
+// 	util.Warnf(ctx, s)
+// }
 
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)

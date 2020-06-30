@@ -10,38 +10,48 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
+// Repository represents a repository.
 type Repository struct {
 	Repotype string `json:"type"`
-	Url      string `json:"url"`
+	URL      string `json:"url"`
 }
 
+// Author represents an author.
 type Author struct {
 	Name  string  `json:"name"`
 	Email string  `json:"email"`
-	Url   *string `json:"url,omitempty"`
+	URL   *string `json:"url,omitempty"`
 }
 
+// License represents a license.
 type License struct {
 	Name string `json:"name"`
-	Url  string `json:"url"`
+	URL  string `json:"url"`
 }
 
+// FileMap represents a number of files located
+// under a base path.
 type FileMap struct {
 	BasePath string   `json:"basePath"`
 	Files    []string `json:"files"`
 }
 
+// Autoupdate is used to update particular files from
+// a source type located at a target destination.
 type Autoupdate struct {
 	Source  string     `json:"source"`
 	Target  string     `json:"target"`
 	FileMap *[]FileMap `json:"fileMap,omitempty"`
 }
 
+// Asset associates a number of files as strings
+// with a version.
 type Asset struct {
 	Version string   `json:"version"`
 	Files   []string `json:"files"`
 }
 
+// Package represents a package.
 type Package struct {
 	ctx context.Context
 	// Cache list of versions for the package
@@ -66,16 +76,16 @@ func stringInObject(key string, object map[string]interface{}) string {
 	value := object[key]
 	if str, ok := value.(string); ok {
 		return str
-	} else {
-		return ""
 	}
+	return ""
 }
 
-// Location of the package in the cdnjs repo
+// Path returns the location of the package in the cdnjs repo.
 func (p *Package) Path() string {
 	return path.Join(util.GetCDNJSPackages(), p.Name)
 }
 
+// Versions gets the versions from git for a particular package.
 func (p *Package) Versions() (versions []string) {
 	if p.versions != nil {
 		return p.versions
@@ -84,19 +94,23 @@ func (p *Package) Versions() (versions []string) {
 	return p.versions
 }
 
-func (p *Package) CalculateVersionSris(version string) map[string]string {
+// CalculateVersionSRIs calculates SRIs for the files in
+// a particular package version.
+func (p *Package) CalculateVersionSRIs(version string) map[string]string {
 	sriFileMap := make(map[string]string)
 
 	for _, relFile := range p.AllFiles(version) {
 		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
 			absFile := path.Join(p.Path(), version, relFile)
-			sriFileMap[relFile] = openssl.CalculateFileSri(absFile)
+			sriFileMap[relFile] = openssl.CalculateFileSRI(absFile)
 		}
 	}
 
 	return sriFileMap
 }
 
+// NpmFileMoveOp represents an operation to move files
+// from a source destination to a target destination.
 type NpmFileMoveOp struct {
 	From string
 	To   string
@@ -135,8 +149,8 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
-				if size > util.MAX_FILE_SIZE {
-					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
+				if size > util.MaxFileSize {
+					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MaxFileSize)
 					continue
 				}
 
@@ -152,7 +166,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	return out
 }
 
-// List all files in the version directory
+// AllFiles lists all files in the version directory.
 func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
@@ -164,6 +178,7 @@ func (p *Package) AllFiles(version string) []string {
 	return out
 }
 
+// Assets gets all the assets for a particular package.
 func (p *Package) Assets() []Asset {
 	assets := make([]Asset, 0)
 

@@ -50,7 +50,7 @@ type MonthlyDownload struct {
 
 // Gets the protocol, either http or https.
 func getProtocol() string {
-	if util.HasHTTProxy() {
+	if util.HasHTTPProxy() {
 		return "http"
 	}
 	return "https"

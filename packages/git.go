@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"bytes"
 	"context"
 	"os/exec"
 	"path"
@@ -137,12 +138,22 @@ func GitTags(ctx context.Context, gitpath string) []string {
 func GitTimeStamp(ctx context.Context, gitpath, tag string) time.Time {
 	args := []string{"log", "-1", "--format=%aI", tag}
 
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 	util.Debugf(ctx, "run %s\n", cmd)
-	out := util.CheckCmd(cmd.CombinedOutput())
+	err := cmd.Run()
 
-	t, err := time.Parse(time.RFC3339, strings.TrimSpace(out))
+	if err != nil {
+		util.Errf(ctx, "%s: %s\n", err, stderr.String())
+		return time.Unix(0, 0)
+	}
+
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(out.String()))
 	util.Check(err)
 
 	return t

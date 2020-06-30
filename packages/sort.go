@@ -22,6 +22,8 @@ func (a ByVersionAsset) Less(i, j int) bool {
 	return left.Compare(right) == 1
 }
 
+// ByVersionString implements sort.Interface for []string based on
+// a number of semver strings.
 type ByVersionString []string
 
 func (a ByVersionString) Len() int      { return len(a) }

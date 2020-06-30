@@ -150,7 +150,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 		files := filterByExt(files, compress.JpegExt)
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
-			compress.CompressJpeg(ctx, absfile)
+			compress.Jpeg(ctx, absfile)
 		}
 	}
 	// png
@@ -162,7 +162,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 			files := filterByExt(files, compress.PngExt)
 			for _, file := range files {
 				absfile := path.Join(version.versionPath, file)
-				compress.CompressPng(ctx, absfile)
+				compress.Png(ctx, absfile)
 			}
 		}
 	}
@@ -171,15 +171,15 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 		files := filterByExt(files, compress.JsExt)
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
-			compress.CompressJs(ctx, absfile)
+			compress.Js(ctx, absfile)
 		}
 	}
 	// css
 	{
-		files := filterByExt(files, compress.CssExt)
+		files := filterByExt(files, compress.CSSExt)
 		for _, file := range files {
 			absfile := path.Join(version.versionPath, file)
-			compress.CompressCss(ctx, absfile)
+			compress.CSS(ctx, absfile)
 		}
 	}
 }
