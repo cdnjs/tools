@@ -1,3 +1,6 @@
+// Package algolia contains functions used to interact with the
+// Algolia Seach API to update the search index used for autocomplete on
+// the cdnjs website.
 package algolia
 
 import (
@@ -8,14 +11,17 @@ import (
 )
 
 var (
-	tmpIndex  = "libraries.tmp"
-	prodIndex = "libraries"
+	tmpIndex  = "libraries.tmp" // temp Algolia index
+	prodIndex = "libraries"     // production Algolia index
 )
 
+// GetClient instantiates a new client to interact with the Algolia Search API
+// using an Application ID and API key.
 func GetClient() *search.Client {
 	return search.NewClient("2QWLVLXZB6", util.GetEnv("ALGOLIA_WRITE_API_KEY"))
 }
 
+// GetTmpIndex instantiates and configures a new temporary Algolia Search index.
 func GetTmpIndex(client *search.Client) *search.Index {
 	index := client.InitIndex(tmpIndex)
 	_, err := index.SetSettings(search.Settings{
@@ -44,6 +50,7 @@ func GetTmpIndex(client *search.Client) *search.Index {
 	return index
 }
 
+// PromoteIndex promotes the temporary Algolia Search index to production.
 func PromoteIndex(client *search.Client) {
 	_, err := client.MoveIndex(tmpIndex, prodIndex)
 	util.Check(err)

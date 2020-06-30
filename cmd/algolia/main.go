@@ -24,10 +24,13 @@ import (
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 )
 
+// PackagesJSON is used to wrap around a slice of []Packages
+// when JSON unmarshalling.
 type PackagesJSON struct {
 	Packages []Package `json:"packages"`
 }
 
+// Package contains metadata for a particular package.
 // FIXME(sven): remove parsing here in favor of github.com/cdnjs/tools/packages
 type Package struct {
 	Name        string   `json:"name"`
@@ -44,6 +47,7 @@ type Package struct {
 	Namespace  interface{} `json:"namespace,omitempty"`
 }
 
+// SearchEntry represents an entry in the Algolia Search index.
 type SearchEntry struct {
 	Name             string               `json:"name"`
 	Filename         string               `json:"filename"`
@@ -63,12 +67,13 @@ type SearchEntry struct {
 	Sri              string               `json:"sri"`
 }
 
+// GitHubMeta contains metadata for a particular GitHub repository.
 type GitHubMeta struct {
-	User              string `json:"user"`
-	Repo              string `json:"repo"`
-	Stargazers_count  int    `json:"stargazers_count"`
-	Forks             int    `json:"forks"`
-	Subscribers_count int    `json:"subscribers_count"`
+	User             string `json:"user"`
+	Repo             string `json:"repo"`
+	StargazersCount  int    `json:"stargazers_count"`
+	Forks            int    `json:"forks"`
+	SubscribersCount int    `json:"subscribers_count"`
 }
 
 func getPackagesBuffer() bytes.Buffer {
@@ -91,8 +96,10 @@ func getPackagesBuffer() bytes.Buffer {
 	return b
 }
 
-var re1 = regexp.MustCompile(`[^a-zA-Z]`)
-var re2 = regexp.MustCompile(`(^[^A-Z]*|[A-Z]*)([A-Z][^A-Z]+|$)`)
+var (
+	re1 = regexp.MustCompile(`[^a-zA-Z]`)
+	re2 = regexp.MustCompile(`(^[^A-Z]*|[A-Z]*)([A-Z][^A-Z]+|$)`)
+)
 
 func getAlternativeNames(name string) []string {
 	names := make([]string, 0)
@@ -107,24 +114,20 @@ func parseLicense(p *Package) (string, error) {
 	case string:
 		{
 			license = v
-			break
 		}
 	case map[string]interface{}:
 		{
 			if v["name"] != nil {
 				license = v["name"].(string)
 			}
-			break
 		}
 	case nil:
-		{
-			break
-		}
 	default:
 		{
 			return "", fmt.Errorf("unsupported license value: `%s`", p.License)
 		}
 	}
+
 	return license, nil
 }
 
@@ -134,19 +137,14 @@ func parseAuthor(p *Package) (string, error) {
 	case string:
 		{
 			author = v
-			break
 		}
 	case map[string]interface{}:
 		{
 			if v["name"] != nil {
 				author = v["name"].(string)
 			}
-			break
 		}
 	case nil:
-		{
-			break
-		}
 	default:
 		{
 			return "", fmt.Errorf("unsupported author value: `%s`", p.Author)
@@ -159,10 +157,12 @@ func parseAuthor(p *Package) (string, error) {
 func parseRepository(p *Package) (*packages.Repository, error) {
 	switch v := p.Repository.(type) {
 	case string:
-		return &packages.Repository{
-			Repotype: "",
-			Url:      v,
-		}, nil
+		{
+			return &packages.Repository{
+				Repotype: "",
+				Url:      v,
+			}, nil
+		}
 	case map[string]interface{}:
 		{
 			if v["type"] != nil && v["url"] != nil {
@@ -170,9 +170,8 @@ func parseRepository(p *Package) (*packages.Repository, error) {
 					Repotype: v["type"].(string),
 					Url:      v["url"].(string),
 				}, nil
-			} else {
-				return nil, nil
 			}
+			return nil, nil
 		}
 	case nil:
 		{
@@ -185,7 +184,7 @@ func parseRepository(p *Package) (*packages.Repository, error) {
 	}
 }
 
-var githubUrl = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
+var githubURL = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
 
 func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	if repo == nil {
@@ -196,7 +195,7 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 		return nil, fmt.Errorf("unsupported repo type `%s`", repo.Repotype)
 	}
 
-	res := githubUrl.FindAllStringSubmatch(repo.Url, -1)
+	res := githubURL.FindAllStringSubmatch(repo.Url, -1)
 	if len(res) == 0 {
 		return nil, fmt.Errorf("could not parse repo URL `%s`", repo.Url)
 	}
@@ -208,11 +207,11 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	}
 
 	return &GitHubMeta{
-		User:              api.GetOwner().GetLogin(),
-		Repo:              api.GetName(),
-		Stargazers_count:  api.GetStargazersCount(),
-		Forks:             api.GetForksCount(),
-		Subscribers_count: api.GetSubscribersCount(),
+		User:             api.GetOwner().GetLogin(),
+		Repo:             api.GetName(),
+		StargazersCount:  api.GetStargazersCount(),
+		Forks:            api.GetForksCount(),
+		SubscribersCount: api.GetSubscribersCount(),
 	}, nil
 }
 
@@ -231,9 +230,8 @@ func getSRI(p *Package) (string, error) {
 
 	if str, ok := j[p.Filename].(string); ok {
 		return str, nil
-	} else {
-		return "", errors.New("SRI could not get converted to a string")
 	}
+	return "", errors.New("SRI could not get converted to a string")
 }
 
 func indexPackage(p Package, index *algoliasearch.Index) error {
@@ -292,34 +290,34 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 
 func main() {
 	flag.Parse()
-	subcommand := flag.Arg(0)
 
-	if subcommand == "update" {
-		fmt.Printf("Downloading package.min.js...")
-		b := getPackagesBuffer()
-		fmt.Printf("Ok\n")
+	switch subcommand := flag.Arg(0); subcommand {
+	case "update":
+		{
+			fmt.Printf("Downloading package.min.js...")
+			b := getPackagesBuffer()
+			fmt.Printf("Ok\n")
 
-		var j PackagesJSON
-		util.Check(json.Unmarshal(b.Bytes(), &j))
+			var j PackagesJSON
+			util.Check(json.Unmarshal(b.Bytes(), &j))
 
-		fmt.Printf("Building index...\n")
+			fmt.Printf("Building index...\n")
 
-		algoliaClient := algolia.GetClient()
-		tmpIndex := algolia.GetTmpIndex(algoliaClient)
+			algoliaClient := algolia.GetClient()
+			tmpIndex := algolia.GetTmpIndex(algoliaClient)
 
-		for _, p := range j.Packages {
-			fmt.Printf("%s: ", p.Name)
-			util.Check(indexPackage(p, tmpIndex))
+			for _, p := range j.Packages {
+				fmt.Printf("%s: ", p.Name)
+				util.Check(indexPackage(p, tmpIndex))
+				fmt.Printf("Ok\n")
+			}
+			fmt.Printf("Ok\n")
+
+			fmt.Printf("Promoting index to production...")
+			algolia.PromoteIndex(algoliaClient)
 			fmt.Printf("Ok\n")
 		}
-		fmt.Printf("Ok\n")
-
-		fmt.Printf("Promoting index to production...")
-		algolia.PromoteIndex(algoliaClient)
-		fmt.Printf("Ok\n")
-
-		return
+	default:
+		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
-
-	panic("unknown subcommand")
 }
