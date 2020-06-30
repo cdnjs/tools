@@ -6,7 +6,7 @@ import (
 	"path"
 	"sort"
 
-	"github.com/cdnjs/tools/openssl"
+	"github.com/cdnjs/tools/sri"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -102,7 +102,7 @@ func (p *Package) CalculateVersionSRIs(version string) map[string]string {
 	for _, relFile := range p.AllFiles(version) {
 		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
 			absFile := path.Join(p.Path(), version, relFile)
-			sriFileMap[relFile] = openssl.CalculateFileSRI(absFile)
+			sriFileMap[relFile] = sri.CalculateFileSRI(absFile)
 		}
 	}
 
