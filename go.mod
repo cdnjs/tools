@@ -27,4 +27,5 @@ require (
 	golang.org/x/tools v0.0.0-20200626171337-aa94e735be7f // indirect
 	google.golang.org/api v0.17.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
+	honnef.co/go/tools v0.0.1-2019.2.3
 )

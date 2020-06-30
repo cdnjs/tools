@@ -244,9 +244,7 @@ func TestCheckerShowFiles(t *testing.T) {
 			}`,
 			expected: `
 
-latest stable version: 0.0.2
-
-current version: 0.0.2
+most recent version: 0.0.2
 
 ` + "```" + `
 a.js
@@ -274,9 +272,7 @@ b.js
 			}`,
 			expected: `
 
-latest stable version: 0.0.2
-
-current version: 0.0.2
+most recent version: 0.0.2
 ` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
 ` + "```" + `
 b.js
@@ -303,9 +299,7 @@ b.js
 			}`,
 			expected: `
 
-latest stable version: 1.3.1
-
-current version: 1.3.1
+most recent version: 1.3.1
 
 ` + "```" + `
 a.js
@@ -334,9 +328,7 @@ c.js
 			}`,
 			expected: `
 
-latest stable version: 3.0
-
-current version: 2.0
+most recent version: 2.0
 
 ` + "```" + `
 2.js

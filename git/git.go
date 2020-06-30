@@ -48,7 +48,8 @@ func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache st
 		})
 	}
 
-	// TODO, determine latest git tag
-	// https://github.com/cdnjs/tools/issues/39
+	if latest := GetMostRecentVersion(gitVersions); latest != nil {
+		return gitVersions, latest.Version
+	}
 	return gitVersions, ""
 }

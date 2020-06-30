@@ -44,7 +44,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	gitVersions, latestVersion := git.GetVersions(ctx, pckg, packageGitcache)
+	gitVersions, latestGitVersion := git.GetVersions(ctx, pckg, packageGitcache)
 	existingVersionSet := pckg.Versions()
 	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
@@ -90,7 +90,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	return newVersionsToCommit, latestVersion
+	return newVersionsToCommit, latestGitVersion
 }
 
 func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {

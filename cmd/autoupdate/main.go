@@ -74,8 +74,9 @@ func main() {
 			}
 		}
 
-		if !noUpdate {
-			commitNewVersions(ctx, newVersionsToCommit, latestVersion, f)
+		if !noUpdate && len(newVersionsToCommit) > 0 {
+			commitNewVersions(ctx, newVersionsToCommit)
+			commitPackageVersion(ctx, pckg, latestVersion, f)
 		}
 	}
 
@@ -184,12 +185,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	}
 }
 
-func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, latestVersion, packageJSONPath string) {
-	if len(newVersionsToCommit) == 0 {
-		return
-	}
-
-	updateVersionInCdnjs(ctx, newVersionsToCommit[0].pckg, latestVersion, packageJSONPath)
+func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 
 	for _, newVersionToCommit := range newVersionsToCommit {
 		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
@@ -200,14 +196,25 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		// Add to git the new version directory
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
-		addDoNotAddFile(ctx, newVersionToCommit.pckg)
-
-		// Add to git the update package.json
-		packages.GitAdd(ctx, cdnjsPath, path.Join(newVersionToCommit.pckg.Path(), "package.json"))
-
 		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 		metrics.ReportNewVersion()
 	}
+}
+
+func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVersion, packageJSONPath string) {
+	util.Debugf(ctx, "adding latest version to package.json %s", latestVersion)
+
+	// Update package.json file
+	updateVersionInCdnjs(ctx, pckg, latestVersion, packageJSONPath)
+	addDoNotAddFile(ctx, pckg)
+
+	// Add to git the updated package.json
+	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.Path(), "package.json"))
+
+	commitMsg := fmt.Sprintf("Add %s package.json (v%s)", pckg.Name, latestVersion)
+	packages.GitCommit(ctx, cdnjsPath, commitMsg)
+
+	metrics.ReportNewVersion()
 }
