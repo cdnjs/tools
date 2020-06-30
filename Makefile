@@ -26,3 +26,8 @@ clean:
 .PHONY: test
 test: clean checker
 	go test -v ./test/...
+
+.PHONY: lint
+lint:
+	go get -u golang.org/x/lint/golint
+	$(GOPATH)/bin/golint ./...
