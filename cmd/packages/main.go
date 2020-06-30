@@ -70,15 +70,6 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 
 				writeSRIJSON(p, version, bytes)
 			}
-
-			// FIXME: reenable that once we don't run in debug mode anymore
-			// // In debug mode ensure that we still generate the same SRI;
-			// // compare with the existing ones (slow).
-			// if util.IsDebug() && hasSri(p, version) {
-			// 	expectedSriFileMap := getSriFileMap(p, version)
-			// 	actualSriFileMap := p.CalculateVersionSris(version)
-			// 	compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
-			// }
 		}
 
 		util.Printf(ctx, "OK\n")
@@ -226,17 +217,6 @@ func hasSRI(p *packages.Package, version string) bool {
 	return !os.IsNotExist(statErr)
 }
 
-func getSRIFileMap(p *packages.Package, version string) map[string]string {
-	sriPath := path.Join(util.SRIPath, p.Name, version+".json")
-	data, err := ioutil.ReadFile(sriPath)
-	util.Check(err)
-
-	var fileMap map[string]string
-	util.Check(json.Unmarshal(data, &fileMap))
-
-	return fileMap
-}
-
 func writeSRIJSON(p *packages.Package, version string, content []byte) {
 	sriDir := path.Join(util.SRIPath, p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
@@ -245,17 +225,4 @@ func writeSRIJSON(p *packages.Package, version string, content []byte) {
 
 	sriFilename := path.Join(sriDir, version+".json")
 	util.Check(ioutil.WriteFile(sriFilename, content, 0777))
-}
-
-func compareMaps(ctx context.Context, a, b map[string]string) {
-	for k := range a {
-		if _, bHas := b[k]; !bHas {
-			util.Printf(ctx, "Sri non existing for file %s\n", k)
-			continue
-		}
-		if a[k] != b[k] {
-			util.Printf(ctx, "Sri diff %s vs %s for file %s\n", a[k], b[k], k)
-			continue
-		}
-	}
 }

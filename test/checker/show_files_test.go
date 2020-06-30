@@ -357,5 +357,5 @@ current version: 2.0
 		})
 	}
 
-	testproxy.Shutdown(context.Background())
+	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }
