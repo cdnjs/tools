@@ -61,14 +61,14 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 		}
 
 		for _, version := range p.Versions() {
-			if !hasSri(p, version) {
+			if !hasSRI(p, version) {
 				util.Printf(ctx, "version %s needs SRI calculation\n", version)
 
-				sriFileMap := p.CalculateVersionSris(version)
+				sriFileMap := p.CalculateVersionSRIs(version)
 				bytes, jsonErr := json.Marshal(sriFileMap)
 				util.Check(jsonErr)
 
-				writeSriJSON(p, version, bytes)
+				writeSRIJSON(p, version, bytes)
 			}
 
 			// FIXME: reenable that once we don't run in debug mode anymore
@@ -220,14 +220,14 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	return &out
 }
 
-func hasSri(p *packages.Package, version string) bool {
-	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
+func hasSRI(p *packages.Package, version string) bool {
+	sriPath := path.Join(util.SRIPath, p.Name, version+".json")
 	_, statErr := os.Stat(sriPath)
 	return !os.IsNotExist(statErr)
 }
 
-func getSriFileMap(p *packages.Package, version string) map[string]string {
-	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
+func getSRIFileMap(p *packages.Package, version string) map[string]string {
+	sriPath := path.Join(util.SRIPath, p.Name, version+".json")
 	data, err := ioutil.ReadFile(sriPath)
 	util.Check(err)
 
@@ -237,8 +237,8 @@ func getSriFileMap(p *packages.Package, version string) map[string]string {
 	return fileMap
 }
 
-func writeSriJSON(p *packages.Package, version string, content []byte) {
-	sriDir := path.Join(util.SRI_PATH, p.Name)
+func writeSRIJSON(p *packages.Package, version string, content []byte) {
+	sriDir := path.Join(util.SRIPath, p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))
 	}

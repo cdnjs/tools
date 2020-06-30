@@ -143,8 +143,8 @@ func showFiles(pckgPath string) {
 	}
 
 	// limit versions
-	if len(versions) > util.IMPORT_ALL_MAX_VERSIONS {
-		versions = versions[:util.IMPORT_ALL_MAX_VERSIONS]
+	if len(versions) > util.ImportAllMaxVersions {
+		versions = versions[:util.ImportAllMaxVersions]
 	}
 
 	// print info for first src version
@@ -260,8 +260,8 @@ func lintPackage(pckgPath string) {
 				}
 
 				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MIN_NPM_MONTHLY_DOWNLOADS {
-					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MIN_NPM_MONTHLY_DOWNLOADS))
+				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNPMMonthlyDownloads {
+					err(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNPMMonthlyDownloads))
 				}
 			}
 		case "git":

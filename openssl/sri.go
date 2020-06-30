@@ -7,8 +7,8 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// CalculateFileSri generates a Subresource Integrity string for a particular file.
-func CalculateFileSri(filename string) string {
+// CalculateFileSRI generates a Subresource Integrity string for a particular file.
+func CalculateFileSRI(filename string) string {
 	dgst, dgstErr := exec.Command("openssl", "dgst", "-sha256", "-binary", filename).Output()
 	util.Check(dgstErr)
 

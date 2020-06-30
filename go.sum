@@ -31,6 +31,7 @@ github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/g
 github.com/algolia/algoliasearch-client-go v2.25.0+incompatible h1:FGQr9l++u4uQPDXrW8jM5kNJm3Iw5SxEJJtYXSFmPRY=
 github.com/algolia/algoliasearch-client-go/v3 v3.4.0 h1:eeVU30L5DkKUK2q/EjXw+8o7reoK4QB1mS+BG0Jbd4Y=
 github.com/algolia/algoliasearch-client-go/v3 v3.4.0/go.mod h1:d0/D54BCmkwhLxT5VIQBeYLAz2GbZHFX9OptYyohTr0=
+github.com/algolia/algoliasearch-client-go/v3 v3.8.1 h1:Bt9z5gZpPxp/6XoL1pJrzmvJ3uOc0kU1dItHIeufoOc=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=

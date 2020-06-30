@@ -6,12 +6,14 @@ import (
 	"os"
 )
 
+// Assert is used to enforce a condition is true.
 func Assert(cond bool) {
 	if !cond {
 		panic("assertion failure")
 	}
 }
 
+// MoveFile moves a file from a source path to destination path.
 func MoveFile(sourcePath, destPath string) error {
 	inputFile, err := os.Open(sourcePath)
 	if err != nil {

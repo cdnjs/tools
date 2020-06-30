@@ -71,7 +71,7 @@ func stringInObject(key string, object map[string]interface{}) string {
 	}
 }
 
-// Location of the package in the cdnjs repo
+// Path returns the location of the package in the cdnjs repo.
 func (p *Package) Path() string {
 	return path.Join(util.GetCDNJSPackages(), p.Name)
 }
@@ -84,13 +84,13 @@ func (p *Package) Versions() (versions []string) {
 	return p.versions
 }
 
-func (p *Package) CalculateVersionSris(version string) map[string]string {
+func (p *Package) CalculateVersionSRIs(version string) map[string]string {
 	sriFileMap := make(map[string]string)
 
 	for _, relFile := range p.AllFiles(version) {
 		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
 			absFile := path.Join(p.Path(), version, relFile)
-			sriFileMap[relFile] = openssl.CalculateFileSri(absFile)
+			sriFileMap[relFile] = openssl.CalculateFileSRI(absFile)
 		}
 	}
 
@@ -135,8 +135,8 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
-				if size > util.MAX_FILE_SIZE {
-					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MAX_FILE_SIZE)
+				if size > util.MaxFileSize {
+					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MaxFileSize)
 					continue
 				}
 

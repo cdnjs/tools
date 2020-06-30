@@ -78,8 +78,8 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 			// too many outdated versions.
 			sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
-			if len(gitVersions) > util.IMPORT_ALL_MAX_VERSIONS {
-				gitVersions = gitVersions[len(gitVersions)-util.IMPORT_ALL_MAX_VERSIONS:]
+			if len(gitVersions) > util.ImportAllMaxVersions {
+				gitVersions = gitVersions[len(gitVersions)-util.ImportAllMaxVersions:]
 			}
 
 			// Reverse the array to have the older versions first
