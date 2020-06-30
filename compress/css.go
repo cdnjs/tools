@@ -12,16 +12,16 @@ import (
 
 // Extensions the compression handle
 var (
-	CssExt = map[string]bool{
+	CSSExt = map[string]bool{
 		".css": true,
 	}
 
-	BASE_PATH = util.GetEnv("BOT_BASE_PATH")
-	CLEANCSS  = path.Join(BASE_PATH, "tools", "node_modules/clean-css-cli/bin/cleancss")
+	basePath = util.GetEnv("BOT_BASE_PATH")
+	cleanCSS = path.Join(basePath, "tools", "node_modules/clean-css-cli/bin/cleancss")
 )
 
-// Perform a compression of the file
-func CompressCss(ctx context.Context, file string) {
+// CSS performs a compression of the file.
+func CSS(ctx context.Context, file string) {
 	ext := path.Ext(file)
 	outfile := file[0:len(file)-len(ext)] + ".min.css"
 
@@ -43,7 +43,7 @@ func CompressCss(ctx context.Context, file string) {
 		file,
 	}
 
-	cmd := exec.Command(CLEANCSS, args...)
+	cmd := exec.Command(cleanCSS, args...)
 	util.Debugf(ctx, "compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
 	util.Debugf(ctx, "%s\n", out)

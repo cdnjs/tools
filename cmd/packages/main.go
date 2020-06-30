@@ -28,7 +28,7 @@ var (
 	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
 
-func encodeJson(packages []*outputPackage) (string, error) {
+func encodeJSON(packages []*outputPackage) (string, error) {
 	out := struct {
 		Packages []*outputPackage `json:"packages"`
 	}{
@@ -61,24 +61,15 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 		}
 
 		for _, version := range p.Versions() {
-			if !hasSri(p, version) {
+			if !hasSRI(p, version) {
 				util.Printf(ctx, "version %s needs SRI calculation\n", version)
 
-				sriFileMap := p.CalculateVersionSris(version)
+				sriFileMap := p.CalculateVersionSRIs(version)
 				bytes, jsonErr := json.Marshal(sriFileMap)
 				util.Check(jsonErr)
 
-				writeSriJson(p, version, bytes)
+				writeSRIJSON(p, version, bytes)
 			}
-
-			// FIXME: reenable that once we don't run in debug mode anymore
-			// // In debug mode ensure that we still generate the same SRI;
-			// // compare with the existing ones (slow).
-			// if util.IsDebug() && hasSri(p, version) {
-			// 	expectedSriFileMap := getSriFileMap(p, version)
-			// 	actualSriFileMap := p.CalculateVersionSris(version)
-			// 	compareMaps(ctx, expectedSriFileMap, actualSriFileMap)
-			// }
 		}
 
 		util.Printf(ctx, "OK\n")
@@ -88,65 +79,65 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 
 func main() {
 	flag.Parse()
-	subcommand := flag.Arg(0)
 
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
 
-	if subcommand == "set" {
-		ctx := defaultCtx
-		bkt, err := cloudstorage.GetAssetsBucket(ctx)
-		util.Check(err)
-		obj := bkt.Object("package.min.js")
+	switch subcommand := flag.Arg(0); subcommand {
+	case "set":
+		{
+			ctx := defaultCtx
+			bkt, err := cloudstorage.GetAssetsBucket(ctx)
+			util.Check(err)
+			obj := bkt.Object("package.min.js")
 
-		w := obj.NewWriter(ctx)
-		_, err = io.Copy(w, os.Stdin)
-		util.Check(err)
-		util.Check(w.Close())
-		util.Check(obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader))
-		fmt.Println("Uploaded package.min.js")
-		return
-	}
-
-	if subcommand == "generate" {
-		files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
-		util.Check(err)
-
-		numJobs := len(files)
-		if numJobs == 0 {
-			panic("cannot find packages")
+			w := obj.NewWriter(ctx)
+			_, err = io.Copy(w, os.Stdin)
+			util.Check(err)
+			util.Check(w.Close())
+			util.Check(obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader))
+			fmt.Println("Uploaded package.min.js")
 		}
+	case "generate":
+		{
+			files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
+			util.Check(err)
 
-		jobs := make(chan string, numJobs)
-		results := make(chan *outputPackage, numJobs)
-
-		// spawn workers
-		for w := 1; w <= runtime.NumCPU()*10; w++ {
-			go generatePackageWorker(jobs, results)
-		}
-
-		// submit jobs; packages to encode
-		for _, f := range files {
-			jobs <- f
-		}
-		close(jobs)
-
-		// collect results
-		out := make([]*outputPackage, 0)
-		for i := 1; i <= numJobs; i++ {
-			if res := <-results; res != nil {
-				out = append(out, res)
+			numJobs := len(files)
+			if numJobs == 0 {
+				panic("cannot find packages")
 			}
+
+			jobs := make(chan string, numJobs)
+			results := make(chan *outputPackage, numJobs)
+
+			// spawn workers
+			for w := 1; w <= runtime.NumCPU()*10; w++ {
+				go generatePackageWorker(jobs, results)
+			}
+
+			// submit jobs; packages to encode
+			for _, f := range files {
+				jobs <- f
+			}
+			close(jobs)
+
+			// collect results
+			out := make([]*outputPackage, 0)
+			for i := 1; i <= numJobs; i++ {
+				if res := <-results; res != nil {
+					out = append(out, res)
+				}
+			}
+
+			str, err := encodeJSON(out)
+			util.Check(err)
+			fmt.Println(string(str))
 		}
-
-		str, err := encodeJson(out)
-		util.Check(err)
-		fmt.Println(string(str))
-		return
+	default:
+		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
-
-	panic("unknown subcommand")
 }
 
 // Struct used to serialize packages
@@ -176,7 +167,7 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	out.Filename = p.Filename
 	out.Repository = map[string]string{
 		"type": p.Repository.Repotype,
-		"url":  p.Repository.Url,
+		"url":  p.Repository.URL,
 	}
 	out.Keywords = p.Keywords
 
@@ -189,10 +180,10 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 			"name":  p.Author.Name,
 			"email": p.Author.Email,
 		}
-	} else if p.Author.Url != nil && p.Author.Name != "" {
+	} else if p.Author.URL != nil && p.Author.Name != "" {
 		out.Author = map[string]string{
 			"name": p.Author.Name,
-			"url":  *p.Author.Url,
+			"url":  *p.Author.URL,
 		}
 	} else if p.Author.Name != "" {
 		out.Author = p.Author.Name
@@ -205,10 +196,10 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	}
 
 	if p.License != nil {
-		if p.License.Url != "" {
+		if p.License.URL != "" {
 			out.License = map[string]string{
 				"name": p.License.Name,
-				"url":  p.License.Url,
+				"url":  p.License.URL,
 			}
 		} else {
 			out.License = p.License.Name
@@ -220,42 +211,18 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	return &out
 }
 
-func hasSri(p *packages.Package, version string) bool {
-	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
+func hasSRI(p *packages.Package, version string) bool {
+	sriPath := path.Join(util.SRIPath, p.Name, version+".json")
 	_, statErr := os.Stat(sriPath)
 	return !os.IsNotExist(statErr)
 }
 
-func getSriFileMap(p *packages.Package, version string) map[string]string {
-	sriPath := path.Join(util.SRI_PATH, p.Name, version+".json")
-	data, err := ioutil.ReadFile(sriPath)
-	util.Check(err)
-
-	var fileMap map[string]string
-	util.Check(json.Unmarshal(data, &fileMap))
-
-	return fileMap
-}
-
-func writeSriJson(p *packages.Package, version string, content []byte) {
-	sriDir := path.Join(util.SRI_PATH, p.Name)
+func writeSRIJSON(p *packages.Package, version string, content []byte) {
+	sriDir := path.Join(util.SRIPath, p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))
 	}
 
 	sriFilename := path.Join(sriDir, version+".json")
 	util.Check(ioutil.WriteFile(sriFilename, content, 0777))
-}
-
-func compareMaps(ctx context.Context, a, b map[string]string) {
-	for k := range a {
-		if _, bHas := b[k]; !bHas {
-			util.Printf(ctx, "Sri non existing for file %s\n", k)
-			continue
-		}
-		if a[k] != b[k] {
-			util.Printf(ctx, "Sri diff %s vs %s for file %s\n", a[k], b[k], k)
-			continue
-		}
-	}
 }

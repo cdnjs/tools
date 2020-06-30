@@ -8,16 +8,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+// GetAssetsBucket gets the GCP BucketHandle for cdnjs assets.
 func GetAssetsBucket(ctx context.Context) (*storage.BucketHandle, error) {
 	client, err := gcp.GetStorageClient(ctx)
 	util.Check(err)
 	bkt := client.Bucket("cdnjs-assets")
-	return bkt, nil
-}
-
-func GetRobotcdnjsBucket(ctx context.Context) (*storage.BucketHandle, error) {
-	client, err := gcp.GetStorageClient(ctx)
-	util.Check(err)
-	bkt := client.Bucket("robotcdnjs")
 	return bkt, nil
 }

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 )
 
+// UpdateGitRepo git pulls and rebases the repository.
 func UpdateGitRepo(ctx context.Context, gitpath string) {
 	args := []string{"pull", "--rebase"}
 

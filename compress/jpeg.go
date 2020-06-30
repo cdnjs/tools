@@ -7,14 +7,14 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// Extensions the compression handle
+// JpegExt are jpeg extensions the compression handles.
 var JpegExt = map[string]bool{
 	".jpg":  true,
 	".jpeg": true,
 }
 
-// Perform an in-place compression of the file
-func CompressJpeg(ctx context.Context, file string) {
+// Jpeg performs an in-place compression of the file.
+func Jpeg(ctx context.Context, file string) {
 	cmd := exec.Command("jpegoptim", file)
 	util.Debugf(ctx, "compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())

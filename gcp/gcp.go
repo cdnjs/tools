@@ -19,6 +19,7 @@ func getCredentialsFile() string {
 	return path.Join(home, "google_storage_cdnjs_assets.json")
 }
 
+// GetStorageClient gets the GCP Storage Client.
 func GetStorageClient(ctx context.Context) (*storage.Client, error) {
 	return storage.NewClient(ctx, option.WithCredentialsFile(getCredentialsFile()))
 }
