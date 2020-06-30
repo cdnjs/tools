@@ -288,9 +288,9 @@ func err(ctx context.Context, s string) {
 }
 
 // wrapper around outputting a checker warning
-func warn(ctx context.Context, s string) {
-	util.Warnf(ctx, s)
-}
+// func warn(ctx context.Context, s string) {
+// 	util.Warnf(ctx, s)
+// }
 
 func shouldNotBeEmpty(name string) string {
 	return fmt.Sprintf("%s should be specified", name)

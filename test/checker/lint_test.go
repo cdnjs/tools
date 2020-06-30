@@ -151,5 +151,5 @@ func TestCheckerLint(t *testing.T) {
 		})
 	}
 
-	testproxy.Shutdown(context.Background())
+	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }
