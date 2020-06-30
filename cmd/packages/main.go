@@ -28,7 +28,7 @@ var (
 	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
 
-func encodeJson(packages []*outputPackage) (string, error) {
+func encodeJSON(packages []*outputPackage) (string, error) {
 	out := struct {
 		Packages []*outputPackage `json:"packages"`
 	}{
@@ -68,7 +68,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 				bytes, jsonErr := json.Marshal(sriFileMap)
 				util.Check(jsonErr)
 
-				writeSriJson(p, version, bytes)
+				writeSriJSON(p, version, bytes)
 			}
 
 			// FIXME: reenable that once we don't run in debug mode anymore
@@ -88,65 +88,65 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 
 func main() {
 	flag.Parse()
-	subcommand := flag.Arg(0)
 
 	if util.IsDebug() {
 		fmt.Println("Running in debug mode")
 	}
 
-	if subcommand == "set" {
-		ctx := defaultCtx
-		bkt, err := cloudstorage.GetAssetsBucket(ctx)
-		util.Check(err)
-		obj := bkt.Object("package.min.js")
+	switch subcommand := flag.Arg(0); subcommand {
+	case "set":
+		{
+			ctx := defaultCtx
+			bkt, err := cloudstorage.GetAssetsBucket(ctx)
+			util.Check(err)
+			obj := bkt.Object("package.min.js")
 
-		w := obj.NewWriter(ctx)
-		_, err = io.Copy(w, os.Stdin)
-		util.Check(err)
-		util.Check(w.Close())
-		util.Check(obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader))
-		fmt.Println("Uploaded package.min.js")
-		return
-	}
-
-	if subcommand == "generate" {
-		files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
-		util.Check(err)
-
-		numJobs := len(files)
-		if numJobs == 0 {
-			panic("cannot find packages")
+			w := obj.NewWriter(ctx)
+			_, err = io.Copy(w, os.Stdin)
+			util.Check(err)
+			util.Check(w.Close())
+			util.Check(obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader))
+			fmt.Println("Uploaded package.min.js")
 		}
+	case "generate":
+		{
+			files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
+			util.Check(err)
 
-		jobs := make(chan string, numJobs)
-		results := make(chan *outputPackage, numJobs)
-
-		// spawn workers
-		for w := 1; w <= runtime.NumCPU()*10; w++ {
-			go generatePackageWorker(jobs, results)
-		}
-
-		// submit jobs; packages to encode
-		for _, f := range files {
-			jobs <- f
-		}
-		close(jobs)
-
-		// collect results
-		out := make([]*outputPackage, 0)
-		for i := 1; i <= numJobs; i++ {
-			if res := <-results; res != nil {
-				out = append(out, res)
+			numJobs := len(files)
+			if numJobs == 0 {
+				panic("cannot find packages")
 			}
+
+			jobs := make(chan string, numJobs)
+			results := make(chan *outputPackage, numJobs)
+
+			// spawn workers
+			for w := 1; w <= runtime.NumCPU()*10; w++ {
+				go generatePackageWorker(jobs, results)
+			}
+
+			// submit jobs; packages to encode
+			for _, f := range files {
+				jobs <- f
+			}
+			close(jobs)
+
+			// collect results
+			out := make([]*outputPackage, 0)
+			for i := 1; i <= numJobs; i++ {
+				if res := <-results; res != nil {
+					out = append(out, res)
+				}
+			}
+
+			str, err := encodeJSON(out)
+			util.Check(err)
+			fmt.Println(string(str))
 		}
-
-		str, err := encodeJson(out)
-		util.Check(err)
-		fmt.Println(string(str))
-		return
+	default:
+		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
-
-	panic("unknown subcommand")
 }
 
 // Struct used to serialize packages
@@ -237,7 +237,7 @@ func getSriFileMap(p *packages.Package, version string) map[string]string {
 	return fileMap
 }
 
-func writeSriJson(p *packages.Package, version string, content []byte) {
+func writeSriJSON(p *packages.Package, version string, content []byte) {
 	sriDir := path.Join(util.SRI_PATH, p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))

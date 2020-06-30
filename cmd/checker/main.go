@@ -49,7 +49,7 @@ func main() {
 			}
 		}
 	default:
-		panic(fmt.Sprintf("unknown subcommand: '%s'", subcommand))
+		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
 }
 
