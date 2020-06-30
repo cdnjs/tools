@@ -49,7 +49,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
 	if lastExistingVersion != nil {
-		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion)
+		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion.Version)
 
 		versionDiff := gitVersionDiff(gitVersions, existingVersionSet)
 
