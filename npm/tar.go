@@ -24,6 +24,7 @@ func removePackageDir(path string) string {
 	return path
 }
 
+// Untar uncompresses a tar at a destination.
 func Untar(dst string, r io.Reader) error {
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
@@ -99,7 +100,7 @@ func Untar(dst string, r io.Reader) error {
 	}
 }
 
-// Extract the tarball url in a temporary location
+// DownloadTar extracts the tarball url into a temporary location.
 func DownloadTar(ctx context.Context, url string) string {
 	dest, err := ioutil.TempDir("", "npmtarball")
 	util.Check(err)
