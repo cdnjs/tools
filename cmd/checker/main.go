@@ -241,13 +241,6 @@ func lintPackage(pckgPath string) {
 		err(ctx, shouldNotExist(".version"))
 	}
 
-	if pckg.NpmName != nil {
-		err(ctx, shouldNotExist(".NpmName"))
-	}
-	if len(pckg.NpmFileMap) > 0 {
-		err(ctx, shouldNotExist(".NpmFileMap"))
-	}
-
 	if pckg.Autoupdate != nil {
 		switch pckg.Autoupdate.Source {
 		case "npm":
