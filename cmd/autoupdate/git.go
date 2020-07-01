@@ -21,7 +21,7 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit {
+func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, string) {
 	var newVersionsToCommit []newVersionToCommit
 
 	packageGitcache := path.Join(gitCache, pckg.Name)
@@ -33,18 +33,18 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		out, err := packages.GitClone(ctx, pckg, packageGitcache)
 		if err != nil {
 			util.Printf(ctx, "could not clone repo: %s: %s\n", err, out)
-			return newVersionsToCommit
+			return newVersionsToCommit, ""
 		}
 	} else {
 		if isValidGit(ctx, packageGitcache) {
 			packages.GitFetch(ctx, packageGitcache)
 		} else {
 			util.Printf(ctx, "invalid git repo\n")
-			return newVersionsToCommit
+			return newVersionsToCommit, ""
 		}
 	}
 
-	gitVersions := git.GetVersions(ctx, pckg, packageGitcache)
+	gitVersions, latestGitVersion := git.GetVersions(ctx, pckg, packageGitcache)
 	existingVersionSet := pckg.Versions()
 	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
@@ -90,7 +90,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) []newVersionToCommit
 		}
 	}
 
-	return newVersionsToCommit
+	return newVersionsToCommit, latestGitVersion
 }
 
 func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {

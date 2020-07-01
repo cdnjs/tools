@@ -39,3 +39,16 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 
 	return mostRecent
 }
+
+// GetMostRecentVersion gets the latest version in git based on time stamp.
+func GetMostRecentVersion(gitVersions []Version) *Version {
+	var mostRecent *Version
+
+	for i := 0; i < len(gitVersions); i++ {
+		if mostRecent == nil || gitVersions[i].TimeStamp.After(mostRecent.TimeStamp) {
+			mostRecent = &gitVersions[i]
+		}
+	}
+
+	return mostRecent
+}

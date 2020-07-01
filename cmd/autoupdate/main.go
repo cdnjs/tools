@@ -60,21 +60,23 @@ func main() {
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
+		var latestVersion string
 
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit = updateNpm(ctx, pckg)
+				newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
 			}
 
 			if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
-				newVersionsToCommit = updateGit(ctx, pckg)
+				newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
 			}
 		}
 
-		if !noUpdate {
-			commitNewVersions(ctx, newVersionsToCommit, f)
+		if !noUpdate && len(newVersionsToCommit) > 0 {
+			commitNewVersions(ctx, newVersionsToCommit)
+			commitPackageVersion(ctx, pckg, latestVersion, f)
 		}
 	}
 
@@ -91,10 +93,8 @@ func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {
 	return buffer.Bytes(), err
 }
 
-// Copy the package.json to the cdnjs repo and update its version
-// TODO: this probaly needs ordering the versions to make sure to not
-// accidentally put an older version of a package in the json
-func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion string, packageJSONPath string) {
+// Copy the package.json to the cdnjs repo and update its version.
+func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion, packageJSONPath string) {
 	var packageJSON map[string]interface{}
 
 	packageJSONData, err := ioutil.ReadFile(path.Join(packagesPath, packageJSONPath))
@@ -170,10 +170,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	}
 }
 
-func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit, packageJSONPath string) {
-	if len(newVersionsToCommit) == 0 {
-		return
-	}
+func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 
 	for _, newVersionToCommit := range newVersionsToCommit {
 		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
@@ -184,14 +181,22 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		// Add to git the new version directory
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
-		updateVersionInCdnjs(ctx, newVersionToCommit.pckg, newVersionToCommit.newVersion, packageJSONPath)
-
-		// Add to git the update package.json
-		packages.GitAdd(ctx, cdnjsPath, path.Join(newVersionToCommit.pckg.Path(), "package.json"))
-
 		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 		metrics.ReportNewVersion()
 	}
+}
+
+func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVersion, packageJSONPath string) {
+	util.Debugf(ctx, "adding latest version to package.json %s", latestVersion)
+
+	// Update package.json file
+	updateVersionInCdnjs(ctx, pckg, latestVersion, packageJSONPath)
+
+	// Add to git the updated package.json
+	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.Path(), "package.json"))
+
+	commitMsg := fmt.Sprintf("Add %s package.json (v%s)", pckg.Name, latestVersion)
+	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 }

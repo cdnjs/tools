@@ -88,7 +88,7 @@ func showFiles(pckgPath string) {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions := npm.GetVersions(pckg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(pckg.Autoupdate.Target)
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -114,7 +114,7 @@ func showFiles(pckgPath string) {
 			}
 
 			// get git versions and sort
-			gitVersions := git.GetVersions(ctx, pckg, packageGitDir)
+			gitVersions, _ := git.GetVersions(ctx, pckg, packageGitDir)
 			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface
@@ -150,7 +150,7 @@ func showFiles(pckgPath string) {
 	}
 
 	// print info for first src version
-	printCurrentVersion(ctx, pckg, downloadDir, versions[0])
+	printMostRecentVersion(ctx, pckg, downloadDir, versions[0])
 
 	// print aggregate info for the few last src versions
 	printLastVersions(ctx, pckg, downloadDir, versions[1:])
@@ -158,8 +158,8 @@ func showFiles(pckgPath string) {
 
 // Prints the files of a package version, outputting debug
 // messages if no valid files are present.
-func printCurrentVersion(ctx context.Context, p *packages.Package, dir string, v version) {
-	fmt.Printf("\ncurrent version: %s\n", v.Get())
+func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string, v version) {
+	fmt.Printf("\nmost recent version: %s\n", v.Get())
 	filesToCopy := p.NpmFilesFrom(dir)
 
 	if len(filesToCopy) == 0 {

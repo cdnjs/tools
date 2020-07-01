@@ -32,8 +32,9 @@ func (g Version) Download(args ...interface{}) string {
 func (g Version) Clean(_ string) {
 }
 
-// GetVersions gets all of the versions associated with a git repo.
-func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache string) []Version {
+// GetVersions gets all of the versions associated with a git repo,
+// as well as the latest version.
+func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache string) ([]Version, string) {
 	gitTags := packages.GitTags(ctx, packageGitcache)
 	util.Debugf(ctx, "found tags in git: %s\n", gitTags)
 
@@ -47,5 +48,8 @@ func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache st
 		})
 	}
 
-	return gitVersions
+	if latest := GetMostRecentVersion(gitVersions); latest != nil {
+		return gitVersions, latest.Version
+	}
+	return gitVersions, ""
 }

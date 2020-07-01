@@ -14,8 +14,9 @@ import (
 
 // Registry contains metadata about a particular npm package.
 type Registry struct {
-	Versions   map[string]interface{} `json:"versions"` // Versions contains metadata about each npm version.
-	TimeStamps map[string]interface{} `json:"time"`     // TimeStamps contains times for each versions as well as the created/modified time.
+	Versions   map[string]interface{} `json:"versions"`  // Versions contains metadata about each npm version.
+	TimeStamps map[string]interface{} `json:"time"`      // TimeStamps contains times for each versions as well as the created/modified time.
+	DistTags   map[string]string      `json:"dist-tags"` // DistTags map dist tags to string versions
 }
 
 // Version represents a version of an npm package.
@@ -77,8 +78,9 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 	return counts
 }
 
-// GetVersions gets all of the versions associated with an npm package.
-func GetVersions(name string) []Version {
+// GetVersions gets all of the versions associated with an npm package,
+// as well as the latest version based on the `latest`.
+func GetVersions(name string) ([]Version, string) {
 	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -112,5 +114,11 @@ func GetVersions(name string) []Version {
 		}
 	}
 
-	return versions
+	// get latest version according to npm
+	latest, ok := r.DistTags["latest"]
+	if !ok {
+		panic(fmt.Sprintf("no latest tag for npm package %s", name))
+	}
+
+	return versions, latest
 }
