@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -20,17 +19,14 @@ import (
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/github"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
-	"github.com/getsentry/raven-go"
 )
 
 func init() {
-	sentryDsn := os.Getenv("SENTRY_DSN")
-	if sentryDsn != "" {
-		util.Check(raven.SetDSN(sentryDsn))
-	}
+	sentry.Init()
 }
 
 // PackagesJSON is used to wrap around a slice of []Packages
@@ -298,6 +294,7 @@ func indexPackage(p Package, index *algoliasearch.Index) error {
 }
 
 func main() {
+	defer sentry.PanicHandler()
 	flag.Parse()
 
 	switch subcommand := flag.Arg(0); subcommand {
