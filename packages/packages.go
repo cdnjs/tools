@@ -66,7 +66,6 @@ type Package struct {
 	Keywords    []string
 	Repository  Repository
 	Filename    string
-	NpmName     *string
 	NpmFileMap  []FileMap
 	License     *License
 	Autoupdate  *Autoupdate

@@ -76,38 +76,6 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 					return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported Keywords", file))
 				}
 			}
-		case "npmName":
-			{
-				str := value.(string)
-				p.NpmName = &str
-				// the package refers to a package on npm, we can set the autoupdate
-				// method to npm
-				p.Autoupdate = &Autoupdate{
-					Source: "npm",
-					Target: str,
-				}
-			}
-		case "npmFileMap":
-			{
-				if values, ok := value.([]interface{}); ok {
-					p.NpmFileMap = make([]FileMap, 0)
-					for _, rawValue := range values {
-						value := rawValue.(map[string]interface{})
-						fileMap := FileMap{
-							BasePath: stringInObject("basePath", value),
-							Files:    make([]string, 0),
-						}
-
-						for _, file := range value["files"].([]interface{}) {
-							fileMap.Files = append(fileMap.Files, file.(string))
-						}
-
-						p.NpmFileMap = append(p.NpmFileMap, fileMap)
-					}
-				} else {
-					return nil, errors.New(fmt.Sprintf("failed to parse %s: unsupported npmFileMap", file))
-				}
-			}
 		case "license":
 			{
 				if name, ok := value.(string); ok {
@@ -164,7 +132,7 @@ func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 		case "devDependencies":
 			// ignore
 		default:
-			util.Printf(ctx, "unknown field %s\n", key)
+			util.Errf(ctx, "unknown field %s", key)
 		}
 	}
 

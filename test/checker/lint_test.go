@@ -147,8 +147,9 @@ func TestCheckerLint(t *testing.T) {
 				]
 
 			}`,
-			expected: ciError(file, ".NpmName should not exist") +
-				ciError(file, ".NpmFileMap should not exist"),
+			expected: ciError(file, "unknown field npmName") +
+				ciError(file, "unknown field npmFileMap") +
+				ciError(file, ".autoupdate should not be null. Package will never auto-update"),
 		},
 	}
 
