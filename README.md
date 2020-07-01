@@ -13,6 +13,7 @@ Repository that contains various tools for maintaining cdnjs.
 
 - `DEBUG`: pass true to run in debug mode
 - `BOT_BASE_PATH`: cdnjs home
+- `SENTRY_DSN` sentry data source name (DSN)
 
 ## Setup a local environment
 
