@@ -34,7 +34,9 @@ func main() {
 	switch subcommand := flag.Arg(0); subcommand {
 	case "lint":
 		{
-			lintPackage(flag.Arg(1))
+			for _, path := range flag.Args()[1:] {
+				lintPackage(path)
+			}
 
 			if errCount > 0 {
 				os.Exit(1)
