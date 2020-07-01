@@ -14,7 +14,7 @@ import (
 type LintTestCase struct {
 	name     string
 	input    string
-	expected string
+	expected []string
 }
 
 const (
@@ -55,17 +55,21 @@ func TestCheckerLint(t *testing.T) {
 
 	cases := []LintTestCase{
 		{
-			name:     "error when invalid JSON",
-			input:    `{ "package":, }`,
-			expected: ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
+			name:  "error when invalid JSON",
+			input: `{ "package":, }`,
+			expected: []string{
+				ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
+			},
 		},
 
 		{
 			name:  "show required fields",
 			input: `{}`,
-			expected: ciError(file, ".name should be specified") +
-				ciError(file, ".autoupdate should not be null. Package will never auto-update") +
-				ciError(file, "Unsupported .repository.type: "),
+			expected: []string{
+				ciError(file, ".name should be specified") +
+					ciError(file, ".autoupdate should not be null. Package will never auto-update") +
+					ciError(file, "Unsupported .repository.type: "),
+			},
 		},
 
 		{
@@ -81,7 +85,9 @@ func TestCheckerLint(t *testing.T) {
 					"target": "git://ff"
 				}
 			}`,
-			expected: ciError(file, ".version should not exist"),
+			expected: []string{
+				ciError(file, ".version should not exist"),
+			},
 		},
 
 		{
@@ -96,7 +102,9 @@ func TestCheckerLint(t *testing.T) {
 					"target": "lol"
 				}
 			}`,
-			expected: ciError(file, "Unsupported .autoupdate.source: ftp"),
+			expected: []string{
+				ciError(file, "Unsupported .autoupdate.source: ftp"),
+			},
 		},
 
 		{
@@ -111,7 +119,9 @@ func TestCheckerLint(t *testing.T) {
 					"target": "` + nonexistentPkg + `"
 				}
 			}`,
-			expected: ciError(file, "package doesn't exist on npm"),
+			expected: []string{
+				ciError(file, "package doesn't exist on npm"),
+			},
 		},
 
 		{
@@ -126,7 +136,9 @@ func TestCheckerLint(t *testing.T) {
 					"target": "` + unpopularPkg + `"
 				}
 			}`,
-			expected: ciError(file, "package download per month on npm is under 800"),
+			expected: []string{
+				ciError(file, "package download per month on npm is under 800"),
+			},
 		},
 
 		{
@@ -147,9 +159,14 @@ func TestCheckerLint(t *testing.T) {
 				]
 
 			}`,
-			expected: ciError(file, "unknown field npmName") +
+			expected: []string{
+				ciError(file, "unknown field npmName") +
+					ciError(file, "unknown field npmFileMap") +
+					ciError(file, ".autoupdate should not be null. Package will never auto-update"),
 				ciError(file, "unknown field npmFileMap") +
-				ciError(file, ".autoupdate should not be null. Package will never auto-update"),
+					ciError(file, "unknown field npmName") +
+					ciError(file, ".autoupdate should not be null. Package will never auto-update"),
+			},
 		},
 	}
 
@@ -174,7 +191,7 @@ func TestCheckerLint(t *testing.T) {
 			assert.Nil(t, err)
 
 			out := runChecker(httpTestProxy, "lint", file)
-			assert.Equal(t, tc.expected, out)
+			assert.Contains(t, tc.expected, out)
 
 			os.Remove(file)
 		})
