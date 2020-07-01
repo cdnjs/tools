@@ -20,6 +20,7 @@ type LintTestCase struct {
 const (
 	unpopularPkg   = "unpopular"
 	nonexistentPkg = "nonexistent"
+	normalPkg      = "normal"
 )
 
 // fakes the npm api for testing purposes
@@ -31,12 +32,17 @@ func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, `{"error":"Not found"}`)
 		}
 	case "/" + unpopularPkg:
+	case "/" + normalPkg:
 		{
 			fmt.Fprint(w, `{}`)
 		}
 	case "/downloads/point/last-month/" + unpopularPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, unpopularPkg)
+		}
+	case "/downloads/point/last-month/" + normalPkg:
+		{
+			fmt.Fprintf(w, `{"downloads":31789789,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, normalPkg)
 		}
 	default:
 		panic(fmt.Sprintf("unknown path: %s", r.URL.Path))
@@ -121,6 +127,28 @@ func TestCheckerLint(t *testing.T) {
 				}
 			}`,
 			expected: ciError(file, "package download per month on npm is under 800"),
+		},
+
+		{
+			name: "legacy NpmName and NpmFileMap should error",
+			input: `{
+				"name": "foo",
+				"repository": {
+					"type": "git"
+				},
+				"npmName": "` + normalPkg + `",
+				"npmFileMap": [
+					{
+						"basePath": "",
+						"files": [
+							"*.css"
+						]
+					}
+				]
+
+			}`,
+			expected: ciError(file, ".NpmName should not exist") +
+				ciError(file, ".NpmFileMap should not exist"),
 		},
 	}
 
