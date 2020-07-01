@@ -15,10 +15,10 @@ import (
 
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 
 	"cloud.google.com/go/storage"
-	"github.com/getsentry/raven-go"
 )
 
 var (
@@ -30,10 +30,7 @@ var (
 )
 
 func init() {
-	sentryDsn := os.Getenv("SENTRY_DSN")
-	if sentryDsn != "" {
-		util.Check(raven.SetDSN(sentryDsn))
-	}
+	sentry.Init()
 }
 
 func encodeJSON(packages []*outputPackage) (string, error) {
@@ -86,6 +83,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 }
 
 func main() {
+	defer sentry.PanicHandler()
 	flag.Parse()
 
 	if util.IsDebug() {

@@ -13,16 +13,12 @@ import (
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
-
-	"github.com/getsentry/raven-go"
 )
 
 func init() {
-	sentryDsn := os.Getenv("SENTRY_DSN")
-	if sentryDsn != "" {
-		util.Check(raven.SetDSN(sentryDsn))
-	}
+	sentry.Init()
 }
 
 var (
@@ -50,6 +46,8 @@ type newVersionToCommit struct {
 }
 
 func main() {
+	defer sentry.PanicHandler()
+
 	var noUpdate bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.Parse()
