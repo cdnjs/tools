@@ -18,6 +18,7 @@ import (
 	"github.com/cdnjs/tools/util"
 
 	"cloud.google.com/go/storage"
+	"github.com/getsentry/raven-go"
 )
 
 var (
@@ -27,6 +28,13 @@ var (
 	// default context (no logger prefix)
 	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
+
+func init() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+	if sentryDsn != "" {
+		util.Check(raven.SetDSN(sentryDsn))
+	}
+}
 
 func encodeJSON(packages []*outputPackage) (string, error) {
 	out := struct {

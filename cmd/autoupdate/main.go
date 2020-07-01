@@ -14,7 +14,16 @@ import (
 	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
+
+	"github.com/getsentry/raven-go"
 )
+
+func init() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+	if sentryDsn != "" {
+		util.Check(raven.SetDSN(sentryDsn))
+	}
+}
 
 var (
 	basePath     = util.GetEnv("BOT_BASE_PATH")
