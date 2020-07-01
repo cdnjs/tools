@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -22,7 +23,15 @@ import (
 	"github.com/cdnjs/tools/util"
 
 	algoliasearch "github.com/algolia/algoliasearch-client-go/v3/algolia/search"
+	"github.com/getsentry/raven-go"
 )
+
+func init() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+	if sentryDsn != "" {
+		util.Check(raven.SetDSN(sentryDsn))
+	}
+}
 
 // PackagesJSON is used to wrap around a slice of []Packages
 // when JSON unmarshalling.
