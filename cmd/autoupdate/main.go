@@ -199,6 +199,4 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVer
 
 	commitMsg := fmt.Sprintf("Add %s package.json (v%s)", pckg.Name, latestVersion)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
-
-	metrics.ReportNewVersion()
 }
