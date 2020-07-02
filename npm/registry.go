@@ -122,6 +122,7 @@ func GetVersions(name string) ([]Version, string) {
 		// such as in the case of https://registry.npmjs.org/angularjs-ie8-build.
 
 		sentry.NotifyError(fmt.Errorf("no latest tag for npm package %s", name))
+		return []Version{}, ""
 		//panic(fmt.Sprintf("no latest tag for npm package %s", name))
 	}
 

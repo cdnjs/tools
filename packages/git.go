@@ -85,13 +85,13 @@ func GitCommit(ctx context.Context, gitpath, msg string) {
 }
 
 // GitFetch fetches objs/refs to the repository.
-func GitFetch(ctx context.Context, gitpath string) {
+func GitFetch(ctx context.Context, gitpath string) ([]byte, error) {
 	args := []string{"fetch"}
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
-	util.CheckCmd(cmd.CombinedOutput())
+	return cmd.CombinedOutput()
 }
 
 // GitPush pushes to a git repository.
