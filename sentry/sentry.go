@@ -26,6 +26,6 @@ func PanicHandler() {
 	if err != nil {
 		sentry.CurrentHub().Recover(err)
 		sentry.Flush(time.Second * 5)
+		panic(err)
 	}
-	panic(err)
 }
