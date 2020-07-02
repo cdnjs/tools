@@ -37,7 +37,11 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	} else {
 		if isValidGit(ctx, packageGitcache) {
-			packages.GitFetch(ctx, packageGitcache)
+			out, fetcherr := packages.GitFetch(ctx, packageGitcache)
+			if fetcherr != nil {
+				util.Printf(ctx, "could not fetch repo %s: %s\n", fetcherr, out)
+				return newVersionsToCommit, ""
+			}
 		} else {
 			util.Printf(ctx, "invalid git repo\n")
 			return newVersionsToCommit, ""
