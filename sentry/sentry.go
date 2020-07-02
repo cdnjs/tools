@@ -24,8 +24,13 @@ func PanicHandler() {
 	err := recover()
 
 	if err != nil {
-		sentry.CurrentHub().Recover(err)
-		sentry.Flush(time.Second * 5)
+		NotifyError(err)
 		panic(err)
 	}
+}
+
+// NotifyError notifies sentry of an error
+func NotifyError(err interface{}) {
+	sentry.CurrentHub().Recover(err)
+	sentry.Flush(time.Second * 5)
 }

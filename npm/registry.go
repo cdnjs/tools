@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -117,7 +118,11 @@ func GetVersions(name string) ([]Version, string) {
 	// get latest version according to npm
 	latest, ok := r.DistTags["latest"]
 	if !ok {
-		panic(fmt.Sprintf("no latest tag for npm package %s", name))
+		// Quick fix: log in sentry when npm registry does not have latest
+		// such as in the case of https://registry.npmjs.org/angularjs-ie8-build.
+
+		sentry.NotifyError(fmt.Errorf("no latest tag for npm package %s", name))
+		//panic(fmt.Sprintf("no latest tag for npm package %s", name))
 	}
 
 	return versions, latest
