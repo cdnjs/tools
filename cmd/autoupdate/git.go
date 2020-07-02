@@ -32,18 +32,18 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		out, err := packages.GitClone(ctx, pckg, packageGitcache)
 		if err != nil {
-			util.Printf(ctx, "could not clone repo: %s: %s\n", err, out)
+			util.Errf(ctx, "could not clone repo: %s: %s\n", err, out)
 			return newVersionsToCommit, ""
 		}
 	} else {
 		if isValidGit(ctx, packageGitcache) {
 			out, fetcherr := packages.GitFetch(ctx, packageGitcache)
 			if fetcherr != nil {
-				util.Printf(ctx, "could not fetch repo %s: %s\n", fetcherr, out)
+				util.Errf(ctx, "could not fetch repo %s: %s\n", fetcherr, out)
 				return newVersionsToCommit, ""
 			}
 		} else {
-			util.Printf(ctx, "invalid git repo\n")
+			util.Errf(ctx, "invalid git repo\n")
 			return newVersionsToCommit, ""
 		}
 	}
