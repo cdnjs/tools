@@ -25,8 +25,8 @@ func PanicHandler() {
 
 	if err != nil {
 		NotifyError(err)
+		panic(err)
 	}
-	panic(err)
 }
 
 // NotifyError notifies sentry of an error
