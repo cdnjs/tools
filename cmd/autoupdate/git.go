@@ -111,7 +111,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 		pckgpath := path.Join(pckg.Path(), gitversion.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
-			util.Debugf(ctx, "version %s already exists; aborting\n", pckgpath)
+			util.Debugf(ctx, "%s already exists; aborting\n", pckgpath)
 			continue
 		}
 
