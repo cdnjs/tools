@@ -99,6 +99,7 @@ func main() {
 func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
+	encoder.SetIndent("", "  ")
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(packageJSON)
 	return buffer.Bytes(), err
