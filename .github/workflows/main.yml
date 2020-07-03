@@ -89,5 +89,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: ./.github/actions/ansible
-      env:
-        BOT_DEPLOY_KEY: ${{ secrets.BOT_DEPLOY_KEY }}
+        env:
+          BOT_DEPLOY_KEY: ${{ secrets.BOT_DEPLOY_KEY }}
