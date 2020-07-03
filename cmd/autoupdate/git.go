@@ -111,7 +111,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 		pckgpath := path.Join(pckg.Path(), gitversion.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
-			util.Debugf(ctx, "%s already exists; aborting\n", pckgpath)
+			util.Debugf(ctx, "version %s already exists; aborting\n", pckgpath)
 			continue
 		}
 
@@ -126,7 +126,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 					util.Check(os.MkdirAll(path.Dir(absDest), os.ModePerm))
 				}
 
-				util.Debugf(ctx, "copy %s -> %s\n", absFrom, absDest)
+				util.Debugf(ctx, "%s -> %s\n", absFrom, absDest)
 
 				err := util.MoveFile(
 					absFrom,
