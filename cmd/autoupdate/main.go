@@ -49,15 +49,19 @@ func main() {
 	defer sentry.PanicHandler()
 
 	var noUpdate bool
+	var noPull bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
+	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
 	flag.Parse()
 
 	if util.IsDebug() {
-		fmt.Printf("Running in debug mode (no-update=%t)\n", noUpdate)
+		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t)\n", noUpdate, noPull)
 	}
 
-	util.UpdateGitRepo(defaultCtx, cdnjsPath)
-	util.UpdateGitRepo(defaultCtx, packagesPath)
+	if !noPull {
+		util.UpdateGitRepo(defaultCtx, cdnjsPath)
+		util.UpdateGitRepo(defaultCtx, packagesPath)
+	}
 
 	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
