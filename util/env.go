@@ -36,9 +36,14 @@ func GetBotBasePath() string {
 	return GetEnv("BOT_BASE_PATH")
 }
 
+// GetCDNJSPath gets the path to the cdnjs repo.
+func GetCDNJSPath() string {
+	return path.Join(GetBotBasePath(), "cdnjs")
+}
+
 // GetCDNJSPackages gets the path to the cdnjs libraries.
 func GetCDNJSPackages() string {
-	return path.Join(GetBotBasePath(), "cdnjs", "ajax", "libs")
+	return path.Join(GetCDNJSPath(), "ajax", "libs")
 }
 
 // HasHTTPProxy returns true if the http proxy environment
