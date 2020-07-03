@@ -1,7 +1,16 @@
 #!/bin/sh
+set -e
 
-echo "$BOT_DEPLOY_KEY" | base64 -d > ~/.ssh/id_rsa
+ssh-agent bash
+echo "$BOT_DEPLOY_KEY" | base64 -d > id_rsa
+ssh-add id_rsa
 
-git clone https://github.com/cdnjs/bot-ansible.git .
+echo "$BOT_HOST" >> /etc/hosts
 
-ansible-playbook -i prod autoupdater.yml --tags tools --user=deploy
+git clone https://github.com/cdnjs/bot-ansible.git
+
+ansible-playbook \
+  -i bot-ansible/prod \
+  bot-ansible/autoupdater.yml \
+  --tags tools \
+  --user=deploy
