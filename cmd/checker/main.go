@@ -109,7 +109,7 @@ func showFiles(pckgPath string, noPathValidation bool) {
 			// make temp dir and clone
 			packageGitDir, direrr := ioutil.TempDir("", src)
 			util.Check(direrr)
-			out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
+			out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir, false)
 			if cloneerr != nil {
 				err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
 				return

@@ -37,7 +37,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	if _, err := os.Stat(packageGitcache); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(packageGitcache, os.ModePerm))
 
-		out, err := packages.GitClone(ctx, pckg, packageGitcache)
+		out, err := packages.GitClone(ctx, pckg, packageGitcache, true)
 		if err != nil {
 			util.Errf(ctx, "could not clone repo: %s: %s\n", err, out)
 			return newVersionsToCommit, nil
@@ -121,9 +121,6 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 	}
 
 	for _, gitversion := range versions {
-		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
-		filesToCopy := pckg.NpmFilesFrom(gitpath)
-
 		pckgpath := path.Join(pckg.LibraryPath(), gitversion.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
@@ -135,6 +132,9 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 			util.Debugf(ctx, "%s is ignored by git; aborting\n", pckgpath)
 			continue
 		}
+
+		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
+		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
 		if len(filesToCopy) > 0 {
 			util.Check(os.MkdirAll(pckgpath, os.ModePerm))

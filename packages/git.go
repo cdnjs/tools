@@ -105,8 +105,12 @@ func GitPush(ctx context.Context, gitpath string) {
 }
 
 // GitClone clones a git repository.
-func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error) {
-	args := []string{"clone", *pckg.Autoupdate.Target, "."}
+func GitClone(ctx context.Context, pckg *Package, gitpath string, partialClone bool) ([]byte, error) {
+	args := []string{"clone"}
+	if partialClone {
+		args = append(args, []string{"--filter=blob:none", "--no-checkout"}...)
+	}
+	args = append(args, []string{*pckg.Autoupdate.Target, "."}...)
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
