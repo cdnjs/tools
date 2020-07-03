@@ -87,7 +87,9 @@ func main() {
 
 		if !noUpdate && len(newVersionsToCommit) > 0 {
 			commitNewVersions(ctx, newVersionsToCommit)
-			commitPackageVersion(ctx, pckg, latestVersion, f)
+			if *pckg.Version != latestVersion {
+				commitPackageVersion(ctx, pckg, latestVersion, f)
+			}
 		}
 	}
 
