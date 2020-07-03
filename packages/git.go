@@ -117,16 +117,21 @@ func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error
 
 // GitTags returns the []string of git tags for a package.
 func GitTags(ctx context.Context, gitpath string) []string {
-	args := []string{"tag"}
+	args := []string{"ls-remote", "--tags", "--refs", "--quiet", gitpath}
 
 	cmd := exec.Command("git", args...)
-	cmd.Dir = gitpath
 	util.Debugf(ctx, "run %s\n", cmd)
-	out := util.CheckCmd(cmd.CombinedOutput())
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil
+	}
+	out := string(stdoutStderr)
 
 	tags := make([]string, 0)
 	for _, line := range strings.Split(out, "\n") {
 		if strings.Trim(line, " ") != "" {
+			line = strings.SplitAfterN(line, "\t", 2)[1]
+			line = strings.TrimPrefix(line, "refs/tags/")
 			tags = append(tags, line)
 		}
 	}

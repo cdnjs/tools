@@ -25,6 +25,12 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	var newVersionsToCommit []newVersionToCommit
 	var allVersions []version
 
+	existingVersionSet := pckg.Versions()
+	gitVersions, _ := git.GetVersions(ctx, *pckg.Autoupdate.Target)
+	if len(gitVersionDiff(gitVersions, existingVersionSet)) == 0 {
+		return newVersionsToCommit, nil
+	}
+
 	packageGitcache := path.Join(gitCache, *pckg.Name)
 	// If the local copy of the package's git doesn't exists, Clone it. If it does
 	// just fetch new tags
@@ -49,8 +55,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	gitVersions, _ := git.GetVersions(ctx, pckg, packageGitcache)
-	existingVersionSet := pckg.Versions()
+	gitVersions, _ = git.GetVersions(ctx, packageGitcache)
 
 	util.Debugf(ctx, "existing git versions: %v\n", existingVersionSet)
 	lastExistingVersion, allExisting := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)

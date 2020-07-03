@@ -116,7 +116,7 @@ func showFiles(pckgPath string, noPathValidation bool) {
 			}
 
 			// get git versions and sort
-			gitVersions, _ := git.GetVersions(ctx, pckg, packageGitDir)
+			gitVersions, _ := git.GetVersions(ctx, packageGitDir)
 			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface
