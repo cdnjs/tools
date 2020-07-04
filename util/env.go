@@ -13,17 +13,22 @@ const (
 
 // GetEnv gets an environment variable, panicking if it is empty.
 func GetEnv(name string) string {
-	v := os.Getenv(name)
-	if v == "" {
-		panic(fmt.Sprintf("Env %s is missing\n", name))
+	if v, ok := os.LookupEnv(name); ok {
+		return v
 	}
-	return v
+	panic(fmt.Sprintf("Env %s is missing\n", name))
+}
+
+// EnvExists determines if an environment variable exists.
+func EnvExists(name string) bool {
+	_, ok := os.LookupEnv(name)
+	return ok
 }
 
 // IsDebug returns true if debug mode is enabled based
 // on an environment variable.
 func IsDebug() bool {
-	return os.Getenv("DEBUG") != ""
+	return EnvExists("DEBUG")
 }
 
 // GetBotBasePath gets the bot base path from an environment variable.
@@ -39,5 +44,5 @@ func GetCDNJSPackages() string {
 // HasHTTPProxy returns true if the http proxy environment
 // variable is set.
 func HasHTTPProxy() bool {
-	return os.Getenv("HTTP_PROXY") != ""
+	return EnvExists("HTTP_PROXY")
 }
