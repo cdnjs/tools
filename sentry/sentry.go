@@ -11,8 +11,7 @@ import (
 
 // Init Sentry client
 func Init() {
-	sentryDsn := os.Getenv("SENTRY_DSN")
-	if sentryDsn != "" {
+	if sentryDsn, ok := os.LookupEnv("SENTRY_DSN"); ok {
 		util.Check(sentry.Init(sentry.ClientOptions{
 			Dsn: sentryDsn,
 		}))
