@@ -11,7 +11,7 @@ const (
 	SRIPath = "../SRIs"
 )
 
-// GetEnv gets an environment variable, panicking if it is empty.
+// GetEnv gets an environment variable, panicking if it nonexistent.
 func GetEnv(name string) string {
 	if v, ok := os.LookupEnv(name); ok {
 		return v
