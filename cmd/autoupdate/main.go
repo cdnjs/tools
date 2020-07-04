@@ -198,7 +198,7 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
-		metrics.ReportNewVersion()
+		metrics.ReportNewVersion(ctx)
 	}
 }
 
