@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 	"sort"
 
+	"github.com/blang/semver"
 	"github.com/cdnjs/tools/sri"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
@@ -19,6 +19,7 @@ import (
 )
 
 var (
+	// TODO, update README.md
 	namespaceID = util.GetEnv("WORKERS_KV_NAMESPACE_ID")
 	accountID   = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
 	apiKey      = util.GetEnv("WORKERS_KV_API_KEY")
@@ -46,41 +47,23 @@ func getKVsWithOptions(o cloudflare.ListWorkersKVsOptions) cloudflare.ListStorag
 	return resp
 }
 
-// func delete(key string) {
-// 	fmt.Printf("deleting %s\n", key)
-// 	resp, err := api.DeleteWorkersKV(context.Background(), namespaceID, key)
-// 	util.Check(err)
-// 	if !resp.Success {
-// 		log.Fatalf("delete failure %v\n", resp)
-// 	}
-// }
-
-// func deleteTestEntries(startsWith string) {
-// 	kvs := getKVs()
-// 	for _, res := range kvs.Result {
-// 		if key := res.Name; strings.HasPrefix(key, startsWith) {
-// 			delete(key)
+// func worker(basePath string, paths <-chan string, kvPairs chan<- *cloudflare.WorkersKVPair) {
+// 	fmt.Println("worker start!", basePath)
+// 	for p := range paths {
+// 		bytes, err := ioutil.ReadFile(path.Join(basePath, p))
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		// resp, err := api.WriteWorkersKV(context.Background(), namespaceID, p, bytes)
+// 		// util.Check(err)
+// 		// fmt.Println(resp.Success, p)
+// 		// kvPairs <- nil
+// 		kvPairs <- &cloudflare.WorkersKVPair{
+// 			Key:   p,
+// 			Value: string(bytes),
 // 		}
 // 	}
 // }
-
-func worker(basePath string, paths <-chan string, kvPairs chan<- *cloudflare.WorkersKVPair) {
-	fmt.Println("worker start!", basePath)
-	for p := range paths {
-		bytes, err := ioutil.ReadFile(path.Join(basePath, p))
-		if err != nil {
-			panic(err)
-		}
-		// resp, err := api.WriteWorkersKV(context.Background(), namespaceID, p, bytes)
-		// util.Check(err)
-		// fmt.Println(resp.Success, p)
-		// kvPairs <- nil
-		kvPairs <- &cloudflare.WorkersKVPair{
-			Key:   p,
-			Value: string(bytes),
-		}
-	}
-}
 
 func encodeToBase64(bytes []byte) string {
 	return base64.StdEncoding.EncodeToString(bytes)
@@ -108,25 +91,9 @@ func deleteAllEntries() {
 	}
 }
 
-// type ReadKVErrs struct {
-// 	Message string `json:"message"`
-// }
-
 func readKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
-
-// func writeKVString(k, v string) {
-// 	api.WriteWorkersKV(context.Background(), namespaceID, k, []byte(v))
-// }
-
-// func writeKV(k string, v []byte) {
-// 	r, err := api.WriteWorkersKV(context.Background(), namespaceID, k, v)
-// 	util.Check(err)
-// 	if !r.Success {
-// 		panic(r)
-// 	}
-// }
 
 func writeKVBulk(kvs cloudflare.WorkersKVBulkWriteRequest) {
 	r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, kvs)
@@ -161,6 +128,7 @@ type File struct {
 	SRI  string `json:"sri"`
 }
 
+// perform binary search, if not present, add it in the correct index
 func insertToSortedListIfNotPresent(sorted []string, s string) []string {
 	i := sort.SearchStrings(sorted, s)
 	if i == len(sorted) {
@@ -250,7 +218,7 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 }
 
 func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
-	// ensure not over limit
+	// ensure not over limit, break into more reqs when > 100
 	// make sure limit actually is 100
 	var kvs []*cloudflare.WorkersKVPair
 	pairs, files := updateFiles(pkg, version, fullPathToVersion, fromVersionPaths)
@@ -263,6 +231,8 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 	writeKVBulk(kvs)
 }
 
+// thoughts:
+
 // bot finds new version
 // downloads to a path
 
@@ -273,6 +243,8 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 // calculates sri, also puts into kv
 // puts package.json metadata into kv as well
 
+// fullpath will be useful if the version is downloaded into a temp directory
+// so it is not just path.Join(basePath, pkg, version)
 func insertVersionToKV(pkg, version, fullPathToVersion string) {
 	fromVersionPaths, err := util.ListFilesInVersion(context.Background(), fullPathToVersion)
 	util.Check(err)
@@ -282,8 +254,28 @@ func insertVersionToKV(pkg, version, fullPathToVersion string) {
 func main() {
 	deleteAllEntries()
 
-	insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
-	insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
+	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
+	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
 
-	os.Exit(1)
+	basePath := util.GetCDNJSPackages()
+
+	pkgs, err := ioutil.ReadDir(basePath)
+	util.Check(err)
+
+	for i, pkg := range pkgs {
+		if i > 5 {
+			return
+		}
+		if pkg.IsDir() {
+			versions, err := ioutil.ReadDir(path.Join(basePath, pkg.Name()))
+			util.Check(err)
+
+			for _, version := range versions {
+				if _, err := semver.Parse(version.Name()); err == nil {
+					fmt.Printf("Inserting %s (%s)\n", pkg.Name(), version.Name())
+					insertVersionToKV(pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
+				}
+			}
+		}
+	}
 }
