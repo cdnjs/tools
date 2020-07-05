@@ -9,6 +9,9 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
+
+	"github.com/cdnjs/tools/sri"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 
@@ -148,10 +151,25 @@ type Package struct {
 
 // Version ..
 //
-// list files in version
-// maybe keep sris here in the future
 type Version struct {
-	Files []string `json:"files"`
+	Files []File `json:"files"`
+}
+
+// File ...
+type File struct {
+	Name string `json:"name"`
+	SRI  string `json:"sri"`
+}
+
+func insertToSortedListIfNotPresent(sorted []string, s string) []string {
+	i := sort.SearchStrings(sorted, s)
+	if i == len(sorted) {
+		return append(sorted, s) // insert at back of list
+	}
+	if sorted[i] == s {
+		return sorted // already exists in list
+	}
+	return append(sorted[:i], append([]string{s}, sorted[i:]...)...) // insert to list
 }
 
 func updateRoot(pkg string) *cloudflare.WorkersKVPair {
@@ -162,7 +180,7 @@ func updateRoot(pkg string) *cloudflare.WorkersKVPair {
 		r.Packages = []string{pkg}
 	} else {
 		util.Check(json.Unmarshal(bytes, &r))
-		r.Packages = append(r.Packages, pkg)
+		r.Packages = insertToSortedListIfNotPresent(r.Packages, pkg)
 	}
 
 	v, err := json.Marshal(r)
@@ -182,7 +200,7 @@ func updatePackage(pkg, version string) *cloudflare.WorkersKVPair {
 		p.Versions = []string{version}
 	} else {
 		util.Check(json.Unmarshal(bytes, &p))
-		p.Versions = append(p.Versions, version)
+		p.Versions = insertToSortedListIfNotPresent(p.Versions, version)
 	}
 
 	v, err := json.Marshal(p)
@@ -194,10 +212,10 @@ func updatePackage(pkg, version string) *cloudflare.WorkersKVPair {
 	}
 }
 
-func updateVersion(pkg, version string, fromVersionPaths []string) *cloudflare.WorkersKVPair {
+func updateVersion(pkg, version string, files []File) *cloudflare.WorkersKVPair {
 	key := path.Join(pkg, version)
 
-	v, err := json.Marshal(Version{Files: fromVersionPaths})
+	v, err := json.Marshal(Version{Files: files})
 	util.Check(err)
 
 	return &cloudflare.WorkersKVPair{
@@ -206,12 +224,14 @@ func updateVersion(pkg, version string, fromVersionPaths []string) *cloudflare.W
 	}
 }
 
-func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []string) []*cloudflare.WorkersKVPair {
+func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*cloudflare.WorkersKVPair, []File) {
 	baseKeyPath := path.Join(pkg, version)
 	kvs := make([]*cloudflare.WorkersKVPair, len(fromVersionPaths))
+	files := make([]File, len(fromVersionPaths))
 
 	for i, fromVersionPath := range fromVersionPaths {
-		bytes, err := ioutil.ReadFile(path.Join(fullPathToVersion, fromVersionPath))
+		fullPath := path.Join(fullPathToVersion, fromVersionPath)
+		bytes, err := ioutil.ReadFile(fullPath)
 		util.Check(err)
 
 		kvs[i] = &cloudflare.WorkersKVPair{
@@ -219,30 +239,37 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 			Value:  encodeToBase64(bytes),
 			Base64: true,
 		}
+
+		files[i] = File{
+			Name: fromVersionPath,
+			SRI:  sri.CalculateFileSRI(fullPath),
+		}
 	}
 
-	return kvs
+	return kvs, files
 }
 
 func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
 	// ensure not over limit
 	// make sure limit actually is 100
 	var kvs []*cloudflare.WorkersKVPair
-	kvs = append(kvs, updateRoot(pkg))
+	pairs, files := updateFiles(pkg, version, fullPathToVersion, fromVersionPaths)
+	kvs = append(kvs, pairs...)
+	kvs = append(kvs, updateVersion(pkg, version, files))
 	kvs = append(kvs, updatePackage(pkg, version))
-	kvs = append(kvs, updateVersion(pkg, version, fromVersionPaths))
-	kvs = append(kvs, updateFiles(pkg, version, fullPathToVersion, fromVersionPaths)...)
+	kvs = append(kvs, updateRoot(pkg))
+
 	// fmt.Println(kvs)
 	writeKVBulk(kvs)
 }
 
 // bot finds new version
 // downloads to a path
-//
+
 // then inserts directly to kv, does not move in disk
 // move from temp dir directly to kv
 // then remove temp dir
-//
+
 // calculates sri, also puts into kv
 // puts package.json metadata into kv as well
 
@@ -255,6 +282,7 @@ func insertVersionToKV(pkg, version, fullPathToVersion string) {
 func main() {
 	deleteAllEntries()
 
+	insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
 	insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
 
 	os.Exit(1)
