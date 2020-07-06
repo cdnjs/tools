@@ -17,8 +17,9 @@ Repository that contains various tools for maintaining cdnjs.
 
 ## Dependencies
 
-- [brotli](https://github.com/google/brotli)
-- [gzip](https://www.gzip.org/)
+In `tools/` run `npm install`.
+
+- [jpegoptim](https://www.kokkonen.net/tjko/projects.html)
 - [zopflipng](https://github.com/google/zopfli)
 
 ## Setup a local environment
