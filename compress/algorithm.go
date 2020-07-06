@@ -11,7 +11,7 @@ import (
 // Runs an algorithm with a set of arguments,
 // and returns its stdout as bytes.
 // Note, this function will panic if anything is
-// printed to stderr.
+// output to stderr.
 func runAlgorithm(alg string, args ...string) []byte {
 	cmd := exec.Command(alg, args...)
 	var stdOut, stdErr bytes.Buffer
