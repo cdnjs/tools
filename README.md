@@ -15,6 +15,12 @@ Repository that contains various tools for maintaining cdnjs.
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
 
+## Dependencies
+
+- [brotli](https://github.com/google/brotli)
+- [gzip](https://www.gzip.org/)
+- [zopflipng](https://github.com/google/zopfli)
+
 ## Setup a local environment
 
 All the tools uses `BOT_BASE_PATH` to define a "cdnjs home".
