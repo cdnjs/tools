@@ -27,6 +27,7 @@ var (
 	api         = getAPI()
 	basePath    = util.GetCDNJSPackages()
 	rootKey     = "/"
+	journalKey  = "/journal"
 	// max bulk request size is 100MiB (104857600), so we will limit the max total payload to be 100MB,
 	// as there can be metadata for each kv (up to 1024 bytes), as well long key fields
 	maxBulkPayload int64 = 1e8
@@ -98,6 +99,14 @@ func readKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 
+func encodeAndWriteKV(k string, v []byte) {
+	r, err := api.WriteWorkersKV(context.Background(), namespaceID, k, v)
+	util.Check(err)
+	if !r.Success {
+		panic(r)
+	}
+}
+
 func encodeAndWriteKVBulk(kvs []*KV) {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
@@ -165,6 +174,15 @@ type File struct {
 type KV struct {
 	Key   string
 	Value []byte
+}
+
+// Journal ...
+// if something in journal, handle that version first (on bot start-up)
+// for now, only handling one, but if we parallelize, will pose many issues
+// don't want two threads updating the same kv file and overwriting, and locking may be slow!
+// maybe lock on certain files (root, journal), and make sure threads are working on different versions
+type Journal struct {
+	Entries []string `json:"entries"` // package/version
 }
 
 // perform binary search, if not present, add it in the correct index
@@ -255,13 +273,54 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 	return kvs, files
 }
 
-func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
-	// maybe write to a file called TODO or something
-	// and then remove it when done
-	// maybe /journal or something
+func writeToJournal(pkg, version string) {
+	var j Journal
+	key := journalKey
+	entry := path.Join(pkg, version)
+	if bytes, err := readKV(key); err != nil {
+		// assume key is not found (could also be auth error)
+		j.Entries = []string{entry}
+	} else {
+		util.Check(json.Unmarshal(bytes, &j))
+		j.Entries = insertToSortedListIfNotPresent(j.Entries, entry)
+	}
 
-	// ensure not over limit, break into more reqs when > 100
-	// make sure limit actually is 100
+	v, err := json.Marshal(j)
+	util.Check(err)
+
+	//fmt.Printf("Adding to journal: %s\n", entry)
+	encodeAndWriteKV(key, v)
+}
+
+func removeFromJournal(pkg, version string) {
+	var j Journal
+	key := journalKey
+	entry := path.Join(pkg, version)
+	if bytes, err := readKV(key); err != nil {
+		panic(err) // journal should exist
+	} else {
+		util.Check(json.Unmarshal(bytes, &j))
+		// filter out the entry (as well as duplicates)
+		newEntries := make([]string, 0)
+		for _, e := range j.Entries {
+			if e != entry {
+				newEntries = append(newEntries, e)
+			}
+		}
+		if len(newEntries) == len(j.Entries) {
+			fmt.Printf("note: entry %s was not found\n", entry)
+		}
+		j.Entries = newEntries
+	}
+
+	v, err := json.Marshal(j)
+	util.Check(err)
+
+	//fmt.Printf("Removing from journal: %s\n", entry)
+	encodeAndWriteKV(key, v)
+}
+
+func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
 	var kvs []*KV
 	pairs, files := updateFiles(pkg, version, fullPathToVersion, fromVersionPaths)
 	kvs = append(kvs, pairs...)
@@ -269,8 +328,9 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 	kvs = append(kvs, updatePackage(pkg, version))
 	kvs = append(kvs, updateRoot(pkg))
 
-	// fmt.Println(kvs)
+	writeToJournal(pkg, version)
 	encodeAndWriteKVBulk(kvs)
+	removeFromJournal(pkg, version)
 }
 
 // thoughts:
@@ -294,8 +354,10 @@ func insertVersionToKV(pkg, version, fullPathToVersion string) {
 }
 
 // test
-func deleteAllAndInsert5Pkgs() {
+func deleteAllAndInsertPkgs() {
 	deleteAllEntries()
+
+	const maxPkgs = 10
 
 	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
 	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
@@ -306,7 +368,7 @@ func deleteAllAndInsert5Pkgs() {
 	util.Check(err)
 
 	for i, pkg := range pkgs {
-		if i > 2 {
+		if i > maxPkgs {
 			return
 		}
 		if pkg.IsDir() {
@@ -324,5 +386,7 @@ func deleteAllAndInsert5Pkgs() {
 }
 
 func main() {
-	deleteAllAndInsert5Pkgs()
+	//deleteAllEntries()
+	//deleteAllAndInsertPkgs()
+	traverse()
 }
