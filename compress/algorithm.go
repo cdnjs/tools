@@ -14,9 +14,10 @@ func Brotli11(uncompressed []byte) []byte {
 	var b bytes.Buffer
 
 	w := brotli.NewWriterLevel(&b, brotli.BestCompression)
+
 	_, err := w.Write(uncompressed)
 	util.Check(err)
-	util.Check(w.Flush())
+	util.Check(w.Close())
 
 	return b.Bytes()
 }
@@ -28,11 +29,10 @@ func Gzip9(uncompressed []byte) []byte {
 
 	w, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
 	util.Check(err)
-	defer w.Close()
 
 	_, err = w.Write(uncompressed)
 	util.Check(err)
-	util.Check(w.Flush())
+	util.Check(w.Close())
 
 	return b.Bytes()
 }
