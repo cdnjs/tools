@@ -27,6 +27,9 @@ var (
 	api         = getAPI()
 	basePath    = util.GetCDNJSPackages()
 	rootKey     = "/"
+	// max bulk request size is 100MiB (104857600), so we will limit the max total payload to be 100MB,
+	// as there can be metadata for each kv (up to 1024 bytes), as well long key fields
+	maxBulkPayload int64 = 1e8
 )
 
 func getAPI() *cloudflare.API {
@@ -95,11 +98,41 @@ func readKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 
-func writeKVBulk(kvs cloudflare.WorkersKVBulkWriteRequest) {
-	r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, kvs)
-	util.Check(err)
-	if !r.Success {
-		panic(r)
+func encodeAndWriteKVBulk(kvs []*KV) {
+	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
+	var bulkWrite []*cloudflare.WorkersKVPair
+	var totalSize int64
+	for _, kv := range kvs {
+		if size := int64(len(kv.Value)); size > util.MaxFileSize {
+			panic(fmt.Sprintf("oversized file: %s (%d)", kv.Key, size))
+		}
+		// note that after encoding in base64, the size gets larger, but after decoding
+		// it will be reduced, so it is okay if the size is larger than util.MaxFileSize after encoding base64,
+		// but we need to watch out for the KV request limit of 100MiB
+		encoded := encodeToBase64(kv.Value)
+		encodedSize := int64(len(encoded))
+		if totalSize+encodedSize > maxBulkPayload {
+			// split into two bulks
+			// this cannot happen when i=0, since util.MaxFileSize must be less than maxBulkPayload
+			bulkWrites = append(bulkWrites, bulkWrite)
+			bulkWrite = []*cloudflare.WorkersKVPair{}
+			totalSize = 0
+		}
+		bulkWrite = append(bulkWrite, &cloudflare.WorkersKVPair{
+			Key:    kv.Key,
+			Value:  encoded,
+			Base64: true,
+		})
+		totalSize += encodedSize
+	}
+	bulkWrites = append(bulkWrites, bulkWrite)
+	for _, b := range bulkWrites {
+		// fmt.Printf("Writing bulk %d (size=%d): %v\n", i, len(b), b)
+		r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
+		util.Check(err)
+		if !r.Success {
+			panic(r)
+		}
 	}
 }
 
@@ -128,6 +161,12 @@ type File struct {
 	SRI  string `json:"sri"`
 }
 
+// KV ..
+type KV struct {
+	Key   string
+	Value []byte
+}
+
 // perform binary search, if not present, add it in the correct index
 func insertToSortedListIfNotPresent(sorted []string, s string) []string {
 	i := sort.SearchStrings(sorted, s)
@@ -140,7 +179,7 @@ func insertToSortedListIfNotPresent(sorted []string, s string) []string {
 	return append(sorted[:i], append([]string{s}, sorted[i:]...)...) // insert to list
 }
 
-func updateRoot(pkg string) *cloudflare.WorkersKVPair {
+func updateRoot(pkg string) *KV {
 	var r Root
 	key := rootKey
 	if bytes, err := readKV(key); err != nil {
@@ -154,13 +193,13 @@ func updateRoot(pkg string) *cloudflare.WorkersKVPair {
 	v, err := json.Marshal(r)
 	util.Check(err)
 
-	return &cloudflare.WorkersKVPair{
+	return &KV{
 		Key:   key,
-		Value: string(v),
+		Value: v,
 	}
 }
 
-func updatePackage(pkg, version string) *cloudflare.WorkersKVPair {
+func updatePackage(pkg, version string) *KV {
 	var p Package
 	key := pkg
 	if bytes, err := readKV(key); err != nil {
@@ -174,27 +213,27 @@ func updatePackage(pkg, version string) *cloudflare.WorkersKVPair {
 	v, err := json.Marshal(p)
 	util.Check(err)
 
-	return &cloudflare.WorkersKVPair{
+	return &KV{
 		Key:   key,
-		Value: string(v),
+		Value: v,
 	}
 }
 
-func updateVersion(pkg, version string, files []File) *cloudflare.WorkersKVPair {
+func updateVersion(pkg, version string, files []File) *KV {
 	key := path.Join(pkg, version)
 
 	v, err := json.Marshal(Version{Files: files})
 	util.Check(err)
 
-	return &cloudflare.WorkersKVPair{
+	return &KV{
 		Key:   key,
-		Value: string(v),
+		Value: v,
 	}
 }
 
-func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*cloudflare.WorkersKVPair, []File) {
+func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*KV, []File) {
 	baseKeyPath := path.Join(pkg, version)
-	kvs := make([]*cloudflare.WorkersKVPair, len(fromVersionPaths))
+	kvs := make([]*KV, len(fromVersionPaths))
 	files := make([]File, len(fromVersionPaths))
 
 	for i, fromVersionPath := range fromVersionPaths {
@@ -202,10 +241,9 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 		bytes, err := ioutil.ReadFile(fullPath)
 		util.Check(err)
 
-		kvs[i] = &cloudflare.WorkersKVPair{
-			Key:    path.Join(baseKeyPath, fromVersionPath),
-			Value:  encodeToBase64(bytes),
-			Base64: true,
+		kvs[i] = &KV{
+			Key:   path.Join(baseKeyPath, fromVersionPath),
+			Value: bytes,
 		}
 
 		files[i] = File{
@@ -218,9 +256,13 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 }
 
 func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
+	// maybe write to a file called TODO or something
+	// and then remove it when done
+	// maybe /journal or something
+
 	// ensure not over limit, break into more reqs when > 100
 	// make sure limit actually is 100
-	var kvs []*cloudflare.WorkersKVPair
+	var kvs []*KV
 	pairs, files := updateFiles(pkg, version, fullPathToVersion, fromVersionPaths)
 	kvs = append(kvs, pairs...)
 	kvs = append(kvs, updateVersion(pkg, version, files))
@@ -228,7 +270,7 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 	kvs = append(kvs, updateRoot(pkg))
 
 	// fmt.Println(kvs)
-	writeKVBulk(kvs)
+	encodeAndWriteKVBulk(kvs)
 }
 
 // thoughts:
@@ -251,7 +293,8 @@ func insertVersionToKV(pkg, version, fullPathToVersion string) {
 	updateKV(pkg, version, fullPathToVersion, fromVersionPaths)
 }
 
-func main() {
+// test
+func deleteAllAndInsert5Pkgs() {
 	deleteAllEntries()
 
 	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
@@ -263,7 +306,7 @@ func main() {
 	util.Check(err)
 
 	for i, pkg := range pkgs {
-		if i > 5 {
+		if i > 2 {
 			return
 		}
 		if pkg.IsDir() {
@@ -278,4 +321,8 @@ func main() {
 			}
 		}
 	}
+}
+
+func main() {
+	deleteAllAndInsert5Pkgs()
 }
