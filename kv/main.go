@@ -99,7 +99,7 @@ func readKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 
-func encodeAndWriteKV(k string, v []byte) {
+func writeKV(k string, v []byte) {
 	r, err := api.WriteWorkersKV(context.Background(), namespaceID, k, v)
 	util.Check(err)
 	if !r.Success {
@@ -289,7 +289,7 @@ func writeToJournal(pkg, version string) {
 	util.Check(err)
 
 	//fmt.Printf("Adding to journal: %s\n", entry)
-	encodeAndWriteKV(key, v)
+	writeKV(key, v)
 }
 
 func removeFromJournal(pkg, version string) {
@@ -317,7 +317,7 @@ func removeFromJournal(pkg, version string) {
 	util.Check(err)
 
 	//fmt.Printf("Removing from journal: %s\n", entry)
-	encodeAndWriteKV(key, v)
+	writeKV(key, v)
 }
 
 func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
