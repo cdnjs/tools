@@ -83,6 +83,11 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 			continue
 		}
 
+		if util.IsPathIgnoredByGit(ctx, util.GetCDNJSPath(), pckgpath) {
+			util.Debugf(ctx, "%s is ignored by git; aborting\n", pckgpath)
+			continue
+		}
+
 		util.Check(os.MkdirAll(pckgpath, os.ModePerm))
 
 		tarballDir := npm.DownloadTar(ctx, version.Tarball)

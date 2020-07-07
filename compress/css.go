@@ -16,7 +16,7 @@ var (
 		".css": true,
 	}
 
-	basePath = util.GetEnv("BOT_BASE_PATH")
+	basePath = util.GetBotBasePath()
 	cleanCSS = path.Join(basePath, "tools", "node_modules/clean-css-cli/bin/cleancss")
 )
 
