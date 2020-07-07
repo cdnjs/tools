@@ -82,15 +82,3 @@ jobs:
         uses: golangci/golangci-lint-action@v1
         with:
           version: v1.26
-
-  deploy:
-    name: Deploy
-    needs: [release]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: ./.github/actions/ansible
-        env:
-          BOT_DEPLOY_KEY: ${{ secrets.BOT_DEPLOY_KEY }}
-          BOT_HOST: ${{ secrets.BOT_HOST }}
