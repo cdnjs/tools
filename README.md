@@ -19,6 +19,13 @@ Repository that contains various tools for maintaining cdnjs.
 - `WORKERS_KV_API_KEY` workers kv api key
 - `WORKERS_KV_EMAIL` user@cloudflare.com
 
+## Dependencies
+
+In `tools/` run `npm install`.
+
+- [jpegoptim](https://www.kokkonen.net/tjko/projects.html)
+- [zopflipng](https://github.com/google/zopfli)
+
 ## Setup a local environment
 
 All the tools uses `BOT_BASE_PATH` to define a "cdnjs home".
