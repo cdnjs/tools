@@ -1,4 +1,4 @@
-package main
+package kv
 
 import (
 	"context"
@@ -12,27 +12,26 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/sri"
-
-	cloudflare "github.com/cloudflare/cloudflare-go"
-
 	"github.com/cdnjs/tools/util"
+	cloudflare "github.com/cloudflare/cloudflare-go"
 )
 
 var (
-	// TODO, update README.md
 	namespaceID = util.GetEnv("WORKERS_KV_NAMESPACE_ID")
 	accountID   = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
 	apiKey      = util.GetEnv("WORKERS_KV_API_KEY")
 	email       = util.GetEnv("WORKERS_KV_EMAIL")
 	api         = getAPI()
 	basePath    = util.GetCDNJSPackages()
-	rootKey     = "/"
-	journalKey  = "/journal"
-	// max bulk request size is 100MiB (104857600), so we will limit the max total payload to be 100MB,
-	// as there can be metadata for each kv (up to 1024 bytes), as well long key fields
-	maxBulkPayload int64 = 1e8
 )
 
+// KV represents a string key and []byte value.
+type KV struct {
+	Key   string
+	Value []byte
+}
+
+// Gets a new *cloudflare.API.
 func getAPI() *cloudflare.API {
 	a, err := cloudflare.New(apiKey, email, cloudflare.UsingAccount(accountID))
 	util.Check(err)
@@ -120,7 +119,7 @@ func encodeAndWriteKVBulk(kvs []*KV) {
 		// but we need to watch out for the KV request limit of 100MiB
 		encoded := encodeToBase64(kv.Value)
 		encodedSize := int64(len(encoded))
-		if totalSize+encodedSize > maxBulkPayload {
+		if totalSize+encodedSize > util.MaxBulkWritePayload {
 			// split into two bulks
 			// this cannot happen when i=0, since util.MaxFileSize must be less than maxBulkPayload
 			bulkWrites = append(bulkWrites, bulkWrite)
@@ -143,46 +142,6 @@ func encodeAndWriteKVBulk(kvs []*KV) {
 			panic(r)
 		}
 	}
-}
-
-// Root ..
-// list of packages
-// top level metadata?
-type Root struct {
-	Packages []string `json:"packages"`
-}
-
-// Package ..
-// can store other metadata like fields in package.json
-type Package struct {
-	Versions []string `json:"versions"`
-}
-
-// Version ..
-//
-type Version struct {
-	Files []File `json:"files"`
-}
-
-// File ...
-type File struct {
-	Name string `json:"name"`
-	SRI  string `json:"sri"`
-}
-
-// KV ..
-type KV struct {
-	Key   string
-	Value []byte
-}
-
-// Journal ...
-// if something in journal, handle that version first (on bot start-up)
-// for now, only handling one, but if we parallelize, will pose many issues
-// don't want two threads updating the same kv file and overwriting, and locking may be slow!
-// maybe lock on certain files (root, journal), and make sure threads are working on different versions
-type Journal struct {
-	Entries []string `json:"entries"` // package/version
 }
 
 // perform binary search, if not present, add it in the correct index
@@ -273,51 +232,12 @@ func updateFiles(pkg, version, fullPathToVersion string, fromVersionPaths []stri
 	return kvs, files
 }
 
-func writeToJournal(pkg, version string) {
-	var j Journal
-	key := journalKey
-	entry := path.Join(pkg, version)
-	if bytes, err := readKV(key); err != nil {
-		// assume key is not found (could also be auth error)
-		j.Entries = []string{entry}
-	} else {
-		util.Check(json.Unmarshal(bytes, &j))
-		j.Entries = insertToSortedListIfNotPresent(j.Entries, entry)
-	}
-
-	v, err := json.Marshal(j)
-	util.Check(err)
-
-	//fmt.Printf("Adding to journal: %s\n", entry)
-	writeKV(key, v)
-}
-
-func removeFromJournal(pkg, version string) {
-	var j Journal
-	key := journalKey
-	entry := path.Join(pkg, version)
-	if bytes, err := readKV(key); err != nil {
-		panic(err) // journal should exist
-	} else {
-		util.Check(json.Unmarshal(bytes, &j))
-		// filter out the entry (as well as duplicates)
-		newEntries := make([]string, 0)
-		for _, e := range j.Entries {
-			if e != entry {
-				newEntries = append(newEntries, e)
-			}
-		}
-		if len(newEntries) == len(j.Entries) {
-			fmt.Printf("note: entry %s was not found\n", entry)
-		}
-		j.Entries = newEntries
-	}
-
-	v, err := json.Marshal(j)
-	util.Check(err)
-
-	//fmt.Printf("Removing from journal: %s\n", entry)
-	writeKV(key, v)
+// TODO:
+// Will want to push to a queue or write to disk somewhere
+// when an operation is about to be attempted and when an
+// operation completes successfully. This is to help recover from
+// silent failures that result in inconsistent states.
+func pushToTaskQueue(_ string) {
 }
 
 func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
@@ -328,22 +248,10 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 	kvs = append(kvs, updatePackage(pkg, version))
 	kvs = append(kvs, updateRoot(pkg))
 
-	writeToJournal(pkg, version)
+	pushToTaskQueue("TODO -- WRITING TO KV")
 	encodeAndWriteKVBulk(kvs)
-	removeFromJournal(pkg, version)
+	pushToTaskQueue("TODO -- WROTE TO KV SUCCESSFULLY")
 }
-
-// thoughts:
-
-// bot finds new version
-// downloads to a path
-
-// then inserts directly to kv, does not move in disk
-// move from temp dir directly to kv
-// then remove temp dir
-
-// calculates sri, also puts into kv
-// puts package.json metadata into kv as well
 
 // fullpath will be useful if the version is downloaded into a temp directory
 // so it is not just path.Join(basePath, pkg, version)
@@ -383,10 +291,4 @@ func deleteAllAndInsertPkgs() {
 			}
 		}
 	}
-}
-
-func main() {
-	//deleteAllEntries()
-	//deleteAllAndInsertPkgs()
-	traverse()
 }
