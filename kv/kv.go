@@ -18,7 +18,6 @@ var (
 	apiKey      = util.GetEnv("WORKERS_KV_API_KEY")
 	email       = util.GetEnv("WORKERS_KV_EMAIL")
 	api         = getAPI()
-	basePath    = util.GetCDNJSPackages()
 )
 
 // Represents a KV write request, consisting of
@@ -125,6 +124,7 @@ func deleteAllEntries() {
 	}
 
 	// TODO: change to api.DeleteWorkersKVsBulk after PR is merged
+	// https://github.com/cloudflare/cloudflare-go/pull/497
 	for _, key := range keys {
 		resp, err := api.DeleteWorkersKV(context.Background(), namespaceID, key)
 		checkSuccess(resp, err)
@@ -132,22 +132,28 @@ func deleteAllEntries() {
 	}
 }
 
-// fullpath will be useful if the version is downloaded into a temp directory
-// so it is not just path.Join(basePath, pkg, version)
-func insertVersionToKV(pkg, version, fullPathToVersion string) {
+// InsertNewVersionToKV inserts a new version to KV.
+// The `fullPathToVersion` string will be useful if the version is downloaded to
+// a temporary directory, not necessarily always in `$BOT_BASE_PATH/cdnjs/ajax/libs/`.
+//
+// For example:
+// InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
+func InsertNewVersionToKV(pkg, version, fullPathToVersion string) {
 	fromVersionPaths, err := util.ListFilesInVersion(context.Background(), fullPathToVersion)
 	util.Check(err)
 	updateKV(pkg, version, fullPathToVersion, fromVersionPaths)
 }
 
-// test
-func deleteAllAndInsertPkgs() {
+// DeleteAllAndInsertPkgs is used for TESTING ONLY to delete all entries in the
+// namespace and insert a number of packages into KV.
+//
+// This function will be deleted eventually, since the eventually the autoupdater
+// will ONLY insert to KV, not delete entries.
+func DeleteAllAndInsertPkgs() {
 	deleteAllEntries()
 
 	const maxPkgs = 10
-
-	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
-	//insertVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/Users/tylercaslin/go/src/fake-smaller-repo/cdnjs/ajax/libs/1000hz-bootstrap-validator/0.10.0")
+	basePath := util.GetCDNJSPackages()
 
 	pkgs, err := ioutil.ReadDir(basePath)
 	util.Check(err)
@@ -163,7 +169,7 @@ func deleteAllAndInsertPkgs() {
 			for _, version := range versions {
 				if _, err := semver.Parse(version.Name()); err == nil {
 					fmt.Printf("Inserting %s (%s)\n", pkg.Name(), version.Name())
-					insertVersionToKV(pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
+					InsertNewVersionToKV(pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
 				}
 			}
 		}
