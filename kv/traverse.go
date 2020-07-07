@@ -12,41 +12,78 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
+const (
+	rootKey = "/packages"
+)
+
 var (
 	reader = bufio.NewReader(os.Stdin)
 )
 
-// Gets the root node in KV containing the list of packages.
-func getRoot(key string) (Root, error) {
+// Root contains the list of all packages.
+type Root struct {
+	Packages []string `json:"packages"`
+}
+
+// Package contains the list of versions
+// for a particular package.
+//
+// TODO:
+// Add package-level metadata,
+// which is currently stored on disk
+// in package.json files (ex. latest version).
+type Package struct {
+	Versions []string `json:"versions"`
+}
+
+// Version contains the list of Files for a
+// particular version.
+//
+// TODO:
+// Determine what version-level metadata
+// needs to be maintained (ex. time stamp).
+type Version struct {
+	Files []File `json:"files"`
+}
+
+// File represents a file and its
+// calculated SRI when uncompressed.
+type File struct {
+	Name string `json:"name"`
+	SRI  string `json:"sri"`
+}
+
+// GetRoot gets the root node in KV containing the list of packages.
+func GetRoot(key string) (Root, error) {
 	var r Root
 	bytes, err := readKV(key)
 	if err != nil {
 		return r, err
 	}
-	util.Check(json.Unmarshal(bytes, &r))
-	return r, nil
+	err = json.Unmarshal(bytes, &r)
+	return r, err
 }
 
-// Gets package metadata from KV.
-func getPackage(key string) (Package, error) {
+// GetPackage gets the package metadata from KV.
+func GetPackage(key string) (Package, error) {
 	var p Package
 	bytes, err := readKV(key)
 	if err != nil {
 		return p, err
 	}
-	util.Check(json.Unmarshal(bytes, &p))
-	return p, nil
+	err = json.Unmarshal(bytes, &p)
+	return p, err
 }
 
-// Gets version metadata from KV.
-func getVersion(key string) (Version, error) {
+// GetVersion gets the version metadata from KV.
+func GetVersion(key string) (Version, error) {
 	var v Version
 	bytes, err := readKV(key)
 	if err != nil {
 		return v, err
 	}
-	util.Check(json.Unmarshal(bytes, &v))
-	return v, nil
+	err = json.Unmarshal(bytes, &v)
+	return v, err
 }
 
 // Prints metadata for a file in KV, panicking if it does not exist.
@@ -88,7 +125,7 @@ list:
 }
 
 // Traverse is used for debugging the KV namespace.
-// It is a basic CLI that prints to stdout.
+// It is a basic CLI that interacts via stdin/stdout.
 // It assumes the root entry `/packages` exists.
 // To "go up" a directory, type `..`. To quit, type `q`.
 func Traverse() {
@@ -96,7 +133,7 @@ func Traverse() {
 	var packagePath string
 root:
 	p = rootKey
-	root, err := getRoot(p)
+	root, err := GetRoot(p)
 	util.Check(err)
 	choice, _, back := listOptions(p, root.Packages)
 	if back {
@@ -106,7 +143,7 @@ root:
 	p = choice
 	packagePath = p
 versions:
-	pkg, err := getPackage(p)
+	pkg, err := GetPackage(p)
 	util.Check(err)
 	choice, _, back = listOptions(p, pkg.Versions)
 	if back {
@@ -114,7 +151,7 @@ versions:
 	}
 
 	p = path.Join(p, choice)
-	version, err := getVersion(p)
+	version, err := GetVersion(p)
 	files := version.Files
 
 	names := make([]string, len(files))
