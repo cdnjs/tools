@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
@@ -40,10 +41,16 @@ func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache st
 
 	gitVersions := make([]Version, 0)
 	for _, tag := range gitTags {
+		version := strings.TrimPrefix(tag, "v")
+
+		if _, err := semver.Parse(version); err != nil {
+			util.Debugf(ctx, "ignoring non-semver git version: %s\n", version)
+			continue
+		}
 
 		gitVersions = append(gitVersions, Version{
 			Tag:       tag,
-			Version:   strings.TrimPrefix(tag, "v"),
+			Version:   version,
 			TimeStamp: packages.GitTimeStamp(ctx, packageGitcache, tag),
 		})
 	}

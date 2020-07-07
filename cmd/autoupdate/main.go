@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
@@ -85,10 +86,16 @@ func main() {
 			}
 		}
 
-		if !noUpdate && len(newVersionsToCommit) > 0 {
-			commitNewVersions(ctx, newVersionsToCommit)
-			if pckg.Version == nil || *pckg.Version != latestVersion {
-				commitPackageVersion(ctx, pckg, latestVersion, f)
+		if !noUpdate {
+			if len(newVersionsToCommit) > 0 {
+				commitNewVersions(ctx, newVersionsToCommit)
+			}
+			if _, err := semver.Parse(latestVersion); err != nil {
+				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
+			} else {
+				if pckg.Version == nil || *pckg.Version != latestVersion {
+					commitPackageVersion(ctx, pckg, latestVersion, f)
+				}
 			}
 		}
 	}

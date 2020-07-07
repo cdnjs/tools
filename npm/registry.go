@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
@@ -81,7 +82,7 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 
 // GetVersions gets all of the versions associated with an npm package,
 // as well as the latest version based on the `latest`.
-func GetVersions(name string) ([]Version, string) {
+func GetVersions(ctx context.Context, name string) ([]Version, string) {
 	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -94,6 +95,10 @@ func GetVersions(name string) ([]Version, string) {
 
 	versions := make([]Version, 0)
 	for k, v := range r.Versions {
+		if _, err := semver.Parse(k); err != nil {
+			util.Debugf(ctx, "ignoring non-semver npm version: %s\n", k)
+			continue
+		}
 		if v, ok := v.(map[string]interface{}); ok {
 			if timeInt, ok := r.TimeStamps[k]; ok {
 				if timeStr, ok := timeInt.(string); ok {

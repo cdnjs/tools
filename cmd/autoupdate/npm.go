@@ -16,7 +16,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	var newVersionsToCommit []newVersionToCommit
 
 	existingVersionSet := pckg.Versions()
-	npmVersions, latestNpmVersion := npm.GetVersions(pckg.Autoupdate.Target)
+	npmVersions, latestNpmVersion := npm.GetVersions(ctx, pckg.Autoupdate.Target)
 	lastExistingVersion := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	if lastExistingVersion != nil {
