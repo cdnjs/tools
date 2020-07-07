@@ -43,11 +43,11 @@ func getPackages(ctx context.Context) []string {
 }
 
 type newVersionToCommit struct {
-	commitType  string // Either "newVersion" "newLatestVersion"
-	versionPath string
+	commitType      string // Either "newVersion" "newLatestVersion"
+	versionPath     string
 	packageJSONPath string
-	newVersion  string
-	pckg        *packages.Package
+	newVersion      string
+	pckg            *packages.Package
 }
 
 func worker(id int, wg *sync.WaitGroup, packagePaths <-chan string, commits chan<- newVersionToCommit) {
