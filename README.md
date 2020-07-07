@@ -15,6 +15,13 @@ Repository that contains various tools for maintaining cdnjs.
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
 
+## Dependencies
+
+In `tools/` run `npm install`.
+
+- [jpegoptim](https://www.kokkonen.net/tjko/projects.html)
+- [zopflipng](https://github.com/google/zopfli)
+
 ## Setup a local environment
 
 All the tools uses `BOT_BASE_PATH` to define a "cdnjs home".
