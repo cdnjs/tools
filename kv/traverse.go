@@ -54,9 +54,9 @@ type File struct {
 }
 
 // GetRoot gets the root node in KV containing the list of packages.
-func GetRoot(key string) (Root, error) {
+func GetRoot() (Root, error) {
 	var r Root
-	bytes, err := readKV(key)
+	bytes, err := ReadKV(rootKey)
 	if err != nil {
 		return r, err
 	}
@@ -67,7 +67,7 @@ func GetRoot(key string) (Root, error) {
 // GetPackage gets the package metadata from KV.
 func GetPackage(key string) (Package, error) {
 	var p Package
-	bytes, err := readKV(key)
+	bytes, err := ReadKV(key)
 	if err != nil {
 		return p, err
 	}
@@ -78,7 +78,7 @@ func GetPackage(key string) (Package, error) {
 // GetVersion gets the version metadata from KV.
 func GetVersion(key string) (Version, error) {
 	var v Version
-	bytes, err := readKV(key)
+	bytes, err := ReadKV(key)
 	if err != nil {
 		return v, err
 	}
@@ -86,9 +86,17 @@ func GetVersion(key string) (Version, error) {
 	return v, err
 }
 
+// GetFile gets a particular file as bytes.
+// If large files are stored into KV with multiple
+// entries in the future, this function will wrap around
+// that retrieval.
+func GetFile(key string) ([]byte, error) {
+	return ReadKV(key)
+}
+
 // Prints metadata for a file in KV, panicking if it does not exist.
 func printFile(key string, f File) {
-	bytes, err := readKV(key)
+	bytes, err := GetFile(key)
 	util.Check(err)
 	fmt.Println("--------------------------")
 	fmt.Printf("\nCurrent path: %s\n\n", key)
@@ -133,7 +141,7 @@ func Traverse() {
 	var packagePath string
 root:
 	p = rootKey
-	root, err := GetRoot(p)
+	root, err := GetRoot()
 	util.Check(err)
 	choice, _, back := listOptions(p, root.Packages)
 	if back {
