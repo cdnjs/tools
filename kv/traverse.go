@@ -1,4 +1,4 @@
-package main
+package kv
 
 import (
 	"bufio"
@@ -16,32 +16,41 @@ var (
 	reader = bufio.NewReader(os.Stdin)
 )
 
-func getRoot(key string) Root {
-	bytes, err := readKV(key)
-	util.Check(err)
+// Gets the root node in KV containing the list of packages.
+func getRoot(key string) (Root, error) {
 	var r Root
+	bytes, err := readKV(key)
+	if err != nil {
+		return r, err
+	}
 	util.Check(json.Unmarshal(bytes, &r))
-	return r
+	return r, nil
 }
 
-func getPackage(key string) Package {
-	bytes, err := readKV(key)
-	util.Check(err)
+// Gets package metadata from KV.
+func getPackage(key string) (Package, error) {
 	var p Package
-	util.Check(json.Unmarshal(bytes, &p))
-	return p
-}
-
-func getVersion(key string) Version {
 	bytes, err := readKV(key)
-	util.Check(err)
-	var v Version
-	util.Check(json.Unmarshal(bytes, &v))
-	return v
+	if err != nil {
+		return p, err
+	}
+	util.Check(json.Unmarshal(bytes, &p))
+	return p, nil
 }
 
+// Gets version metadata from KV.
+func getVersion(key string) (Version, error) {
+	var v Version
+	bytes, err := readKV(key)
+	if err != nil {
+		return v, err
+	}
+	util.Check(json.Unmarshal(bytes, &v))
+	return v, nil
+}
+
+// Prints metadata for a file in KV, panicking if it does not exist.
 func printFile(key string, f File) {
-	// sri, name
 	bytes, err := readKV(key)
 	util.Check(err)
 	fmt.Println("--------------------------")
@@ -51,8 +60,9 @@ func printFile(key string, f File) {
 	fmt.Printf("Bytes: %d\n\n", len(bytes))
 }
 
-// lists options, returns selected option as well as
-// if selected to go back a directory
+// Lists options for a user to select.
+// Returns the selected option, its index, and whether the
+// user decided to return to that last set of options.
 func listOptions(p string, opts []string) (string, int, bool) {
 list:
 	fmt.Println("--------------------------")
@@ -77,28 +87,36 @@ list:
 	return opts[index], index, false
 }
 
-// assume root exists
-// enter '..' to go up a directory
-// enter 'q' to quit
-func traverse() {
+// Traverse is used for debugging the KV namespace.
+// It is a basic CLI that prints to stdout.
+// It assumes the root entry `/packages` exists.
+// To "go up" a directory, type `..`. To quit, type `q`.
+func Traverse() {
 	var p string
 	var packagePath string
 root:
 	p = rootKey
-	choice, _, back := listOptions(p, getRoot(p).Packages)
+	root, err := getRoot(p)
+	util.Check(err)
+	choice, _, back := listOptions(p, root.Packages)
 	if back {
 		goto root
 	}
+
 	p = choice
 	packagePath = p
 versions:
-	choice, _, back = listOptions(p, getPackage(p).Versions)
+	pkg, err := getPackage(p)
+	util.Check(err)
+	choice, _, back = listOptions(p, pkg.Versions)
 	if back {
 		goto root
 	}
 
 	p = path.Join(p, choice)
-	files := getVersion(p).Files
+	version, err := getVersion(p)
+	files := version.Files
+
 	names := make([]string, len(files))
 	for i, f := range files {
 		names[i] = f.Name
