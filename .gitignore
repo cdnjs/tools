@@ -12,3 +12,9 @@
 *.out
 
 bin/
+
+.DS_Store
+._.DS_Store
+
+node_modules/
+*.json

@@ -8,12 +8,17 @@ Repository that contains various tools for maintaining cdnjs.
 - [checker](./cmd/checker)
 - [packages](./cmd/packages)
 - [autoupdate](./cmd/autoupdate)
+- [kv](./cmd/kv)
 
 ## Configuration
 
 - `DEBUG`: pass true to run in debug mode
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
+- `WORKERS_KV_NAMESPACE_ID` workers kv namespace ID
+- `WORKERS_KV_ACCOUNT_ID` workers kv account ID
+- `WORKERS_KV_API_KEY` workers kv api key
+- `WORKERS_KV_EMAIL` user@cloudflare.com
 
 ## Dependencies
 
