@@ -88,7 +88,7 @@ func showFiles(pckgPath string) {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions, _ := npm.GetVersions(pckg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -97,7 +97,9 @@ func showFiles(pckgPath string) {
 			}
 
 			// download into temp dir
-			downloadDir = npm.DownloadTar(ctx, npmVersions[0].Tarball)
+			if len(versions) > 0 {
+				downloadDir = npm.DownloadTar(ctx, npmVersions[0].Tarball)
+			}
 
 			// set err string if no versions
 			noVersionsErr = "no version found on npm"

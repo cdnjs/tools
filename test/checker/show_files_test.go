@@ -21,11 +21,11 @@ const (
 	oversizedFilesPkg   = "oversizePkg"
 	unpublishedFieldPkg = "unpublishedPkg"
 	sortByTimeStampPkg  = "sortByTimePkg"
-	timeStamp1          = "1.0"
-	timeStamp2          = "2.0"
-	timeStamp3          = "3.0"
-	timeStamp4          = "4.0"
-	timeStamp5          = "5.0"
+	timeStamp1          = "1.0.0"
+	timeStamp2          = "2.0.0"
+	timeStamp3          = "3.0.0"
+	timeStamp4          = "4.0.0"
+	timeStamp5          = "5.0.0"
 )
 
 type ShowFilesTestCase struct {
@@ -142,41 +142,41 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 	case "/" + sortByTimeStampPkg:
 		fmt.Fprint(w, `{
 			"versions": {
-				"1.0": {
+				"1.0.0": {
 					"dist": {
 						"tarball": "http://registry.npmjs.org/`+timeStamp1+`.tgz"
 					}
 				},
-				"2.0": {
+				"2.0.0": {
 					"dist": {
 						"tarball": "http://registry.npmjs.org/`+timeStamp2+`.tgz"
 					}
 				},
-				"3.0": {
+				"3.0.0": {
 					"dist": {
 						"tarball": "http://registry.npmjs.org/`+timeStamp3+`.tgz"
 					}
 				},
-				"4.0": {
+				"4.0.0": {
 					"dist": {
 						"tarball": "http://registry.npmjs.org/`+timeStamp4+`.tgz"
 					}
 				},
-				"5.0": {
+				"5.0.0": {
 					"dist": {
 						"tarball": "http://registry.npmjs.org/`+timeStamp5+`.tgz"
 					}
 				}
 			},
 			 "time": {
-				"2.0": "2019-12-30T19:39:27.425Z",
-				"3.0": "2019-12-30T19:38:27.425Z",
-				"1.0": "2018-12-30T19:39:27.425Z",
-				"5.0": "2017-12-30T19:39:27.425Z",
-    			"4.0": "2017-11-30T19:39:27.425Z"
+				"2.0.0": "2019-12-30T19:39:27.425Z",
+				"3.0.0": "2019-12-30T19:38:27.425Z",
+				"1.0.0": "2018-12-30T19:39:27.425Z",
+				"5.0.0": "2017-12-30T19:39:27.425Z",
+    			"4.0.0": "2017-11-30T19:39:27.425Z"
 			},
 			"dist-tags": {
-				"latest": "3.0"
+				"latest": "3.0.0"
 			}
 		}`)
 	case "/" + jsFilesPkg + ".tgz":
@@ -328,17 +328,17 @@ c.js
 			}`,
 			expected: `
 
-most recent version: 2.0
+most recent version: 2.0.0
 
 ` + "```" + `
 2.js
 ` + "```" + `
 
 4 last version(s):
-- 3.0: 1 file(s) matched :heavy_check_mark:
-- 1.0: 1 file(s) matched :heavy_check_mark:
-- 5.0: 1 file(s) matched :heavy_check_mark:
-- 4.0: 1 file(s) matched :heavy_check_mark:
+- 3.0.0: 1 file(s) matched :heavy_check_mark:
+- 1.0.0: 1 file(s) matched :heavy_check_mark:
+- 5.0.0: 1 file(s) matched :heavy_check_mark:
+- 4.0.0: 1 file(s) matched :heavy_check_mark:
 `,
 		},
 	}
