@@ -207,5 +207,5 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	// kvs = append(kvs, updateRootRequest(pkg))
 
 	// write bulk to KV
-	encodeAndWriteKVBulk(kvs)
+	encodeAndWriteKVBulk(ctx, kvs)
 }
