@@ -80,10 +80,13 @@ func updateVersionRequest(pkg, version string, files []File) *writeRequest {
 }
 
 // Gets the requests to update a number of files in KV in compressed format.
+// In order to do this, it will create a brotli and gzip version for each uncompressed file
+// that is not banned (ex. `.woff2`). The SRIs for each new compressed File will be the
+// same as its respective uncompressed File.
 func updateCompressedFilesRequests(uncompressedFiles []File) ([]*writeRequest, []File) {
-	for _, f := range uncompressedFiles {
-		fmt.Println(f)
-	}
+	// for _, f := range uncompressedFiles {
+	// 	//fmt.Println(f)
+	// }
 	// iterate over files, compress each via brotli/gzip unless if it is woff2
 	return nil, nil
 }
@@ -146,6 +149,8 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 			compress.Js(ctx, fullPath)
 		case ".css":
 			compress.CSS(ctx, fullPath)
+		default:
+			fmt.Println(path.Ext(fromV))
 		}
 	}
 	updatedFromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
