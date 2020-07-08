@@ -1,12 +1,14 @@
 package kv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path"
 	"sort"
 
+	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/sri"
 	"github.com/cdnjs/tools/util"
 )
@@ -119,8 +121,45 @@ func updateUncompressedFilesRequests(pkg, version, fullPathToVersion string, fro
 func pushToTaskQueue(_ string) {
 }
 
+// Optimizes/minifies files on disk for a particular package version.
+// Note that the package's metadata in KV must be updated before this function call
+// (ex. whether or not to optimize PNG).
+//
+// TODO:
+// Eventually remove the autoupdater's `compressNewVersion()` function,
+// as we will not depend on disk files such as `.donotoptimizepng`.
+// Also remove `filterByExt()` since it is cleaner with a switch.
+func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) []string {
+	p, err := GetPackage(pkg)
+	doNotOptimizePNG := err == nil && p.DoNotOptimizePNG
+
+	for _, fromV := range fromVersionPaths {
+		fullPath := path.Join(fullPathToVersion, fromV)
+		switch path.Ext(fromV) {
+		case ".jpg", ".jpeg":
+			compress.Jpeg(ctx, fullPath)
+		case ".png":
+			if !doNotOptimizePNG {
+				compress.Png(ctx, fullPath)
+			}
+		case ".js":
+			compress.Js(ctx, fullPath)
+		case ".css":
+			compress.CSS(ctx, fullPath)
+		}
+	}
+	updatedFromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
+	util.Check(err)
+	return updatedFromVersionPaths
+}
+
 // Updates KV with new version, writing to all of the necessary data structures.
-func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string) {
+func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) {
+	// minify/optimize existing files, adding any new files generated (ex: .min.js)
+	// note: encoding in brotli/gzip will occur later for each of these files
+	fromVersionPaths = optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
+
+	// create bulk of requests
 	var kvs []*writeRequest
 	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
 	compressedReqs, compressedFiles := updateCompressedFilesRequests(uncompressedFiles)
@@ -130,6 +169,7 @@ func updateKV(pkg, version, fullPathToVersion string, fromVersionPaths []string)
 	kvs = append(kvs, updatePackageRequest(pkg, version))
 	kvs = append(kvs, updateRootRequest(pkg))
 
+	// write bulk to KV
 	pushToTaskQueue("TODO -- WRITING TO KV")
 	encodeAndWriteKVBulk(kvs)
 	pushToTaskQueue("TODO -- WROTE TO KV SUCCESSFULLY")

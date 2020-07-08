@@ -33,7 +33,8 @@ type Root struct {
 // which is currently stored on disk
 // in package.json files (ex. latest version).
 type Package struct {
-	Versions []string `json:"versions"`
+	Versions         []string `json:"versions"`
+	DoNotOptimizePNG bool     `json:"do_not_optimize_png"`
 }
 
 // Version contains the list of Files for a

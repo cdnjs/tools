@@ -136,12 +136,15 @@ func deleteAllEntries() {
 // The `fullPathToVersion` string will be useful if the version is downloaded to
 // a temporary directory, not necessarily always in `$BOT_BASE_PATH/cdnjs/ajax/libs/`.
 //
+// Note that this function will also compress the files, generating brotli/gzip entries
+// to KV where necessary, as well as minifying js, compressing png/jpeg/css, etc.
+//
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(pkg, version, fullPathToVersion string) {
-	fromVersionPaths, err := util.ListFilesInVersion(context.Background(), fullPathToVersion)
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) {
+	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	util.Check(err)
-	updateKV(pkg, version, fullPathToVersion, fromVersionPaths)
+	updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 }
 
 // DeleteAllAndInsertPkgs is used for TESTING ONLY to delete all entries in the
@@ -152,14 +155,14 @@ func InsertNewVersionToKV(pkg, version, fullPathToVersion string) {
 func DeleteAllAndInsertPkgs() {
 	deleteAllEntries()
 
-	const maxPkgs = 10
+	maxPkgs := 2
 	basePath := util.GetCDNJSPackages()
 
 	pkgs, err := ioutil.ReadDir(basePath)
 	util.Check(err)
 
 	for i, pkg := range pkgs {
-		if i > maxPkgs {
+		if i >= maxPkgs {
 			return
 		}
 		if pkg.IsDir() {
@@ -169,9 +172,11 @@ func DeleteAllAndInsertPkgs() {
 			for _, version := range versions {
 				if _, err := semver.Parse(version.Name()); err == nil {
 					fmt.Printf("Inserting %s (%s)\n", pkg.Name(), version.Name())
-					InsertNewVersionToKV(pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
+					InsertNewVersionToKV(context.TODO(), pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
 				}
 			}
+		} else {
+			maxPkgs++
 		}
 	}
 }
