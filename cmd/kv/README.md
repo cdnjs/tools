@@ -12,4 +12,4 @@ A simple CLI to view the Workers KV namespace.
 
 ## `test`
 
-Tests the namespace by **deleting all entries** and then inserting a number of packages.
+Tests the namespace by ***deleting all entries*** and then inserting a number of packages.
