@@ -93,10 +93,12 @@ func main() {
 			if _, err := semver.Parse(latestVersion); err != nil {
 				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
 			} else {
-				if pckg.Version == nil || *pckg.Version != latestVersion {
+				destpckg, err := packages.ReadPackageJSON(ctx, path.Join("ajax", "libs", pckg.Name, "package.json"))
+				util.Check(err)
+				if destpckg.Version == nil || *destpckg.Version != latestVersion {
 					oldVersion := "nil"
-					if pckg.Version != nil {
-						oldVersion = *pckg.Version
+					if destpckg.Version != nil {
+						oldVersion = *destpckg.Version
 					}
 					util.Debugf(ctx, "updating latest version %s -> %s\n", oldVersion, latestVersion)
 					commitPackageVersion(ctx, pckg, latestVersion, f)
