@@ -41,13 +41,6 @@ func getKVs() cloudflare.ListStorageKeysResponse {
 	return resp
 }
 
-// Gets all entries in Workers KV with options (ex. set the limit).
-func getKVsWithOptions(o cloudflare.ListWorkersKVsOptions) cloudflare.ListStorageKeysResponse {
-	resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
-	util.Check(err)
-	return resp
-}
-
 // ReadKV reads from Workers KV.
 func ReadKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
@@ -59,12 +52,6 @@ func checkSuccess(r cloudflare.Response, err interface{}) {
 		panic(r)
 	}
 	util.Check(err)
-}
-
-// Writes an entry to Workers KV, panicking if unsuccessful.
-func writeKV(k string, v []byte) {
-	r, err := api.WriteWorkersKV(context.Background(), namespaceID, k, v)
-	checkSuccess(r, err)
 }
 
 // Encodes a byte array to a base64 string.

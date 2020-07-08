@@ -161,6 +161,7 @@ versions:
 
 	p = path.Join(p, choice)
 	version, err := GetVersion(p)
+	util.Check(err)
 	files := version.Files
 
 	names := make([]string, len(files))
