@@ -37,8 +37,9 @@ func ReadKV(key string) ([]byte, error) {
 }
 
 // Ensure a response is successful and the error is nil.
-func checkSuccess(r cloudflare.Response, err interface{}) {
+func checkSuccess(ctx context.Context, r cloudflare.Response, err interface{}) {
 	if !r.Success {
+		util.Debugf(ctx, "kv fail: %v\n", r)
 		panic(r)
 	}
 	util.Check(err)
@@ -51,7 +52,7 @@ func encodeToBase64(bytes []byte) string {
 
 // Encodes key-value pairs to base64 and writes them to KV
 // in multiple bulk requests, panicking if unsuccessful.
-func encodeAndWriteKVBulk(kvs []*writeRequest) {
+func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
 	var totalSize int64
@@ -82,10 +83,10 @@ func encodeAndWriteKVBulk(kvs []*writeRequest) {
 	}
 	bulkWrites = append(bulkWrites, bulkWrite)
 
-	for _, b := range bulkWrites {
-		// util.Debugf(ctx, "writing bulk %d/%d (keys=%d)...\n", i+1, len(bulkWrites), len(b))
+	for i, b := range bulkWrites {
+		util.Debugf(ctx, "writing bulk %d/%d (keys=%d)...\n", i+1, len(bulkWrites), len(b))
 		r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
-		checkSuccess(r, err)
+		checkSuccess(ctx, r, err)
 	}
 }
 
