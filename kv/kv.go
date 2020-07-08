@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"path"
 
-	"github.com/blang/semver"
 	"github.com/cdnjs/tools/util"
 	cloudflare "github.com/cloudflare/cloudflare-go"
 )
@@ -105,31 +102,4 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	util.Check(err)
 	updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
-}
-
-// TestInsertingPkgs is used for TESTING ONLY to insert a number of packages into KV.
-func TestInsertingPkgs(ctx context.Context, maxPkgs int) {
-	basePath := util.GetCDNJSPackages()
-
-	pkgs, err := ioutil.ReadDir(basePath)
-	util.Check(err)
-
-	for i, pkg := range pkgs {
-		if i >= maxPkgs {
-			return
-		}
-		if pkg.IsDir() {
-			versions, err := ioutil.ReadDir(path.Join(basePath, pkg.Name()))
-			util.Check(err)
-
-			for _, version := range versions {
-				if _, err := semver.Parse(version.Name()); err == nil {
-					fmt.Printf("Inserting %s (%s)\n", pkg.Name(), version.Name())
-					InsertNewVersionToKV(ctx, pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
-				}
-			}
-		} else {
-			maxPkgs++
-		}
-	}
 }

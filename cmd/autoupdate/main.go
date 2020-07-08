@@ -11,6 +11,7 @@ import (
 	"path"
 
 	"github.com/cdnjs/tools/compress"
+	"github.com/cdnjs/tools/kv"
 	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
@@ -87,6 +88,7 @@ func main() {
 
 		if !noUpdate && len(newVersionsToCommit) > 0 {
 			commitNewVersions(ctx, newVersionsToCommit)
+			writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
 			if pckg.Version == nil || *pckg.Version != latestVersion {
 				commitPackageVersion(ctx, pckg, latestVersion, f)
 			}
@@ -184,8 +186,17 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 	}
 }
 
-func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+// write all versions to KV
+func writehNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+	for _, newVersionToCommit := range newVersionsToCommit {
+		pkg, version := newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
+		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
+		kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath)
+	}
+}
+
+func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 	for _, newVersionToCommit := range newVersionsToCommit {
 		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
 

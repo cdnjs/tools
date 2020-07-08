@@ -10,6 +10,3 @@ A simple CLI to view the Workers KV namespace.
 - Return to the previous set of options with `..`.
 - Exit with `q`, `quit`, or `exit`.
 
-## `test`
-
-Tests the Workers KV namespace by inserting a number of packages.

@@ -11,7 +11,7 @@ import (
 
 var (
 	// initialize standard debug logger
-	logger = util.GetStandardLogger()
+	_ = util.GetStandardLogger()
 )
 
 func main() {
@@ -25,13 +25,6 @@ func main() {
 	case "traverse":
 		{
 			kv.Traverse()
-		}
-	case "test":
-		{
-			// create context with file path prefix, checker logger
-			ctx := util.ContextWithEntries(util.GetCheckerEntries("", logger)...)
-			const maxPkgs = 3
-			kv.TestInsertingPkgs(ctx, maxPkgs)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
