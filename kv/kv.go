@@ -38,11 +38,11 @@ func ReadKV(key string) ([]byte, error) {
 
 // Ensure a response is successful and the error is nil.
 func checkSuccess(ctx context.Context, r cloudflare.Response, err interface{}) {
+	util.Check(err)
 	if !r.Success {
 		util.Debugf(ctx, "kv fail: %v\n", r)
 		panic(r)
 	}
-	util.Check(err)
 }
 
 // Encodes a byte array to a base64 string.
