@@ -170,9 +170,6 @@ func DeleteAllAndInsertPkgs(ctx context.Context) {
 			util.Check(err)
 
 			for _, version := range versions {
-				if version.Name() != "0.2.0" {
-					continue
-				}
 				if _, err := semver.Parse(version.Name()); err == nil {
 					fmt.Printf("Inserting %s (%s)\n", pkg.Name(), version.Name())
 					InsertNewVersionToKV(ctx, pkg.Name(), version.Name(), path.Join(basePath, pkg.Name(), version.Name()))
