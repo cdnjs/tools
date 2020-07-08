@@ -42,8 +42,8 @@ github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWR
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
-github.com/cloudflare/cloudflare-go v0.12.1-0.20200702124351-f76f4c83971a h1:TS96wxT0cOYifH6bcbEv7a07ksCMyt6AV/VPZ1H3o9o=
-github.com/cloudflare/cloudflare-go v0.12.1-0.20200702124351-f76f4c83971a/go.mod h1:gmzHQPAyHh8N8UgX0Z+3rSMRbNj47JDEbzXDICHVXys=
+github.com/cloudflare/cloudflare-go v0.12.1 h1:j6TfMkFbfoRYqC9wbktl59Nd7xIqPem0XXXvZ9Vtj1I=
+github.com/cloudflare/cloudflare-go v0.12.1/go.mod h1:gmzHQPAyHh8N8UgX0Z+3rSMRbNj47JDEbzXDICHVXys=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=

@@ -20,7 +20,7 @@ autoupdate:
 	go build $(GO_BUILD_ARGS) -o bin/autoupdate ./cmd/autoupdate
 
 .PHONY: kv
-autoupdate:
+kv:
 	go build $(GO_BUILD_ARGS) -o bin/kv ./cmd/kv
 
 .PHONY: clean

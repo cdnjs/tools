@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/storage v1.5.0
 	github.com/algolia/algoliasearch-client-go/v3 v3.4.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cloudflare/cloudflare-go v0.12.1-0.20200702124351-f76f4c83971a
+	github.com/cloudflare/cloudflare-go v0.12.1
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/karrick/godirwalk v1.15.6

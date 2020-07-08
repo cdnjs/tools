@@ -30,7 +30,8 @@ func main() {
 		{
 			// create context with file path prefix, checker logger
 			ctx := util.ContextWithEntries(util.GetCheckerEntries("", logger)...)
-			kv.DeleteAllAndInsertPkgs(ctx)
+			const maxPkgs = 3
+			kv.TestInsertingPkgs(ctx, maxPkgs)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))

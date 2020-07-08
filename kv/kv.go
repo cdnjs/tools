@@ -34,13 +34,6 @@ func getAPI() *cloudflare.API {
 	return a
 }
 
-// Gets all entries in Workers KV.
-func getKVs() cloudflare.ListStorageKeysResponse {
-	resp, err := api.ListWorkersKVs(context.Background(), namespaceID)
-	util.Check(err)
-	return resp
-}
-
 // ReadKV reads from Workers KV.
 func ReadKV(key string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
@@ -99,26 +92,6 @@ func encodeAndWriteKVBulk(kvs []*writeRequest) {
 	}
 }
 
-// Deletes all entries for the KV namespace.
-// This is used for testing purposes only.
-func deleteAllEntries() {
-	resp := getKVs()
-
-	// make []string of keys
-	keys := make([]string, len(resp.Result))
-	for i, res := range resp.Result {
-		keys[i] = res.Name
-	}
-
-	// TODO: change to api.DeleteWorkersKVsBulk after PR is merged
-	// https://github.com/cloudflare/cloudflare-go/pull/497
-	for _, key := range keys {
-		resp, err := api.DeleteWorkersKV(context.Background(), namespaceID, key)
-		checkSuccess(resp, err)
-		fmt.Printf("Deleted %s\n", key)
-	}
-}
-
 // InsertNewVersionToKV inserts a new version to KV.
 // The `fullPathToVersion` string will be useful if the version is downloaded to
 // a temporary directory, not necessarily always in `$BOT_BASE_PATH/cdnjs/ajax/libs/`.
@@ -134,15 +107,8 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 	updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 }
 
-// DeleteAllAndInsertPkgs is used for TESTING ONLY to delete all entries in the
-// namespace and insert a number of packages into KV.
-//
-// This function will be deleted eventually, since the eventually the autoupdater
-// will ONLY insert to KV, not delete entries.
-func DeleteAllAndInsertPkgs(ctx context.Context) {
-	deleteAllEntries()
-
-	maxPkgs := 3
+// TestInsertingPkgs is used for TESTING ONLY to insert a number of packages into KV.
+func TestInsertingPkgs(ctx context.Context, maxPkgs int) {
 	basePath := util.GetCDNJSPackages()
 
 	pkgs, err := ioutil.ReadDir(basePath)
