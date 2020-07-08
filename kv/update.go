@@ -3,7 +3,6 @@ package kv
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path"
 	"sort"
@@ -11,6 +10,13 @@ import (
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/sri"
 	"github.com/cdnjs/tools/util"
+)
+
+var (
+	doNotCompress = map[string]bool{
+		".woff":  true,
+		".woff2": true,
+	}
 )
 
 // Perform a binary search, inserting a string into the sorted list if not present.
@@ -81,14 +87,47 @@ func updateVersionRequest(pkg, version string, files []File) *writeRequest {
 
 // Gets the requests to update a number of files in KV in compressed format.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
-// that is not banned (ex. `.woff2`). The SRIs for each new compressed File will be the
-// same as its respective uncompressed File.
-func updateCompressedFilesRequests(uncompressedFiles []File) ([]*writeRequest, []File) {
-	// for _, f := range uncompressedFiles {
-	// 	//fmt.Println(f)
-	// }
-	// iterate over files, compress each via brotli/gzip unless if it is woff2
-	return nil, nil
+// that is not banned (ex. `.woff2`).
+// The SRIs for each new compressed File will be the same as its respective uncompressed File.
+//
+// TODO:
+// Should SRIs be calculated for all files, including compressed ones, or just uncompressed files?
+func updateCompressedFilesRequests(pkg, version, fullPathToVersion string, uncompressedFiles []File) ([]*writeRequest, []File) {
+	baseKeyPath := path.Join(pkg, version)
+	var kvs []*writeRequest
+	var compressedFiles []File
+
+	for _, f := range uncompressedFiles {
+		if _, ok := doNotCompress[path.Ext(f.Name)]; !ok {
+			fullPath := path.Join(fullPathToVersion, f.Name)
+			fKey := path.Join(baseKeyPath, f.Name)
+
+			// brotli
+			kvs = append(kvs, &writeRequest{
+				Key:   fKey + ".br",
+				Value: compress.Brotli11CLI(fullPath),
+			})
+			compressedFiles = append(compressedFiles, File{
+				Name: f.Name + ".br",
+				SRI:  f.SRI,
+			})
+
+			// gzip
+			bytes, err := ioutil.ReadFile(fullPath)
+			util.Check(err)
+
+			kvs = append(kvs, &writeRequest{
+				Key:   fKey + ".gz",
+				Value: compress.Gzip9Native(bytes),
+			})
+			compressedFiles = append(compressedFiles, File{
+				Name: f.Name + ".gz",
+				SRI:  f.SRI,
+			})
+		}
+	}
+
+	return kvs, compressedFiles
 }
 
 // Gets the requests to update a number of files in KV in uncompressed format.
@@ -149,8 +188,6 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 			compress.Js(ctx, fullPath)
 		case ".css":
 			compress.CSS(ctx, fullPath)
-		default:
-			fmt.Println(path.Ext(fromV))
 		}
 	}
 	updatedFromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
@@ -167,7 +204,7 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	// create bulk of requests
 	var kvs []*writeRequest
 	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
-	compressedReqs, compressedFiles := updateCompressedFilesRequests(uncompressedFiles)
+	compressedReqs, compressedFiles := updateCompressedFilesRequests(pkg, version, fullPathToVersion, uncompressedFiles)
 	kvs = append(kvs, uncompressedReqs...)
 	kvs = append(kvs, compressedReqs...)
 	kvs = append(kvs, updateVersionRequest(pkg, version, append(uncompressedFiles, compressedFiles...)))

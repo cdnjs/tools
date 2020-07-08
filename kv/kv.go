@@ -155,7 +155,7 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 func DeleteAllAndInsertPkgs(ctx context.Context) {
 	deleteAllEntries()
 
-	maxPkgs := 2
+	maxPkgs := 3
 	basePath := util.GetCDNJSPackages()
 
 	pkgs, err := ioutil.ReadDir(basePath)
