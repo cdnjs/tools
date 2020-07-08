@@ -89,7 +89,7 @@ var (
 //
 // TODO:
 // Should SRIs be calculated for all files, including compressed ones, or just uncompressed files?
-func updateCompressedFilesRequests(pkg, version, fullPathToVersion string, uncompressedFiles []File) ([]*writeRequest, []File) {
+func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, uncompressedFiles []File) ([]*writeRequest, []File) {
 	baseKeyPath := path.Join(pkg, version)
 	var kvs []*writeRequest
 	var compressedFiles []File
@@ -102,7 +102,7 @@ func updateCompressedFilesRequests(pkg, version, fullPathToVersion string, uncom
 			// brotli
 			kvs = append(kvs, &writeRequest{
 				Key:   fKey + ".br",
-				Value: compress.Brotli11CLI(fullPath),
+				Value: compress.Brotli11CLI(ctx, fullPath),
 			})
 			compressedFiles = append(compressedFiles, File{
 				Name: f.Name + ".br",
@@ -194,7 +194,7 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	// create bulk of requests
 	var kvs []*writeRequest
 	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
-	compressedReqs, compressedFiles := updateCompressedFilesRequests(pkg, version, fullPathToVersion, uncompressedFiles)
+	compressedReqs, compressedFiles := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, uncompressedFiles)
 	allFiles := append(uncompressedFiles, compressedFiles...)
 	sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
 
