@@ -205,9 +205,12 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	var kvs []*writeRequest
 	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
 	compressedReqs, compressedFiles := updateCompressedFilesRequests(pkg, version, fullPathToVersion, uncompressedFiles)
+	allFiles := append(uncompressedFiles, compressedFiles...)
+	sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
+
 	kvs = append(kvs, uncompressedReqs...)
 	kvs = append(kvs, compressedReqs...)
-	kvs = append(kvs, updateVersionRequest(pkg, version, append(uncompressedFiles, compressedFiles...)))
+	kvs = append(kvs, updateVersionRequest(pkg, version, allFiles))
 	kvs = append(kvs, updatePackageRequest(pkg, version))
 	kvs = append(kvs, updateRootRequest(pkg))
 
