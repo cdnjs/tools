@@ -3,6 +3,7 @@ package compress
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"os/exec"
 
@@ -13,11 +14,12 @@ import (
 // and returns its stdout as bytes.
 // Note, this function will panic if anything is
 // output to stderr.
-func runAlgorithm(alg string, args ...string) []byte {
+func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 	cmd := exec.Command(alg, args...)
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdOut, &stdErr
 
+	util.Debugf(ctx, "algorithm: run %s\n", cmd)
 	err := cmd.Run()
 	util.Check(err)
 
@@ -30,8 +32,8 @@ func runAlgorithm(alg string, args ...string) []byte {
 
 // Brotli11CLI returns a brotli compressed file as bytes
 // at optimal compression (quality 11).
-func Brotli11CLI(filePath string) []byte {
-	return runAlgorithm("brotli", "-c", "-q", "11", filePath)
+func Brotli11CLI(ctx context.Context, filePath string) []byte {
+	return runAlgorithm(ctx, "brotli", "-c", "-q", "11", filePath)
 }
 
 // Gzip9Native returns a gzip compressed file as bytes
