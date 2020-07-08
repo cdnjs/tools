@@ -20,7 +20,7 @@ var (
 	// Store the number of validation errors
 	errCount uint = 0
 
-	// initialize standard debug logger
+	// initialize checker debug logger
 	logger = util.GetCheckerLogger()
 )
 
