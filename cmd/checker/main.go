@@ -97,7 +97,9 @@ func showFiles(pckgPath string) {
 			}
 
 			// download into temp dir
-			downloadDir = npm.DownloadTar(ctx, npmVersions[0].Tarball)
+			if len(versions) > 0 {
+				downloadDir = npm.DownloadTar(ctx, npmVersions[0].Tarball)
+			}
 
 			// set err string if no versions
 			noVersionsErr = "no version found on npm"
