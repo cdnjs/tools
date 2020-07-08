@@ -94,7 +94,11 @@ func main() {
 				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
 			} else {
 				if pckg.Version == nil || *pckg.Version != latestVersion {
-					util.Debugf(ctx, "updating latest version %s -> %s\n", pckg.Version, latestVersion)
+					oldVersion := "nil"
+					if pckg.Version != nil {
+						oldVersion = *pckg.Version
+					}
+					util.Debugf(ctx, "updating latest version %s -> %s\n", oldVersion, latestVersion)
 					commitPackageVersion(ctx, pckg, latestVersion, f)
 				}
 			}
