@@ -187,7 +187,7 @@ func compressNewVersion(ctx context.Context, version newVersionToCommit) {
 }
 
 // write all versions to KV
-func writehNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 	for _, newVersionToCommit := range newVersionsToCommit {
 		pkg, version := newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
