@@ -33,8 +33,7 @@ type Root struct {
 // which is currently stored on disk
 // in package.json files (ex. latest version).
 type Package struct {
-	Versions         []string `json:"versions"`
-	DoNotOptimizePNG bool     `json:"do_not_optimize_png"`
+	Versions []string `json:"versions"`
 }
 
 // Version contains the list of Files for a
@@ -51,7 +50,6 @@ type Version struct {
 // calculated SRI when uncompressed.
 type File struct {
 	Name string `json:"name"`
-	SRI  string `json:"sri"`
 }
 
 // GetRoot gets the root node in KV containing the list of packages.
@@ -102,7 +100,6 @@ func printFile(key string, f File) {
 	fmt.Println("--------------------------")
 	fmt.Printf("\nCurrent path: %s\n\n", key)
 	fmt.Printf("Name: %s\n", f.Name)
-	fmt.Printf("SRI: %s\n", f.SRI)
 	fmt.Printf("Bytes: %d\n\n", len(bytes))
 }
 

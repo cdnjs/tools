@@ -86,7 +86,6 @@ var (
 // Gets the requests to update a number of files in KV in compressed format.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`).
-// The SRIs for each new compressed File will be the same as its respective uncompressed File.
 //
 // TODO:
 // Should SRIs be calculated for all files, including compressed ones, or just uncompressed files?
@@ -108,7 +107,6 @@ func updateCompressedFilesRequests(pkg, version, fullPathToVersion string, uncom
 			compressedFiles = append(compressedFiles, File{
 				Name: f.Name + ".br",
 				// TODO: determine metadata
-				// SRI:  f.SRI,
 			})
 
 			// gzip
@@ -122,7 +120,6 @@ func updateCompressedFilesRequests(pkg, version, fullPathToVersion string, uncom
 			compressedFiles = append(compressedFiles, File{
 				Name: f.Name + ".gz",
 				// TODO: determine metadata
-				// SRI:  f.SRI,
 			})
 		}
 	}
@@ -149,7 +146,6 @@ func updateUncompressedFilesRequests(pkg, version, fullPathToVersion string, fro
 		files[i] = File{
 			Name: fromVersionPath,
 			// TODO: determine metadata
-			// SRI:  sri.CalculateFileSRI(fullPath),
 		}
 	}
 
@@ -165,18 +161,13 @@ func updateUncompressedFilesRequests(pkg, version, fullPathToVersion string, fro
 // as we will not depend on disk files such as `.donotoptimizepng`.
 // Also remove `filterByExt()` since it is cleaner with a switch.
 func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) []string {
-	p, err := GetPackage(pkg)
-	doNotOptimizePNG := err == nil && p.DoNotOptimizePNG
-
 	for _, fromV := range fromVersionPaths {
 		fullPath := path.Join(fullPathToVersion, fromV)
 		switch path.Ext(fromV) {
 		case ".jpg", ".jpeg":
 			compress.Jpeg(ctx, fullPath)
 		case ".png":
-			if !doNotOptimizePNG {
-				compress.Png(ctx, fullPath)
-			}
+			compress.Png(ctx, fullPath)
 		case ".js":
 			compress.Js(ctx, fullPath)
 		case ".css":
