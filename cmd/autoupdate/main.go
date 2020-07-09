@@ -94,8 +94,7 @@ func main() {
 				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
 			} else {
 				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
-				util.Check(err)
-				if destpckg.Version == nil || *destpckg.Version != latestVersion {
+				if err != nil || destpckg.Version == nil || *destpckg.Version != latestVersion {
 					commitPackageVersion(ctx, pckg, latestVersion, f)
 				}
 			}
@@ -220,6 +219,6 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVer
 	// Add to git the updated package.json
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.Path(), "package.json"))
 
-	commitMsg := fmt.Sprintf("Add %s package.json (v%s)", pckg.Name, latestVersion)
+	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", pckg.Name, latestVersion)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 }
