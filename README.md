@@ -18,8 +18,7 @@ Repository that contains various tools for maintaining cdnjs.
 - `DISABLE_KV` set to disable writes to workers KV
 - `WORKERS_KV_NAMESPACE_ID` workers kv namespace ID
 - `WORKERS_KV_ACCOUNT_ID` workers kv account ID
-- `WORKERS_KV_API_KEY` workers kv api key
-- `WORKERS_KV_EMAIL` user@cloudflare.com
+- `WORKERS_KV_API_TOKEN` workers kv api token
 
 ## Dependencies
 
