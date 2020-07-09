@@ -101,6 +101,7 @@ func main() {
 			if !noUpdate {
 				if len(newVersionsToCommit) > 0 {
 					commitNewVersions(ctx, newVersionsToCommit)
+					packages.GitPush(ctx, cdnjsPath)
 					//writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
 				}
 				if _, err := semver.Parse(latestVersion); err != nil {
@@ -110,13 +111,10 @@ func main() {
 					util.Check(err)
 					if destpckg.Version == nil || *destpckg.Version != latestVersion {
 						commitPackageVersion(ctx, pckg, latestVersion, f)
+						packages.GitPush(ctx, cdnjsPath)
 					}
 				}
 			}
-		}
-
-		if !noUpdate {
-			packages.GitPush(defaultCtx, cdnjsPath)
 		}
 	}
 }
