@@ -90,7 +90,9 @@ func main() {
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
-				//writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
+				if !util.IsKVDisabled() {
+					writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
+				}
 			}
 			if _, err := semver.Parse(latestVersion); err != nil {
 				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
