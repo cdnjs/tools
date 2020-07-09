@@ -36,12 +36,14 @@ func ReadKV(key string) ([]byte, error) {
 }
 
 // Ensure a response is successful and the error is nil.
-func checkSuccess(ctx context.Context, r cloudflare.Response, err interface{}) {
-	util.Check(err)
-	if !r.Success {
-		util.Debugf(ctx, "kv fail: %v\n", r)
-		panic(r)
+func checkSuccess(r cloudflare.Response, err error) error {
+	if err != nil {
+		return err
 	}
+	if !r.Success {
+		return fmt.Errorf("kv fail: %v", r)
+	}
+	return nil
 }
 
 // Encodes a byte array to a base64 string.
@@ -50,15 +52,16 @@ func encodeToBase64(bytes []byte) string {
 }
 
 // Encodes key-value pairs to base64 and writes them to KV
-// in multiple bulk requests, panicking if unsuccessful.
-func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) {
+// in multiple bulk requests.
+func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
 	var totalSize int64
 
 	for _, kv := range kvs {
 		if size := int64(len(kv.Value)); size > util.MaxFileSize {
-			panic(fmt.Sprintf("oversized file: %s (%d)", kv.Key, size))
+			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.Key, size)
+			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
 		// it will be reduced, so it is okay if the size is larger than util.MaxFileSize after encoding base64.
@@ -85,8 +88,12 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) {
 	for i, b := range bulkWrites {
 		util.Debugf(ctx, "writing bulk %d/%d (keys=%d)...\n", i+1, len(bulkWrites), len(b))
 		r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
-		checkSuccess(ctx, r, err)
+		if err = checkSuccess(r, err); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // InsertNewVersionToKV inserts a new version to KV.
@@ -98,8 +105,10 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) {
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) error {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
-	util.Check(err)
-	updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
+	return updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 }

@@ -96,7 +96,7 @@ var (
 //
 // TODO:
 // Should SRIs be calculated for all files, including compressed ones, or just uncompressed files?
-func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []File) {
+func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []File, error) {
 	baseVersionPath := path.Join(pkg, version)
 	var kvs []*writeRequest
 	var compressedFiles []File
@@ -111,7 +111,9 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		baseFileKey := path.Join(baseVersionPath, fromVersionPath)
 
 		bytes, err := ioutil.ReadFile(fullPath)
-		util.Check(err)
+		if err != nil {
+			return kvs, compressedFiles, err
+		}
 
 		if _, ok := doNotCompress[ext]; ok {
 			// will insert to KV without compressing further
@@ -148,7 +150,7 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		})
 	}
 
-	return kvs, compressedFiles
+	return kvs, compressedFiles, nil
 }
 
 // Optimizes/minifies files on disk for a particular package version.
@@ -159,7 +161,7 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 // Eventually remove the autoupdater's `compressNewVersion()` function,
 // as we will not depend on disk files such as `.donotoptimizepng`.
 // Also remove `filterByExt()` since it is cleaner with a switch.
-func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) []string {
+func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
 	for _, fromV := range fromVersionPaths {
 		fullPath := path.Join(fullPathToVersion, fromV)
 		switch path.Ext(fromV) {
@@ -173,9 +175,7 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 			compress.CSS(ctx, fullPath)
 		}
 	}
-	updatedFromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
-	util.Check(err)
-	return updatedFromVersionPaths
+	return util.ListFilesInVersion(ctx, fullPathToVersion)
 }
 
 // Updates KV with new version, writing to all of the necessary data structures.
@@ -185,14 +185,20 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 // when an operation is about to be attempted and when an
 // operation completes successfully. This is to help recover from
 // silent failures that result in inconsistent states.
-func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) {
+func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) error {
 	// minify/optimize existing files, adding any new files generated (ex: .min.js)
 	// note: encoding in brotli/gzip will occur later for each of these files
-	fromVersionPaths = optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
+	fromVersionPaths, err := optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
 
 	// create bulk of requests
 	var kvs []*writeRequest
-	compressedReqs, _ := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	compressedReqs, _, err := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
 
 	kvs = append(kvs, compressedReqs...)
 
@@ -204,5 +210,5 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	// kvs = append(kvs, updateRootRequest(pkg))
 
 	// write bulk to KV
-	encodeAndWriteKVBulk(ctx, kvs)
+	return encodeAndWriteKVBulk(ctx, kvs)
 }
