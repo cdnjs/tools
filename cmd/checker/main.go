@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
@@ -225,6 +226,30 @@ func makeGlobDebugLink(glob string, dir string) string {
 	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
+func checkPopularity(ctx context.Context, pckg *packages.Package) {
+	var monthlyDownload, stars uint
+
+	if pckg.Autoupdate.Source == "npm" {
+		md := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
+		monthlyDownload = md.Downloads
+	}
+
+	if strings.Contains(pckg.Repository.URL, "github") {
+		s := git.GetGitHubStars(pckg.Repository.URL)
+		stars = s.Stars
+	}
+
+	if monthlyDownload < util.MinNpmMonthlyDownloads && stars < util.MinGitHubStars {
+		if pckg.Autoupdate.Source == "npm" {
+			warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
+		}
+		if strings.Contains(pckg.Repository.URL, "github") {
+			warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
+		}
+	}
+
+}
+
 func lintPackage(pckgPath string) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
@@ -255,12 +280,12 @@ func lintPackage(pckgPath string) {
 					break
 				}
 
-				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
-					warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
-				}
+				checkPopularity(ctx, pckg)
 			}
 		case "git":
+			{
+				checkPopularity(ctx, pckg)
+			}
 		default:
 			{
 				err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)

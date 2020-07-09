@@ -14,6 +14,10 @@ const (
 	// from npm needed for a library to be accepted into cdnjs.
 	MinNpmMonthlyDownloads = 800
 
+	// MinGitHubStars is the minimum number of stars for a library to be
+	// accepted into cdnjs.
+	MinGitHubStars = 200
+
 	// MaxBulkWritePayload is the maximum payload size for a request to write
 	// to Workers KV in bulk. Note that this will be the sum of all values only.
 	// The max bulk request size is 100MiB (104857600), so this will provide
