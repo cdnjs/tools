@@ -2,6 +2,7 @@ package sentry
 
 import (
 	"os"
+	"time"
 
 	"github.com/cdnjs/tools/util"
 
@@ -30,5 +31,5 @@ func PanicHandler() {
 // NotifyError notifies sentry of an error
 func NotifyError(err interface{}) {
 	sentry.CurrentHub().Recover(err)
-	sentry.Flush(util.SentryFlushTime)
+	sentry.Flush(time.Second * 5)
 }

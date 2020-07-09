@@ -203,7 +203,7 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
 		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
-			util.Warnf(ctx, "kv write fail: %s", err.Error())
+			sentry.NotifyError(fmt.Errorf("kv write %s: %s", path.Join(pkg, version), err.Error()))
 		}
 	}
 }

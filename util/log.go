@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	"github.com/getsentry/sentry-go"
 )
 
 // LogFunc represents a function that takes a context,
@@ -39,10 +37,6 @@ func GetStandardEntries(prefix string, logger *log.Logger) []ContextEntry {
 			Key:   Logger,
 			Value: logger,
 		},
-		{
-			Key:   Warn,
-			Value: LogFunc(SentryWarnf),
-		},
 	}
 }
 
@@ -68,12 +62,6 @@ func GetCheckerEntries(prefix string, logger *log.Logger) []ContextEntry {
 			Value: LogFunc(CheckerErrf),
 		},
 	}
-}
-
-// SentryWarnf implements LogFunc, notifying sentry of an error.
-func SentryWarnf(ctx context.Context, format string, v ...interface{}) {
-	sentry.CurrentHub().RecoverWithContext(ctx, fmt.Errorf(format, v...))
-	sentry.CurrentHub().Flush(SentryFlushTime)
 }
 
 // Printf is a LogFunc that uses a logger to log a formatted string.
