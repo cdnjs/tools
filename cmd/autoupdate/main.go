@@ -89,7 +89,7 @@ func main() {
 
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
-				commitNewVersions(ctx, newVersionsToCommit)
+				commitNewVersions(defaultCtx, newVersionsToCommit)
 				if !util.IsKVDisabled() {
 					writeNewVersionsToKV(ctx, newVersionsToCommit)
 				}
@@ -99,7 +99,7 @@ func main() {
 			} else {
 				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
 				if err != nil || destpckg.Version == nil || *destpckg.Version != latestVersion {
-					commitPackageVersion(ctx, pckg, latestVersion, f)
+					commitPackageVersion(defaultCtx, pckg, latestVersion, f)
 				}
 			}
 		}
