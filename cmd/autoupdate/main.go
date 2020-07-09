@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -65,47 +67,57 @@ func main() {
 		util.UpdateGitRepo(defaultCtx, packagesPath)
 	}
 
+	// create channel to handle signals
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+
 	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
-		pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
-		util.Check(err)
+		select {
+		case sig := <-c:
+			util.Debugf(ctx, "received signal %s\n", sig)
+			return
+		default:
+			pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
+			util.Check(err)
 
-		var newVersionsToCommit []newVersionToCommit
-		var latestVersion string
+			var newVersionsToCommit []newVersionToCommit
+			var latestVersion string
 
-		if pckg.Autoupdate != nil {
-			if pckg.Autoupdate.Source == "npm" {
-				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
+			if pckg.Autoupdate != nil {
+				if pckg.Autoupdate.Source == "npm" {
+					util.Debugf(ctx, "running npm update")
+					newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
+				}
+
+				if pckg.Autoupdate.Source == "git" {
+					util.Debugf(ctx, "running git update")
+					newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
+				}
 			}
 
-			if pckg.Autoupdate.Source == "git" {
-				util.Debugf(ctx, "running git update")
-				newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
+			if !noUpdate {
+				if len(newVersionsToCommit) > 0 {
+					commitNewVersions(ctx, newVersionsToCommit)
+					//writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
+				}
+				if _, err := semver.Parse(latestVersion); err != nil {
+					util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
+				} else {
+					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
+					util.Check(err)
+					if destpckg.Version == nil || *destpckg.Version != latestVersion {
+						commitPackageVersion(ctx, pckg, latestVersion, f)
+					}
+				}
 			}
 		}
 
 		if !noUpdate {
-			if len(newVersionsToCommit) > 0 {
-				commitNewVersions(ctx, newVersionsToCommit)
-				//writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
-			}
-			if _, err := semver.Parse(latestVersion); err != nil {
-				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
-			} else {
-				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
-				util.Check(err)
-				if destpckg.Version == nil || *destpckg.Version != latestVersion {
-					commitPackageVersion(ctx, pckg, latestVersion, f)
-				}
-			}
+			packages.GitPush(defaultCtx, cdnjsPath)
 		}
-	}
-
-	if !noUpdate {
-		packages.GitPush(defaultCtx, cdnjsPath)
 	}
 }
 
