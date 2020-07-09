@@ -60,8 +60,11 @@ func test() {
 		case <-time.After(time.Second):
 			fmt.Printf("hello world %d\n", i)
 		case sig := <-c:
-			fmt.Printf("Received signal: %s\n", sig)
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Received signal: %s\n", sig)
+			for j := 1; ; j++ {
+				<-time.After(time.Second)
+				fmt.Fprintf(os.Stderr, "Alive for %d second(s)\n", j)
+			}
 		}
 	}
 }
