@@ -100,11 +100,6 @@ func main() {
 			}
 		}
 
-		if pckg.Autoupdate.Source == "git" {
-			util.Debugf(ctx, "running git update")
-			newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
-		}
-
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
