@@ -228,22 +228,25 @@ func makeGlobDebugLink(glob string, dir string) string {
 
 func checkPopularity(ctx context.Context, pckg *packages.Package) {
 	var monthlyDownload, stars uint
+	var npmChecked, gitHubChecked bool
 
 	if pckg.Autoupdate.Source == "npm" {
+		npmChecked = true
 		md := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
 		monthlyDownload = md.Downloads
 	}
 
 	if strings.Contains(pckg.Repository.URL, "github") {
+		gitHubChecked = true
 		s := git.GetGitHubStars(pckg.Repository.URL)
 		stars = s.Stars
 	}
 
 	if monthlyDownload < util.MinNpmMonthlyDownloads && stars < util.MinGitHubStars {
-		if pckg.Autoupdate.Source == "npm" {
+		if npmChecked {
 			warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
 		}
-		if strings.Contains(pckg.Repository.URL, "github") {
+		if gitHubChecked {
 			warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
 		}
 	}
