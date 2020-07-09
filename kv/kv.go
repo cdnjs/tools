@@ -12,8 +12,7 @@ import (
 var (
 	namespaceID = util.GetEnv("WORKERS_KV_NAMESPACE_ID")
 	accountID   = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
-	apiKey      = util.GetEnv("WORKERS_KV_API_KEY")
-	email       = util.GetEnv("WORKERS_KV_EMAIL")
+	apiToken    = util.GetEnv("WORKERS_KV_API_TOKEN")
 	api         = getAPI()
 )
 
@@ -26,7 +25,7 @@ type writeRequest struct {
 
 // Gets a new *cloudflare.API.
 func getAPI() *cloudflare.API {
-	a, err := cloudflare.New(apiKey, email, cloudflare.UsingAccount(accountID))
+	a, err := cloudflare.NewWithAPIToken(apiToken, cloudflare.UsingAccount(accountID))
 	util.Check(err)
 	return a
 }
@@ -38,11 +37,11 @@ func ReadKV(key string) ([]byte, error) {
 
 // Ensure a response is successful and the error is nil.
 func checkSuccess(ctx context.Context, r cloudflare.Response, err interface{}) {
+	util.Check(err)
 	if !r.Success {
 		util.Debugf(ctx, "kv fail: %v\n", r)
 		panic(r)
 	}
-	util.Check(err)
 }
 
 // Encodes a byte array to a base64 string.

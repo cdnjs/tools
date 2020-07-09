@@ -80,39 +80,46 @@ func main() {
 			util.Debugf(ctx, "received signal %s\n", sig)
 			return
 		default:
-			pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
-			util.Check(err)
+		}
 
-			var newVersionsToCommit []newVersionToCommit
-			var latestVersion string
+		pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
+		util.Check(err)
 
-			if pckg.Autoupdate != nil {
-				if pckg.Autoupdate.Source == "npm" {
-					util.Debugf(ctx, "running npm update")
-					newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
-				}
+		var newVersionsToCommit []newVersionToCommit
+		var latestVersion string
 
-				if pckg.Autoupdate.Source == "git" {
-					util.Debugf(ctx, "running git update")
-					newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
-				}
+		if pckg.Autoupdate != nil {
+			if pckg.Autoupdate.Source == "npm" {
+				util.Debugf(ctx, "running npm update")
+				newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
 			}
 
-			if !noUpdate {
-				if len(newVersionsToCommit) > 0 {
-					commitNewVersions(ctx, newVersionsToCommit)
-					packages.GitPush(ctx, cdnjsPath)
-					//writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
+			if pckg.Autoupdate.Source == "git" {
+				util.Debugf(ctx, "running git update")
+				newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
+			}
+		}
+
+		if pckg.Autoupdate.Source == "git" {
+			util.Debugf(ctx, "running git update")
+			newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
+		}
+
+		if !noUpdate {
+			if len(newVersionsToCommit) > 0 {
+				commitNewVersions(ctx, newVersionsToCommit)
+				packages.GitPush(ctx, cdnjsPath)
+				if !util.IsKVDisabled() {
+					writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
 				}
-				if _, err := semver.Parse(latestVersion); err != nil {
-					util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
-				} else {
-					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
-					util.Check(err)
-					if destpckg.Version == nil || *destpckg.Version != latestVersion {
-						commitPackageVersion(ctx, pckg, latestVersion, f)
-						packages.GitPush(ctx, cdnjsPath)
-					}
+			}
+			if _, err := semver.Parse(latestVersion); err != nil {
+				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
+			} else {
+				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
+				if err != nil || destpckg.Version == nil || *destpckg.Version != latestVersion {
+					commitPackageVersion(ctx, pckg, latestVersion, f)
+					packages.GitPush(ctx, cdnjsPath)
 				}
 			}
 		}
@@ -241,6 +248,6 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVer
 	// Add to git the updated package.json
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.Path(), "package.json"))
 
-	commitMsg := fmt.Sprintf("Add %s package.json (v%s)", pckg.Name, latestVersion)
+	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", pckg.Name, latestVersion)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 }
