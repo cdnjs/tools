@@ -137,7 +137,7 @@ func TestCheckerLint(t *testing.T) {
 				}
 			}`,
 			expected: []string{
-				ciError(file, "package download per month on npm is under 800"),
+				ciWarn(file, "package download per month on npm is under 800"),
 			},
 		},
 
