@@ -15,6 +15,7 @@ Repository that contains various tools for maintaining cdnjs.
 - `DEBUG`: pass true to run in debug mode
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
+- `DISABLE_KV` pass true to disable writes to workers KV
 - `WORKERS_KV_NAMESPACE_ID` workers kv namespace ID
 - `WORKERS_KV_ACCOUNT_ID` workers kv account ID
 - `WORKERS_KV_API_KEY` workers kv api key
