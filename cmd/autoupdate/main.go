@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -49,7 +50,24 @@ type newVersionToCommit struct {
 	pckg        *packages.Package
 }
 
+func test() {
+	// create channel to handle signals
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+
+	for i := 0; ; i++ {
+		select {
+		case <-time.After(time.Second):
+			fmt.Printf("hello world %d\n", i)
+		case sig := <-c:
+			fmt.Printf("Received signal: %s\n", sig)
+			os.Exit(1)
+		}
+	}
+}
+
 func main() {
+	test()
 	defer sentry.PanicHandler()
 
 	var noUpdate bool
