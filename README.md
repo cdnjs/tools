@@ -26,6 +26,7 @@ In `tools/` run `npm install`.
 
 - [jpegoptim](https://www.kokkonen.net/tjko/projects.html)
 - [zopflipng](https://github.com/google/zopfli)
+- [brotli](https://github.com/google/brotli) (Linux)
 
 ## Setup a local environment
 

@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -65,9 +67,20 @@ func main() {
 		util.UpdateGitRepo(defaultCtx, packagesPath)
 	}
 
+	// create channel to handle signals
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+
 	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		select {
+		case sig := <-c:
+			util.Debugf(ctx, "received signal %s\n", sig)
+			return
+		default:
+		}
 
 		pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
 		util.Check(err)
@@ -90,6 +103,7 @@ func main() {
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
+				packages.GitPush(ctx, cdnjsPath)
 				if !util.IsKVDisabled() {
 					writeNewVersionsToKV(ctx, newVersionsToCommit)
 				}
@@ -100,11 +114,9 @@ func main() {
 				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
 				if err != nil || destpckg.Version == nil || *destpckg.Version != latestVersion {
 					commitPackageVersion(ctx, pckg, latestVersion, f)
+					packages.GitPush(ctx, cdnjsPath)
 				}
 			}
-		}
-		if !noUpdate {
-			packages.GitPush(ctx, cdnjsPath)
 		}
 	}
 }
