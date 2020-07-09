@@ -4,7 +4,6 @@ import (
 	"context"
 	"io/ioutil"
 	"path"
-	"sort"
 
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/util"
@@ -194,14 +193,14 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 	// create bulk of requests
 	var kvs []*writeRequest
 	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
-	compressedReqs, compressedFiles := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, uncompressedFiles)
-	allFiles := append(uncompressedFiles, compressedFiles...)
-	sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
+	compressedReqs, _ := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, uncompressedFiles)
 
 	kvs = append(kvs, uncompressedReqs...)
 	kvs = append(kvs, compressedReqs...)
 
 	// TODO: decide on how much metadata will be maintained
+	// allFiles := append(uncompressedFiles, compressedFiles...)
+	// sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
 	// kvs = append(kvs, updateVersionRequest(pkg, version, allFiles))
 	// kvs = append(kvs, updatePackageRequest(pkg, version))
 	// kvs = append(kvs, updateRootRequest(pkg))
