@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -78,7 +79,10 @@ func main() {
 		select {
 		case sig := <-c:
 			util.Debugf(ctx, "received signal %s\n", sig)
-			fmt.Fprintln(os.Stderr, "exiting successfully...")
+			for i := 0; ; i++ {
+				util.Debugf(ctx, "alive for %d second(s)\n", i)
+				<-time.After(time.Second)
+			}
 			return
 		default:
 		}
