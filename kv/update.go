@@ -4,13 +4,20 @@ import (
 	"context"
 	"io/ioutil"
 	"path"
-	"sort"
 
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/util"
 )
 
 var (
+	// these file extensions are ignored and will not
+	// be compressed or uploaded to KV
+	ignored = map[string]bool{
+		".br": true,
+		".gz": true,
+	}
+	// these file extensions will be uploaded to KV
+	// but not compessed
 	doNotCompress = map[string]bool{
 		".woff":  true,
 		".woff2": true,
@@ -85,71 +92,65 @@ var (
 
 // Gets the requests to update a number of files in KV in compressed format.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
-// that is not banned (ex. `.woff2`).
+// that is not banned (ex. `.woff2`, `.br`, `.gz`).
 //
 // TODO:
 // Should SRIs be calculated for all files, including compressed ones, or just uncompressed files?
-func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, uncompressedFiles []File) ([]*writeRequest, []File) {
-	baseKeyPath := path.Join(pkg, version)
+func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []File, error) {
+	baseVersionPath := path.Join(pkg, version)
 	var kvs []*writeRequest
 	var compressedFiles []File
 
-	for _, f := range uncompressedFiles {
-		if _, ok := doNotCompress[path.Ext(f.Name)]; !ok {
-			fullPath := path.Join(fullPathToVersion, f.Name)
-			fKey := path.Join(baseKeyPath, f.Name)
-
-			// brotli
-			kvs = append(kvs, &writeRequest{
-				Key:   fKey + ".br",
-				Value: compress.Brotli11CLI(ctx, fullPath),
-			})
-			compressedFiles = append(compressedFiles, File{
-				Name: f.Name + ".br",
-				// TODO: determine metadata
-			})
-
-			// gzip
-			bytes, err := ioutil.ReadFile(fullPath)
-			util.Check(err)
-
-			kvs = append(kvs, &writeRequest{
-				Key:   fKey + ".gz",
-				Value: compress.Gzip9Native(bytes),
-			})
-			compressedFiles = append(compressedFiles, File{
-				Name: f.Name + ".gz",
-				// TODO: determine metadata
-			})
+	for _, fromVersionPath := range fromVersionPaths {
+		ext := path.Ext(fromVersionPath)
+		if _, ok := ignored[ext]; ok {
+			util.Debugf(ctx, "file ignored from kv write: %s\n", fromVersionPath)
+			continue // ignore completely
 		}
-	}
-
-	return kvs, compressedFiles
-}
-
-// Gets the requests to update a number of files in KV in uncompressed format.
-func updateUncompressedFilesRequests(pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []File) {
-	baseKeyPath := path.Join(pkg, version)
-	kvs := make([]*writeRequest, len(fromVersionPaths))
-	files := make([]File, len(fromVersionPaths))
-
-	for i, fromVersionPath := range fromVersionPaths {
 		fullPath := path.Join(fullPathToVersion, fromVersionPath)
+		baseFileKey := path.Join(baseVersionPath, fromVersionPath)
+
 		bytes, err := ioutil.ReadFile(fullPath)
-		util.Check(err)
-
-		kvs[i] = &writeRequest{
-			Key:   path.Join(baseKeyPath, fromVersionPath),
-			Value: bytes,
+		if err != nil {
+			return kvs, compressedFiles, err
 		}
 
-		files[i] = File{
-			Name: fromVersionPath,
+		if _, ok := doNotCompress[ext]; ok {
+			// will insert to KV without compressing further
+			util.Debugf(ctx, "file will not be compressed in kv write: %s\n", fromVersionPath)
+			kvs = append(kvs, &writeRequest{
+				Key:   baseFileKey,
+				Value: bytes,
+			})
+			compressedFiles = append(compressedFiles, File{
+				Name: fromVersionPath,
+				// TODO: determine metadata
+			})
+			continue
+		}
+
+		// brotli
+		kvs = append(kvs, &writeRequest{
+			Key:   baseFileKey + ".br",
+			Value: compress.Brotli11CLI(ctx, fullPath),
+		})
+		compressedFiles = append(compressedFiles, File{
+			Name: fromVersionPath + ".br",
 			// TODO: determine metadata
-		}
+		})
+
+		// gzip
+		kvs = append(kvs, &writeRequest{
+			Key:   baseFileKey + ".gz",
+			Value: compress.Gzip9Native(bytes),
+		})
+		compressedFiles = append(compressedFiles, File{
+			Name: fromVersionPath + ".gz",
+			// TODO: determine metadata
+		})
 	}
 
-	return kvs, files
+	return kvs, compressedFiles, nil
 }
 
 // Optimizes/minifies files on disk for a particular package version.
@@ -160,7 +161,7 @@ func updateUncompressedFilesRequests(pkg, version, fullPathToVersion string, fro
 // Eventually remove the autoupdater's `compressNewVersion()` function,
 // as we will not depend on disk files such as `.donotoptimizepng`.
 // Also remove `filterByExt()` since it is cleaner with a switch.
-func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) []string {
+func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
 	for _, fromV := range fromVersionPaths {
 		fullPath := path.Join(fullPathToVersion, fromV)
 		switch path.Ext(fromV) {
@@ -174,9 +175,7 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 			compress.CSS(ctx, fullPath)
 		}
 	}
-	updatedFromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
-	util.Check(err)
-	return updatedFromVersionPaths
+	return util.ListFilesInVersion(ctx, fullPathToVersion)
 }
 
 // Updates KV with new version, writing to all of the necessary data structures.
@@ -186,26 +185,30 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 // when an operation is about to be attempted and when an
 // operation completes successfully. This is to help recover from
 // silent failures that result in inconsistent states.
-func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) {
+func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) error {
 	// minify/optimize existing files, adding any new files generated (ex: .min.js)
 	// note: encoding in brotli/gzip will occur later for each of these files
-	fromVersionPaths = optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
+	fromVersionPaths, err := optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
 
 	// create bulk of requests
 	var kvs []*writeRequest
-	uncompressedReqs, uncompressedFiles := updateUncompressedFilesRequests(pkg, version, fullPathToVersion, fromVersionPaths)
-	compressedReqs, compressedFiles := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, uncompressedFiles)
-	allFiles := append(uncompressedFiles, compressedFiles...)
-	sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
+	compressedReqs, _, err := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
 
-	kvs = append(kvs, uncompressedReqs...)
 	kvs = append(kvs, compressedReqs...)
 
 	// TODO: decide on how much metadata will be maintained
+	// allFiles := append(uncompressedFiles, compressedFiles...)
+	// sort.Slice(allFiles, func(i, j int) bool { return allFiles[i].Name < allFiles[j].Name })
 	// kvs = append(kvs, updateVersionRequest(pkg, version, allFiles))
 	// kvs = append(kvs, updatePackageRequest(pkg, version))
 	// kvs = append(kvs, updateRootRequest(pkg))
 
 	// write bulk to KV
-	encodeAndWriteKVBulk(ctx, kvs)
+	return encodeAndWriteKVBulk(ctx, kvs)
 }

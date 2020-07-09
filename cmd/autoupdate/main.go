@@ -105,7 +105,7 @@ func main() {
 				commitNewVersions(ctx, newVersionsToCommit)
 				packages.GitPush(ctx, cdnjsPath)
 				if !util.IsKVDisabled() {
-					writeNewVersionsToKV(defaultCtx, newVersionsToCommit)
+					writeNewVersionsToKV(ctx, newVersionsToCommit)
 				}
 			}
 			if _, err := semver.Parse(latestVersion); err != nil {
@@ -213,7 +213,9 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		pkg, version := newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath)
+		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
+			sentry.NotifyError(fmt.Errorf("kv write %s: %s", path.Join(pkg, version), err.Error()))
+		}
 	}
 }
 
