@@ -226,31 +226,16 @@ func makeGlobDebugLink(glob string, dir string) string {
 	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
-func checkPopularity(ctx context.Context, pckg *packages.Package) {
-	var monthlyDownload, stars uint
-	var npmChecked, gitHubChecked bool
-
-	if pckg.Autoupdate.Source == "npm" {
-		npmChecked = true
-		md := npm.GetMonthlyDownload(pckg.Autoupdate.Target)
-		monthlyDownload = md.Downloads
+func checkGitHubPopularity(ctx context.Context, pckg *packages.Package) bool {
+	if !strings.Contains(pckg.Repository.URL, "github.com") {
+		return false
 	}
 
-	if strings.Contains(pckg.Repository.URL, "github.com") {
-		gitHubChecked = true
-		s := git.GetGitHubStars(pckg.Repository.URL)
-		stars = s.Stars
+	if s := git.GetGitHubStars(pckg.Repository.URL); s.Stars < util.MinGitHubStars {
+		warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
+		return false
 	}
-
-	if monthlyDownload < util.MinNpmMonthlyDownloads && stars < util.MinGitHubStars {
-		if npmChecked {
-			warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
-		}
-		if gitHubChecked {
-			warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
-		}
-	}
-
+	return true
 }
 
 func lintPackage(pckgPath string) {
@@ -283,11 +268,16 @@ func lintPackage(pckgPath string) {
 					break
 				}
 
-				checkPopularity(ctx, pckg)
+				// check if it has enough downloads
+				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
+					if !checkGitHubPopularity(ctx, pckg) {
+						warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
+					}
+				}
 			}
 		case "git":
 			{
-				checkPopularity(ctx, pckg)
+				checkGitHubPopularity(ctx, pckg)
 			}
 		default:
 			{
