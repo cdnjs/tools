@@ -236,7 +236,7 @@ func checkPopularity(ctx context.Context, pckg *packages.Package) {
 		monthlyDownload = md.Downloads
 	}
 
-	if strings.Contains(pckg.Repository.URL, "github") {
+	if strings.Contains(pckg.Repository.URL, "github.com") {
 		gitHubChecked = true
 		s := git.GetGitHubStars(pckg.Repository.URL)
 		stars = s.Stars
