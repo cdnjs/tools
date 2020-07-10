@@ -33,6 +33,11 @@ func (g Version) Download(args ...interface{}) string {
 func (g Version) Clean(_ string) {
 }
 
+// GetTimeStamp gets the time stamp for a particular git version.
+func (g Version) GetTimeStamp() time.Time {
+	return g.TimeStamp
+}
+
 // GetVersions gets all of the versions associated with a git repo,
 // as well as the latest version.
 func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache string) ([]Version, string) {

@@ -21,7 +21,7 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, string) {
+func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, version) {
 	var newVersionsToCommit []newVersionToCommit
 
 	packageGitcache := path.Join(gitCache, pckg.Name)
@@ -33,22 +33,22 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		out, err := packages.GitClone(ctx, pckg, packageGitcache)
 		if err != nil {
 			util.Errf(ctx, "could not clone repo: %s: %s\n", err, out)
-			return newVersionsToCommit, ""
+			return newVersionsToCommit, nil
 		}
 	} else {
 		if isValidGit(ctx, packageGitcache) {
 			out, fetcherr := packages.GitFetch(ctx, packageGitcache)
 			if fetcherr != nil {
 				util.Errf(ctx, "could not fetch repo %s: %s\n", fetcherr, out)
-				return newVersionsToCommit, ""
+				return newVersionsToCommit, nil
 			}
 		} else {
 			util.Errf(ctx, "invalid git repo\n")
-			return newVersionsToCommit, ""
+			return newVersionsToCommit, nil
 		}
 	}
 
-	gitVersions, latestGitVersion := git.GetVersions(ctx, pckg, packageGitcache)
+	gitVersions, _ := git.GetVersions(ctx, pckg, packageGitcache)
 	existingVersionSet := pckg.Versions()
 	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
@@ -94,7 +94,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	return newVersionsToCommit, latestGitVersion
+	return newVersionsToCommit, version(lastExistingVersion)
 }
 
 func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {
@@ -146,6 +146,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 				versionPath: pckgpath,
 				newVersion:  gitversion.Version,
 				pckg:        pckg,
+				timestamp:   gitversion.TimeStamp,
 			})
 		} else {
 			util.Debugf(ctx, "no files matched\n")

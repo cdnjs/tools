@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -47,6 +48,12 @@ type newVersionToCommit struct {
 	versionPath string
 	newVersion  string
 	pckg        *packages.Package
+	timestamp   time.Time
+}
+
+type version interface {
+	Get() string             // Get the version.
+	GetTimeStamp() time.Time // GetTimeStamp gets the time stamp associated with the version.
 }
 
 func main() {
@@ -86,17 +93,17 @@ func main() {
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
-		var latestVersion string
+		var latestExistingVersion version
 
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit, latestVersion = updateNpm(ctx, pckg)
+				newVersionsToCommit, latestExistingVersion = updateNpm(ctx, pckg)
 			}
 
 			if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
-				newVersionsToCommit, latestVersion = updateGit(ctx, pckg)
+				newVersionsToCommit, latestExistingVersion = updateGit(ctx, pckg)
 			}
 		}
 
@@ -108,6 +115,7 @@ func main() {
 					writeNewVersionsToKV(ctx, newVersionsToCommit)
 				}
 			}
+			latestVersion := getLatestVersion(latestExistingVersion, newVersionsToCommit)
 			if _, err := semver.Parse(latestVersion); err != nil {
 				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
 			} else {
@@ -119,6 +127,23 @@ func main() {
 			}
 		}
 	}
+}
+
+// Gets the latest version by time stamp. If it does not exist, an empty string is returned.
+func getLatestVersion(latestExistingVersion version, newVersionsToCommit []newVersionToCommit) string {
+	var latest string
+	var latestTimeStamp time.Time
+	if latestExistingVersion != nil {
+		latest = latestExistingVersion.Get()
+		latestTimeStamp = latestExistingVersion.GetTimeStamp()
+	}
+	for _, newVersionToCommit := range newVersionsToCommit {
+		if newVersionToCommit.timestamp.After(latestTimeStamp) {
+			latest = newVersionToCommit.newVersion
+			latestTimeStamp = newVersionToCommit.timestamp
+		}
+	}
+	return latest
 }
 
 func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {

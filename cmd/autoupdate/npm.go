@@ -12,11 +12,11 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, string) {
+func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, version) {
 	var newVersionsToCommit []newVersionToCommit
 
 	existingVersionSet := pckg.Versions()
-	npmVersions, latestNpmVersion := npm.GetVersions(ctx, pckg.Autoupdate.Target)
+	npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
 	lastExistingVersion := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	if lastExistingVersion != nil {
@@ -52,11 +52,6 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 				npmVersions = npmVersions[len(npmVersions)-util.ImportAllMaxVersions:]
 			}
 
-			npmVersionsStr := make([]string, len(npmVersions))
-			for i, npmVersion := range npmVersions {
-				npmVersionsStr[i] = npmVersion.Version
-			}
-
 			// Reverse the array to have the older versions first
 			// It matters when we will commit the updates
 			sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
@@ -65,7 +60,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	return newVersionsToCommit, latestNpmVersion
+	return newVersionsToCommit, version(lastExistingVersion)
 }
 
 func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Version) []newVersionToCommit {
@@ -117,6 +112,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 				versionPath: pckgpath,
 				newVersion:  version.Version,
 				pckg:        pckg,
+				timestamp:   version.TimeStamp,
 			})
 		} else {
 			util.Debugf(ctx, "no files matched")
