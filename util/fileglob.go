@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/karrick/godirwalk"
 )
@@ -33,6 +34,7 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) ([]string, 
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	cmd.Dir = base
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	err := cmd.Run()
 	if err != nil {
 		fmt.Printf("%s: %s\n", err, out.String())

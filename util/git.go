@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"syscall"
 )
 
 // UpdateGitRepo git pulls and rebases the repository.
@@ -12,6 +13,7 @@ func UpdateGitRepo(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	CheckCmd(cmd.CombinedOutput())
 }
@@ -31,6 +33,7 @@ func isPathIgnoredByGit(ctx context.Context, gitpath string, path string) bool {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 
 	return cmd.Run() == nil

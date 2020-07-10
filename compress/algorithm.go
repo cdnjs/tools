@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"syscall"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -18,6 +19,7 @@ func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 	cmd := exec.Command(alg, args...)
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdOut, &stdErr
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 
 	util.Debugf(ctx, "algorithm: run %s\n", cmd)
 	err := cmd.Run()

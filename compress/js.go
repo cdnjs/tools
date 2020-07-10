@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -46,12 +47,14 @@ func Js(ctx context.Context, file string) {
 
 	// try with uglifyjs, if it fails retry with uglifyes
 	cmd := exec.Command(UGLIFYJS, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "compress: run %s\n", cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		util.Debugf(ctx, "failed with %s: %s\n", err, out)
 
 		cmd := exec.Command(UGLIFYES, args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 		util.Debugf(ctx, "compress: run %s\n", cmd)
 		out, err := cmd.CombinedOutput()
 		if err != nil {

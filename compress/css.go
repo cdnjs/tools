@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -44,6 +45,7 @@ func CSS(ctx context.Context, file string) {
 	}
 
 	cmd := exec.Command(cleanCSS, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
 	util.Debugf(ctx, "%s\n", out)

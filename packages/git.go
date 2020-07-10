@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/cdnjs/tools/util"
@@ -40,6 +41,7 @@ func GitListPackageVersions(ctx context.Context, basePath string) []string {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = basePath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s from %s\n", cmd, basePath)
 	out := util.CheckCmd(cmd.CombinedOutput())
 
@@ -70,6 +72,7 @@ func GitAdd(ctx context.Context, gitpath, relpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
@@ -80,6 +83,7 @@ func GitCommit(ctx context.Context, gitpath, msg string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
@@ -90,6 +94,7 @@ func GitFetch(ctx context.Context, gitpath string) ([]byte, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	return cmd.CombinedOutput()
 }
@@ -100,6 +105,7 @@ func GitPush(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
@@ -110,6 +116,7 @@ func GitClone(ctx context.Context, pckg *Package, gitpath string) ([]byte, error
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	out, err := cmd.CombinedOutput()
 	return out, err
@@ -121,6 +128,7 @@ func GitTags(ctx context.Context, gitpath string) []string {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
 
@@ -145,6 +153,7 @@ func GitTimeStamp(ctx context.Context, gitpath, tag string) time.Time {
 	cmd.Dir = gitpath
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	err := cmd.Run()
 
@@ -165,6 +174,7 @@ func GitForceCheckout(ctx context.Context, gitpath, tag string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }

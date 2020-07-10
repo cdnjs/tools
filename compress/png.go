@@ -3,6 +3,7 @@ package compress
 import (
 	"context"
 	"os/exec"
+	"syscall"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -24,6 +25,7 @@ func Png(ctx context.Context, file string) {
 	}
 
 	cmd := exec.Command("zopflipng", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
 	util.Debugf(ctx, "%s\n", out)
