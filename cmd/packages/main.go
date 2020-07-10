@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 
+	"github.com/agnivade/levenshtein"
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
@@ -171,6 +173,7 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 	out.Version = *p.Version
 	out.Description = p.Description
 	out.Filename = p.Filename
+
 	out.Repository = map[string]string{
 		"type": p.Repository.Repotype,
 		"url":  p.Repository.URL,
@@ -212,9 +215,52 @@ func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
 		}
 	}
 
-	out.Assets = p.Assets()
+	assets := p.Assets()
+	out.Assets = assets
+
+	if files, ok := versionContainsFile(out.Name, out.Version, out.Filename, assets); !ok {
+		if len(files) == 0 {
+			// no files in this version, filename will be 404 on website
+			sentry.NotifyError(fmt.Errorf("version contains no files: %s/%s", out.Name, out.Version))
+		} else {
+			p.Filename = getMostSimilarFilename(p.Filename, files) // get "best" alternative
+		}
+	}
 
 	return &out
+}
+
+// Gets the most similar filename to a target filename.
+// The []string of alternatives must have at least one element.
+func getMostSimilarFilename(target string, filenames []string) string {
+	var mostSimilar string
+	var minDist int = math.MaxInt32
+	for _, f := range filenames {
+		if dist := levenshtein.ComputeDistance(target, f); dist < minDist {
+			mostSimilar = f
+			minDist = dist
+		}
+	}
+	return mostSimilar
+}
+
+// Determines if a version contains a file.
+// If not found, returns the version's files.
+func versionContainsFile(name, version, filename string, assets []packages.Asset) ([]string, bool) {
+	for _, a := range assets {
+		if a.Version == version {
+			for _, f := range a.Files {
+				if f == filename {
+					return nil, true // target version contains file
+				}
+			}
+			// target version does not contain file, return files
+			return a.Files, false
+		}
+	}
+	// version not found, filename will be 404 on website
+	sentry.NotifyError(fmt.Errorf("version not found in assets: %s/%s", name, version))
+	return nil, true // send true to avoid processing this issue further
 }
 
 func hasSRI(p *packages.Package, version string) bool {
