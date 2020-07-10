@@ -67,6 +67,7 @@ func TestCheckerLint(t *testing.T) {
 			input: `{}`,
 			expected: []string{
 				ciError(file, ".name should be specified") +
+					ciError(file, ".repository.url should be specified") +
 					ciError(file, ".autoupdate should not be null. Package will never auto-update") +
 					ciError(file, "Unsupported .repository.type: "),
 			},
@@ -78,7 +79,8 @@ func TestCheckerLint(t *testing.T) {
 				"name": "foo",
 				"version": "v123456",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "git",
@@ -95,7 +97,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "lol"
 				},
 				"autoupdate": {
 					"source": "ftp",
@@ -112,7 +115,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "npm",
@@ -129,7 +133,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "npm",
@@ -146,7 +151,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"npmName": "` + normalPkg + `",
 				"npmFileMap": [

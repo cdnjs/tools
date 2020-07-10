@@ -258,6 +258,10 @@ func lintPackage(pckgPath string) {
 		err(ctx, shouldNotExist(".version"))
 	}
 
+	if pckg.Repository.URL == "" {
+		err(ctx, shouldNotBeEmpty(".repository.url"))
+	}
+
 	if pckg.Autoupdate != nil {
 		switch pckg.Autoupdate.Source {
 		case "npm":
