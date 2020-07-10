@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
-	"time"
 
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -70,7 +69,7 @@ func main() {
 
 	// create channel to handle signals
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGTERM)
 
 	for _, f := range getPackages(defaultCtx) {
 		// create context with file path prefix, standard debug logger
@@ -78,11 +77,7 @@ func main() {
 
 		select {
 		case sig := <-c:
-			util.Debugf(ctx, "received signal %s\n", sig)
-			for i := 0; ; i++ {
-				util.Debugf(ctx, "alive for %d second(s)\n", i)
-				<-time.After(time.Second)
-			}
+			util.Debugf(ctx, "received signal: %s\n", sig)
 			return
 		default:
 		}
