@@ -263,6 +263,10 @@ func lintPackage(pckgPath string) {
 	}
 
 	if pckg.Autoupdate != nil {
+		if pckg.Autoupdate.Source == "git" && pckg.Autoupdate.Target != pckg.Repository.URL {
+			err(ctx, ".autoupdate.target and .repository.url must not differ")
+		}
+
 		switch pckg.Autoupdate.Source {
 		case "npm":
 			{
