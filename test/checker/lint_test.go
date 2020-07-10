@@ -21,11 +21,13 @@ const (
 	unpopularPkg   = "unpopular"
 	nonexistentPkg = "nonexistent"
 	normalPkg      = "normal"
+	unpopularRepo  = "user/unpopularRepo"
 )
 
-// fakes the npm api for testing purposes
-func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
+// fakes the npm api and GitHub api for testing purposes
+func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
+	// NPM
 	case "/" + nonexistentPkg:
 		{
 			w.WriteHeader(404)
@@ -43,6 +45,11 @@ func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
 	case "/downloads/point/last-month/" + normalPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":31789789,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, normalPkg)
+		}
+	// GitHub
+	case "/repos/" + unpopularRepo:
+		{
+			fmt.Fprintf(w, `{"stargazers_count": 123}`)
 		}
 	default:
 		panic(fmt.Sprintf("unknown path: %s", r.URL.Path))
@@ -129,7 +136,7 @@ func TestCheckerLint(t *testing.T) {
 		},
 
 		{
-			name: "check popularity",
+			name: "check popularity (npm)",
 			input: `{
 				"name": "foo",
 				"repository": {
@@ -143,6 +150,24 @@ func TestCheckerLint(t *testing.T) {
 			}`,
 			expected: []string{
 				ciWarn(file, "package download per month on npm is under 800"),
+			},
+		},
+
+		{
+			name: "check popularity (git)",
+			input: `{
+				"name": "foo",
+				"repository": {
+					"type": "git",
+					"url": "https://github.com/` + unpopularRepo + `.git"
+				},
+				"autoupdate": {
+					"source": "git",
+					"target": "https://github.com/` + unpopularRepo + `.git"
+				}
+			}`,
+			expected: []string{
+				ciWarn(file, "stars on GitHub is under 200"),
 			},
 		},
 
@@ -178,7 +203,7 @@ func TestCheckerLint(t *testing.T) {
 
 	testproxy := &http.Server{
 		Addr:    httpTestProxy,
-		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerLint)),
+		Handler: http.Handler(http.HandlerFunc(fakeNpmGitHubHandlerLint)),
 	}
 
 	go func() {
