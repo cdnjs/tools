@@ -14,14 +14,6 @@ type Stars struct {
 	Stars uint `json:"stargazers_count"`
 }
 
-// Gets the protocol, either http or https.
-func getProtocol() string {
-	if util.HasHTTPProxy() {
-		return "http"
-	}
-	return "https"
-}
-
 // GetGitHubStars uses the GitHub API to get the star count for a
 // particular GitHub repository.
 func GetGitHubStars(gitUrl string) Stars {
@@ -32,7 +24,7 @@ func GetGitHubStars(gitUrl string) Stars {
 	re := regexp.MustCompile(`.*github\.com[:|/](.*?)(?:\.git)?$`)
 	gitHubRepository := re.ReplaceAllString(gitUrl, "$1")
 
-	resp, err := http.Get(getProtocol() + "://api.github.com/repos/" + gitHubRepository)
+	resp, err := http.Get(util.GetProtocol() + "://api.github.com/repos/" + gitHubRepository)
 	util.Check(err)
 
 	defer resp.Body.Close()

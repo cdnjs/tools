@@ -50,17 +50,9 @@ type MonthlyDownload struct {
 	Downloads uint `json:"downloads"`
 }
 
-// Gets the protocol, either http or https.
-func getProtocol() string {
-	if util.HasHTTPProxy() {
-		return "http"
-	}
-	return "https"
-}
-
 // Exists determines if an npm package exists.
 func Exists(name string) bool {
-	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
+	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 	return resp.StatusCode == http.StatusOK
 }
@@ -68,7 +60,7 @@ func Exists(name string) bool {
 // GetMonthlyDownload uses the npm API to get the MonthlyDownload
 // for a particular npm package.
 func GetMonthlyDownload(name string) MonthlyDownload {
-	resp, err := http.Get(getProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
+	resp, err := http.Get(util.GetProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
@@ -83,7 +75,7 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 // GetVersions gets all of the versions associated with an npm package,
 // as well as the latest version based on the `latest`.
 func GetVersions(ctx context.Context, name string) ([]Version, string) {
-	resp, err := http.Get(getProtocol() + "://registry.npmjs.org/" + name)
+	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
