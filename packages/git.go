@@ -94,9 +94,17 @@ func GitFetch(ctx context.Context, gitpath string) ([]byte, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
+	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
-	return cmd.CombinedOutput()
+
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+	util.Check(cmd.Start())
+	err := cmd.Wait()
+	return b.Bytes(), err
+
+	// return cmd.CombinedOutput()
 }
 
 // GitPush pushes to a git repository.
