@@ -77,7 +77,7 @@ func main() {
 
 		select {
 		case sig := <-c:
-			util.Debugf(ctx, "received signal: %s\n", sig)
+			util.Debugf(ctx, "RECEIVED SIGNAL: %s\n", sig)
 			return
 		default:
 		}
