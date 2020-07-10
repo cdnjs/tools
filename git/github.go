@@ -29,7 +29,7 @@ func GetGitHubStars(gitUrl string) Stars {
 	// "git@github.com:chris-pearce/backpack.css.git"
 	// "git+https://github.com/18F/web-design-standards.git"
 	// "https://github.com/epeli/underscore.string"
-	re := regexp.MustCompile(`.*github.com[:|/](.*?)(?:\.git)?$`)
+	re := regexp.MustCompile(`.*github\.com[:|/](.*?)(?:\.git)?$`)
 	gitHubRepository := re.ReplaceAllString(gitUrl, "$1")
 
 	resp, err := http.Get(getProtocol() + "://api.github.com/repos/" + gitHubRepository)
