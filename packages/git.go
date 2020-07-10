@@ -94,7 +94,7 @@ func GitFetch(ctx context.Context, gitpath string) ([]byte, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 
 	var b bytes.Buffer
