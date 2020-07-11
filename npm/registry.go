@@ -44,6 +44,11 @@ func (n Version) Clean(downloadDir string) {
 	os.RemoveAll(downloadDir) // clean up temp tarball dir
 }
 
+// GetTimeStamp gets the time stamp for a particular npm version.
+func (n Version) GetTimeStamp() time.Time {
+	return n.TimeStamp
+}
+
 // MonthlyDownload holds the number of monthly downloads
 // for an npm package.
 type MonthlyDownload struct {
