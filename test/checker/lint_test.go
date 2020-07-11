@@ -26,33 +26,31 @@ const (
 
 // fakes the npm api and GitHub api for testing purposes
 func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	// NPM
-	case "/" + nonexistentPkg:
+	switch r.Host + r.URL.Path {
+	case "registry.npmjs.org/" + nonexistentPkg:
 		{
 			w.WriteHeader(404)
 			fmt.Fprint(w, `{"error":"Not found"}`)
 		}
-	case "/" + unpopularPkg:
-	case "/" + normalPkg:
+	case "registry.npmjs.org/" + unpopularPkg:
+	case "registry.npmjs.org/" + normalPkg:
 		{
 			fmt.Fprint(w, `{}`)
 		}
-	case "/downloads/point/last-month/" + unpopularPkg:
+	case "api.npmjs.org/downloads/point/last-month/" + unpopularPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, unpopularPkg)
 		}
-	case "/downloads/point/last-month/" + normalPkg:
+	case "api.npmjs.org/downloads/point/last-month/" + normalPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":31789789,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, normalPkg)
 		}
-	// GitHub
-	case "/repos/" + unpopularRepo:
+	case "api.github.com/repos/" + unpopularRepo:
 		{
 			fmt.Fprintf(w, `{"stargazers_count": 123}`)
 		}
 	default:
-		panic(fmt.Sprintf("unknown path: %s", r.URL.Path))
+		panic(fmt.Sprintf("unknown path: %s", r.Host + r.URL.Path))
 	}
 }
 
