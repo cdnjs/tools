@@ -21,7 +21,7 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, version) {
+func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, *git.Version) {
 	var newVersionsToCommit []newVersionToCommit
 
 	packageGitcache := path.Join(gitCache, pckg.Name)
@@ -92,9 +92,10 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 			newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 		}
+		return newVersionsToCommit, nil // pass nil explicitly otherwise the version will be non-nil
 	}
 
-	return newVersionsToCommit, version(lastExistingVersion)
+	return newVersionsToCommit, lastExistingVersion
 }
 
 func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {
