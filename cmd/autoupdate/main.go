@@ -99,9 +99,7 @@ func main() {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
 				newVersionsToCommit, latestExistingVersion = updateNpm(ctx, pckg)
-			}
-
-			if pckg.Autoupdate.Source == "git" {
+			} else if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
 				newVersionsToCommit, latestExistingVersion = updateGit(ctx, pckg)
 			}

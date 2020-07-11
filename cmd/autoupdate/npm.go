@@ -58,9 +58,10 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 			newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 		}
+		return newVersionsToCommit, nil // pass nil explicitly otherwise the version will be non-nil
 	}
 
-	return newVersionsToCommit, version(lastExistingVersion)
+	return newVersionsToCommit, lastExistingVersion
 }
 
 func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Version) []newVersionToCommit {
