@@ -162,7 +162,9 @@ func showFiles(pckgPath string) {
 // messages if no valid files are present.
 func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string, v version) {
 	fmt.Printf("\nmost recent version: %s\n", v.Get())
-	filesToCopy := p.NpmFilesFrom(dir)
+	downloadDir := v.Download(ctx, dir)
+	defer v.Clean(downloadDir)
+	filesToCopy := p.NpmFilesFrom(downloadDir)
 
 	if len(filesToCopy) == 0 {
 		errormsg := ""
@@ -177,7 +179,7 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 					continue // skip duplicate pattern
 				}
 				seen[pattern] = true
-				errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, dir))
+				errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, downloadDir))
 			}
 		}
 		err(ctx, errormsg)
