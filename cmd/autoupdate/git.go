@@ -92,7 +92,6 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 			newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 		}
-		return newVersionsToCommit, nil // pass nil explicitly otherwise the version will be non-nil
 	}
 
 	return newVersionsToCommit, lastExistingVersion

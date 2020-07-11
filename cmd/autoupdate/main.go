@@ -98,10 +98,18 @@ func main() {
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit, latestExistingVersion = updateNpm(ctx, pckg)
+				newVersions, v := updateNpm(ctx, pckg)
+				newVersionsToCommit = newVersions
+				if v != nil {
+					latestExistingVersion = v
+				}
 			} else if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
-				newVersionsToCommit, latestExistingVersion = updateGit(ctx, pckg)
+				newVersions, v := updateGit(ctx, pckg)
+				newVersionsToCommit = newVersions
+				if v != nil {
+					latestExistingVersion = v
+				}
 			}
 		}
 
