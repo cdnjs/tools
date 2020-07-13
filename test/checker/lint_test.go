@@ -21,31 +21,36 @@ const (
 	unpopularPkg   = "unpopular"
 	nonexistentPkg = "nonexistent"
 	normalPkg      = "normal"
+	unpopularRepo  = "user/unpopularRepo"
 )
 
-// fakes the npm api for testing purposes
-func fakeNpmHandlerLint(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/" + nonexistentPkg:
+// fakes the npm api and GitHub api for testing purposes
+func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
+	switch r.Host + r.URL.Path {
+	case "registry.npmjs.org/" + nonexistentPkg:
 		{
 			w.WriteHeader(404)
 			fmt.Fprint(w, `{"error":"Not found"}`)
 		}
-	case "/" + unpopularPkg:
-	case "/" + normalPkg:
+	case "registry.npmjs.org/" + unpopularPkg:
+	case "registry.npmjs.org/" + normalPkg:
 		{
 			fmt.Fprint(w, `{}`)
 		}
-	case "/downloads/point/last-month/" + unpopularPkg:
+	case "api.npmjs.org/downloads/point/last-month/" + unpopularPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, unpopularPkg)
 		}
-	case "/downloads/point/last-month/" + normalPkg:
+	case "api.npmjs.org/downloads/point/last-month/" + normalPkg:
 		{
 			fmt.Fprintf(w, `{"downloads":31789789,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, normalPkg)
 		}
+	case "api.github.com/repos/" + unpopularRepo:
+		{
+			fmt.Fprintf(w, `{"stargazers_count": 123}`)
+		}
 	default:
-		panic(fmt.Sprintf("unknown path: %s", r.URL.Path))
+		panic(fmt.Sprintf("unknown path: %s", r.Host + r.URL.Path))
 	}
 }
 
@@ -67,6 +72,7 @@ func TestCheckerLint(t *testing.T) {
 			input: `{}`,
 			expected: []string{
 				ciError(file, ".name should be specified") +
+					ciError(file, ".repository.url should be specified") +
 					ciError(file, ".autoupdate should not be null. Package will never auto-update") +
 					ciError(file, "Unsupported .repository.type: "),
 			},
@@ -78,7 +84,8 @@ func TestCheckerLint(t *testing.T) {
 				"name": "foo",
 				"version": "v123456",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "git",
@@ -95,7 +102,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "lol"
 				},
 				"autoupdate": {
 					"source": "ftp",
@@ -112,7 +120,8 @@ func TestCheckerLint(t *testing.T) {
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "npm",
@@ -125,11 +134,12 @@ func TestCheckerLint(t *testing.T) {
 		},
 
 		{
-			name: "check popularity",
+			name: "check popularity (npm)",
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"autoupdate": {
 					"source": "npm",
@@ -142,11 +152,30 @@ func TestCheckerLint(t *testing.T) {
 		},
 
 		{
+			name: "check popularity (git)",
+			input: `{
+				"name": "foo",
+				"repository": {
+					"type": "git",
+					"url": "https://github.com/` + unpopularRepo + `.git"
+				},
+				"autoupdate": {
+					"source": "git",
+					"target": "https://github.com/` + unpopularRepo + `.git"
+				}
+			}`,
+			expected: []string{
+				ciWarn(file, "stars on GitHub is under 200"),
+			},
+		},
+
+		{
 			name: "legacy NpmName and NpmFileMap should error",
 			input: `{
 				"name": "foo",
 				"repository": {
-					"type": "git"
+					"type": "git",
+					"url": "git://ff"
 				},
 				"npmName": "` + normalPkg + `",
 				"npmFileMap": [
@@ -172,7 +201,7 @@ func TestCheckerLint(t *testing.T) {
 
 	testproxy := &http.Server{
 		Addr:    httpTestProxy,
-		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerLint)),
+		Handler: http.Handler(http.HandlerFunc(fakeNpmGitHubHandlerLint)),
 	}
 
 	go func() {
