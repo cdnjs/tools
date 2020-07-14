@@ -17,18 +17,21 @@ func (a ByTimeStamp) Less(i, j int) bool {
 }
 
 // GetMostRecentExistingVersion gets the most recent npm.Version based on time stamp
-// that is currently downloaded.
-func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string, npmVersions []Version) *Version {
+// that is currently downloaded as well as all existing versions in npm.Version form.
+func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string, npmVersions []Version) (*Version, []Version) {
 	// create map for fast lookups
 	npmMap := make(map[string]Version)
 	for _, v := range npmVersions {
 		npmMap[v.Version] = v
 	}
 
+	var allExisting []Version
+
 	// find most recent version
 	var mostRecent *Version
 	for _, existingVersion := range existingVersions {
 		if version, ok := npmMap[existingVersion]; ok {
+			allExisting = append(allExisting, version)
 			if mostRecent == nil || version.TimeStamp.After(mostRecent.TimeStamp) {
 				mostRecent = &version // new most recent found
 			}
@@ -37,5 +40,5 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 		util.Debugf(ctx, "existing version not found on npm: %s", existingVersion)
 	}
 
-	return mostRecent
+	return mostRecent, allExisting
 }

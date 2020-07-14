@@ -12,12 +12,18 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, *npm.Version) {
+func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, []version) {
 	var newVersionsToCommit []newVersionToCommit
+	var allVersions []version
 
 	existingVersionSet := pckg.Versions()
 	npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
-	lastExistingVersion := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
+	lastExistingVersion, allExisting := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
+
+	// add all existing versions to all versions list
+	for _, v := range allExisting {
+		allVersions = append(allVersions, version(v))
+	}
 
 	if lastExistingVersion != nil {
 		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion.Version)
@@ -35,6 +41,11 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
+
+		// add new npm versions to all versions list
+		for _, v := range newNpmVersions {
+			allVersions = append(allVersions, version(v))
+		}
 
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {
@@ -56,11 +67,16 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 			// It matters when we will commit the updates
 			sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
+			// add new npm versions to all versions list
+			for _, v := range npmVersions {
+				allVersions = append(allVersions, version(v))
+			}
+
 			newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 		}
 	}
 
-	return newVersionsToCommit, lastExistingVersion
+	return newVersionsToCommit, allVersions
 }
 
 func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Version) []newVersionToCommit {

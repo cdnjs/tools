@@ -40,7 +40,7 @@ func (g Version) GetTimeStamp() time.Time {
 
 // GetVersions gets all of the versions associated with a git repo,
 // as well as the latest version.
-func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache string) ([]Version, string) {
+func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache string) ([]Version, *string) {
 	gitTags := packages.GitTags(ctx, packageGitcache)
 	util.Debugf(ctx, "found tags in git: %s\n", gitTags)
 
@@ -61,7 +61,7 @@ func GetVersions(ctx context.Context, pckg *packages.Package, packageGitcache st
 	}
 
 	if latest := GetMostRecentVersion(gitVersions); latest != nil {
-		return gitVersions, latest.Version
+		return gitVersions, &latest.Version
 	}
-	return gitVersions, ""
+	return gitVersions, nil
 }

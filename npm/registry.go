@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -78,8 +77,8 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 }
 
 // GetVersions gets all of the versions associated with an npm package,
-// as well as the latest version based on the `latest`.
-func GetVersions(ctx context.Context, name string) ([]Version, string) {
+// as well as the latest version based on the `latest` tag.
+func GetVersions(ctx context.Context, name string) ([]Version, *string) {
 	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -97,36 +96,30 @@ func GetVersions(ctx context.Context, name string) ([]Version, string) {
 			continue
 		}
 		if v, ok := v.(map[string]interface{}); ok {
+			dist := v["dist"].(map[string]interface{})
+			tarball := dist["tarball"].(string)
+
 			if timeInt, ok := r.TimeStamps[k]; ok {
 				if timeStr, ok := timeInt.(string); ok {
 					// parse time.Time from time stamp
 					timeStamp, err := time.Parse(time.RFC3339, timeStr)
 					util.Check(err)
 
-					dist := v["dist"].(map[string]interface{})
-
 					versions = append(versions, Version{
 						Version:   k,
-						Tarball:   dist["tarball"].(string),
+						Tarball:   tarball,
 						TimeStamp: timeStamp,
 					})
 					continue
 				}
 			}
-			panic(fmt.Sprintf("no time stamp for npm version %s", k))
+			panic(fmt.Errorf("no time stamp for npm version %s/%s", name, k))
 		}
 	}
 
-	// get latest version according to npm
-	latest, ok := r.DistTags["latest"]
-	if !ok {
-		// Quick fix: log in sentry when npm registry does not have latest
-		// such as in the case of https://registry.npmjs.org/angularjs-ie8-build.
-
-		sentry.NotifyError(fmt.Errorf("no latest tag for npm package %s", name))
-		return []Version{}, ""
-		//panic(fmt.Sprintf("no latest tag for npm package %s", name))
+	// attempt to get latest version according to npm
+	if latest, ok := r.DistTags["latest"]; ok {
+		return versions, &latest
 	}
-
-	return versions, latest
+	return versions, nil
 }
