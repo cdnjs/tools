@@ -139,7 +139,7 @@ func getLatestStableVersion(versions []version) *string {
 	var latestTime time.Time
 	for _, v := range versions {
 		vStr := v.Get()
-		if s, err := semver.Parse(vStr); err != nil && len(s.Pre) == 0 {
+		if s, err := semver.Parse(vStr); err == nil && len(s.Pre) == 0 {
 			timeStamp := v.GetTimeStamp()
 			if latest == nil || timeStamp.After(latestTime) {
 				latest = &vStr
