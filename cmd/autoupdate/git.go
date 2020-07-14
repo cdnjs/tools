@@ -51,6 +51,8 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 	gitVersions, _ := git.GetVersions(ctx, pckg, packageGitcache)
 	existingVersionSet := pckg.Versions()
+
+	util.Debugf(ctx, "existing git versions: %v\n", existingVersionSet)
 	lastExistingVersion, allExisting := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
 
 	// add all existing versions to all versions list
