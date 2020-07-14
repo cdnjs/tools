@@ -42,11 +42,6 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
-		// add new npm versions to all versions list
-		for _, v := range newNpmVersions {
-			allVersions = append(allVersions, version(v))
-		}
-
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {
 		if len(existingVersionSet) > 0 {
@@ -67,13 +62,13 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 			// It matters when we will commit the updates
 			sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
-			// add new npm versions to all versions list
-			for _, v := range npmVersions {
-				allVersions = append(allVersions, version(v))
-			}
-
 			newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 		}
+	}
+
+	// add all new versions to list of all versions
+	for _, v := range newVersionsToCommit {
+		allVersions = append(allVersions, version(v))
 	}
 
 	return newVersionsToCommit, allVersions

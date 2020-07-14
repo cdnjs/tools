@@ -44,6 +44,11 @@ func getPackages(ctx context.Context) []string {
 	return list
 }
 
+type version interface {
+	Get() string             // Get the version.
+	GetTimeStamp() time.Time // GetTimeStamp gets the time stamp associated with the version.
+}
+
 type newVersionToCommit struct {
 	versionPath string
 	newVersion  string
@@ -51,9 +56,14 @@ type newVersionToCommit struct {
 	timestamp   time.Time
 }
 
-type version interface {
-	Get() string             // Get the version.
-	GetTimeStamp() time.Time // GetTimeStamp gets the time stamp associated with the version.
+// Get is used to get the new version.
+func (n newVersionToCommit) Get() string {
+	return n.newVersion
+}
+
+// GetTimeStamp gets the time stamp associated with the new version.
+func (n newVersionToCommit) GetTimeStamp() time.Time {
+	return n.timestamp
 }
 
 func main() {

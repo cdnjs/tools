@@ -76,11 +76,6 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		sort.Sort(sort.Reverse(git.ByTimeStamp(newGitVersions)))
 
-		// add new git versions to all versions list
-		for _, v := range newGitVersions {
-			allVersions = append(allVersions, version(v))
-		}
-
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, newGitVersions)
 	} else {
 		if len(existingVersionSet) > 0 {
@@ -101,13 +96,13 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 			// It matters when we will commit the updates
 			sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
-			// add new git versions to all versions list
-			for _, v := range gitVersions {
-				allVersions = append(allVersions, version(v))
-			}
-
 			newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 		}
+	}
+
+	// add all new versions to list of all versions
+	for _, v := range newVersionsToCommit {
+		allVersions = append(allVersions, version(v))
 	}
 
 	return newVersionsToCommit, allVersions
