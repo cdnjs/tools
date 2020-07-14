@@ -131,7 +131,7 @@ func main() {
 }
 
 // Gets the latest stable version by time stamp. A  "stable" version is
-// considered to be a version contains no pre-releases.
+// considered to be a version that contains no pre-releases.
 // If no latest stable version is found (ex. all are non-semver), a nil *string
 // will be returned.
 func getLatestStableVersion(versions []version) *string {
