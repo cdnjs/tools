@@ -21,8 +21,9 @@ func isValidGit(ctx context.Context, pckgdir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, *git.Version) {
+func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommit, []version) {
 	var newVersionsToCommit []newVersionToCommit
+	var allVersions []version
 
 	packageGitcache := path.Join(gitCache, pckg.Name)
 	// If the local copy of the package's git doesn't exists, Clone it. If it does
@@ -50,7 +51,12 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 	gitVersions, _ := git.GetVersions(ctx, pckg, packageGitcache)
 	existingVersionSet := pckg.Versions()
-	lastExistingVersion := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
+	lastExistingVersion, allExisting := git.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
+
+	// add all existing versions to all versions list
+	for _, v := range allExisting {
+		allVersions = append(allVersions, version(v))
+	}
 
 	if lastExistingVersion != nil {
 		util.Debugf(ctx, "last existing version: %s\n", lastExistingVersion.Version)
@@ -69,6 +75,11 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		util.Debugf(ctx, "new versions: %s\n", newGitVersions)
 
 		sort.Sort(sort.Reverse(git.ByTimeStamp(newGitVersions)))
+
+		// add new git versions to all versions list
+		for _, v := range newGitVersions {
+			allVersions = append(allVersions, version(v))
+		}
 
 		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, newGitVersions)
 	} else {
@@ -90,11 +101,16 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 			// It matters when we will commit the updates
 			sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
 
+			// add new git versions to all versions list
+			for _, v := range gitVersions {
+				allVersions = append(allVersions, version(v))
+			}
+
 			newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 		}
 	}
 
-	return newVersionsToCommit, lastExistingVersion
+	return newVersionsToCommit, allVersions
 }
 
 func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, versions []git.Version) []newVersionToCommit {

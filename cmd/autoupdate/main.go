@@ -93,23 +93,15 @@ func main() {
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
-		var latestExistingVersion version
+		var allVersions []version
 
 		if pckg.Autoupdate != nil {
 			if pckg.Autoupdate.Source == "npm" {
 				util.Debugf(ctx, "running npm update")
-				newVersions, v := updateNpm(ctx, pckg)
-				newVersionsToCommit = newVersions
-				if v != nil {
-					latestExistingVersion = v
-				}
+				newVersionsToCommit, allVersions = updateNpm(ctx, pckg)
 			} else if pckg.Autoupdate.Source == "git" {
 				util.Debugf(ctx, "running git update")
-				newVersions, v := updateGit(ctx, pckg)
-				newVersionsToCommit = newVersions
-				if v != nil {
-					latestExistingVersion = v
-				}
+				newVersionsToCommit, allVersions = updateGit(ctx, pckg)
 			}
 		}
 
@@ -121,32 +113,52 @@ func main() {
 					writeNewVersionsToKV(ctx, newVersionsToCommit)
 				}
 			}
-			latestVersion := getLatestVersion(latestExistingVersion, newVersionsToCommit)
-			if _, err := semver.Parse(latestVersion); err != nil {
-				util.Debugf(ctx, "ignoring invalid latest version: %s\n", latestVersion)
-			} else {
-				destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
-				if err != nil || destpckg.Version == nil || *destpckg.Version != latestVersion {
-					commitPackageVersion(ctx, pckg, latestVersion, f)
-					packages.GitPush(ctx, cdnjsPath)
+			if len(allVersions) > 0 {
+				latestVersion := getLatestStableVersion(allVersions)
+				if latestVersion == nil {
+					latestVersion = getLatestVersion(allVersions)
+				}
+				if latestVersion != nil {
+					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
+					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
+						commitPackageVersion(ctx, pckg, *latestVersion, f)
+						packages.GitPush(ctx, cdnjsPath)
+					}
 				}
 			}
 		}
 	}
 }
 
-// Gets the latest version by time stamp. If it does not exist, an empty string is returned.
-func getLatestVersion(latestExistingVersion version, newVersionsToCommit []newVersionToCommit) string {
-	var latest string
-	var latestTimeStamp time.Time
-	if latestExistingVersion != nil {
-		latest = latestExistingVersion.Get()
-		latestTimeStamp = latestExistingVersion.GetTimeStamp()
+// Gets the latest stable version by time stamp. A  "stable" version is
+// considered to be a version contains no pre-releases.
+// If no latest stable version is found (ex. all are non-semver), a nil *string
+// will be returned.
+func getLatestStableVersion(versions []version) *string {
+	var latest *string
+	var latestTime time.Time
+	for _, v := range versions {
+		vStr := v.Get()
+		if s, err := semver.Parse(vStr); err != nil && len(s.Pre) == 0 {
+			timeStamp := v.GetTimeStamp()
+			if latest == nil || timeStamp.After(latestTime) {
+				latest = &vStr
+				latestTime = timeStamp
+			}
+		}
 	}
-	for _, newVersionToCommit := range newVersionsToCommit {
-		if newVersionToCommit.timestamp.After(latestTimeStamp) {
-			latest = newVersionToCommit.newVersion
-			latestTimeStamp = newVersionToCommit.timestamp
+	return latest
+}
+
+// Gets the latest version by time stamp. If it does not exist, a nil *string is returned.
+func getLatestVersion(versions []version) *string {
+	var latest *string
+	var latestTime time.Time
+	for _, v := range versions {
+		vStr, timeStamp := v.Get(), v.GetTimeStamp()
+		if latest == nil || timeStamp.After(latestTime) {
+			latest = &vStr
+			latestTime = timeStamp
 		}
 	}
 	return latest

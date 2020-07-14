@@ -17,18 +17,21 @@ func (a ByTimeStamp) Less(i, j int) bool {
 }
 
 // GetMostRecentExistingVersion gets the most recent git.Version based on time stamp
-// that is currently downloaded.
-func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string, gitVersions []Version) *Version {
+// that is currently downloaded as well as all existing versions in git.Version form.
+func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string, gitVersions []Version) (*Version, []Version) {
 	// create map for fast lookups
 	gitMap := make(map[string]Version)
 	for _, v := range gitVersions {
 		gitMap[v.Version] = v
 	}
 
+	var allExisting []Version
+
 	// find most recent version
 	var mostRecent *Version
 	for _, existingVersion := range existingVersions {
 		if version, ok := gitMap[existingVersion]; ok {
+			allExisting = append(allExisting, version)
 			if mostRecent == nil || version.TimeStamp.After(mostRecent.TimeStamp) {
 				mostRecent = &version // new most recent found
 			}
@@ -37,7 +40,7 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 		util.Debugf(ctx, "existing version not found on git: %s", existingVersion)
 	}
 
-	return mostRecent
+	return mostRecent, allExisting
 }
 
 // GetMostRecentVersion gets the latest version in git based on time stamp.
