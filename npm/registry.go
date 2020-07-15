@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -91,10 +90,6 @@ func GetVersions(ctx context.Context, name string) ([]Version, *string) {
 
 	versions := make([]Version, 0)
 	for k, v := range r.Versions {
-		if _, err := semver.Parse(k); err != nil {
-			util.Debugf(ctx, "ignoring non-semver npm version: %s\n", k)
-			continue
-		}
 		if v, ok := v.(map[string]interface{}); ok {
 			dist := v["dist"].(map[string]interface{})
 			tarball := dist["tarball"].(string)
