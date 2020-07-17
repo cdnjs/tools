@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 	cloudflare "github.com/cloudflare/cloudflare-go"
 )
@@ -68,8 +69,8 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 	var totalSize int64
 
 	for _, kv := range kvs {
-		if size := int64(len(kv.value)); size > util.MaxFileSize {
-			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.key, size)
+		if unencodedSize := int64(len(kv.value)); unencodedSize > util.MaxFileSize {
+			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.key, unencodedSize)
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
@@ -88,8 +89,14 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 			if err != nil {
 				return err
 			}
+			metasize := int64(len(bytes))
+			if metasize > util.MaxMetadataSize {
+				util.Debugf(ctx, "ignoring oversized metadata: %s (%d)", kv.key, metasize)
+				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s", kv.key, metasize, bytes))
+				continue
+			}
 			writePair.Metadata = bytes
-			size += int64(len(bytes))
+			size += metasize
 		}
 		if totalSize+size > util.MaxBulkWritePayload {
 			// Create a new bulk since we are over the limit.
