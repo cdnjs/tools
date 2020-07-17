@@ -119,8 +119,8 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 			// will insert to KV without compressing further
 			util.Debugf(ctx, "file will not be compressed in kv write: %s\n", fromVersionPath)
 			kvs = append(kvs, &writeRequest{
-				Key:   baseFileKey,
-				Value: bytes,
+				key:   baseFileKey,
+				value: bytes,
 			})
 			compressedFiles = append(compressedFiles, File{
 				Name: fromVersionPath,
@@ -131,8 +131,8 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 
 		// brotli
 		kvs = append(kvs, &writeRequest{
-			Key:   baseFileKey + ".br",
-			Value: compress.Brotli11CLI(ctx, fullPath),
+			key:   baseFileKey + ".br",
+			value: compress.Brotli11CLI(ctx, fullPath),
 		})
 		compressedFiles = append(compressedFiles, File{
 			Name: fromVersionPath + ".br",
@@ -141,8 +141,8 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 
 		// gzip
 		kvs = append(kvs, &writeRequest{
-			Key:   baseFileKey + ".gz",
-			Value: compress.Gzip9Native(bytes),
+			key:   baseFileKey + ".gz",
+			value: compress.Gzip9Native(bytes),
 		})
 		compressedFiles = append(compressedFiles, File{
 			Name: fromVersionPath + ".gz",

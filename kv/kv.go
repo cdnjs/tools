@@ -3,6 +3,7 @@ package kv
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/cdnjs/tools/util"
@@ -19,8 +20,16 @@ var (
 // Represents a KV write request, consisting of
 // a string key and []byte value.
 type writeRequest struct {
-	Key   string
-	Value []byte
+	key   string
+	value []byte
+	meta  *Metadata
+}
+
+// Metadata represents metadata for a
+// particular KV.
+type Metadata struct {
+	ETag         string `json:"etag"`
+	LastModified string `json:"lastmodified"`
 }
 
 // Gets a new *cloudflare.API.
@@ -59,16 +68,30 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 	var totalSize int64
 
 	for _, kv := range kvs {
-		if size := int64(len(kv.Value)); size > util.MaxFileSize {
-			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.Key, size)
+		if size := int64(len(kv.value)); size > util.MaxFileSize {
+			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.key, size)
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
 		// it will be reduced, so it is okay if the size is larger than util.MaxFileSize after encoding base64.
 		// However, we still need to check for the KV bulk request limit of 100MiB.
-		encoded := encodeToBase64(kv.Value)
-		encodedSize := int64(len(encoded))
-		if totalSize+encodedSize > util.MaxBulkWritePayload {
+		encodedValue := encodeToBase64(kv.value)
+		size := int64(len(encodedValue))
+		writePair := &cloudflare.WorkersKVPair{
+			Key:    kv.key,
+			Value:  encodedValue,
+			Base64: true,
+		}
+		if kv.meta != nil {
+			// Marshal metadata into JSON bytes.
+			bytes, err := json.Marshal(kv.meta)
+			if err != nil {
+				return err
+			}
+			writePair.Metadata = bytes
+			size += int64(len(bytes))
+		}
+		if totalSize+size > util.MaxBulkWritePayload {
 			// Create a new bulk since we are over the limit.
 			// Note, this cannot happen on the first index,
 			// since util.MaxFileSize must be less than util.MaxBulkWritePayload.
@@ -76,12 +99,8 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 			bulkWrite = []*cloudflare.WorkersKVPair{}
 			totalSize = 0
 		}
-		bulkWrite = append(bulkWrite, &cloudflare.WorkersKVPair{
-			Key:    kv.Key,
-			Value:  encoded,
-			Base64: true,
-		})
-		totalSize += encodedSize
+		bulkWrite = append(bulkWrite, writePair)
+		totalSize += size
 	}
 	bulkWrites = append(bulkWrites, bulkWrite)
 

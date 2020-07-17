@@ -24,4 +24,8 @@ const (
 	// enough leeway for any metadata stored with each key (up to 1024 bytes),
 	// long keys, and verbose JSON syntax.
 	MaxBulkWritePayload int64 = 1e8
+
+	// MaxMetadataSize is the maximum metadata in bytes that can be stored for a
+	// particular KV entry.
+	MaxMetadataSize int64 = 1024
 )
