@@ -90,6 +90,10 @@ var (
 // 	}
 // }
 
+func getMetadata(payload []byte) (*Metadata, error) {
+	return &Metadata{}, nil
+}
+
 // Gets the requests to update a number of files in KV in compressed format.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
@@ -99,7 +103,7 @@ var (
 func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []File, error) {
 	baseVersionPath := path.Join(pkg, version)
 	var kvs []*writeRequest
-	var compressedFiles []File
+	var compressedFiles []File // legacy (currently unused)
 
 	for _, fromVersionPath := range fromVersionPaths {
 		ext := path.Ext(fromVersionPath)
@@ -122,10 +126,10 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 				key:   baseFileKey,
 				value: bytes,
 			})
-			compressedFiles = append(compressedFiles, File{
-				Name: fromVersionPath,
-				// TODO: determine metadata
-			})
+			// compressedFiles = append(compressedFiles, File{
+			// 	Name: fromVersionPath,
+			// 	// TODO: determine metadata
+			// })
 			continue
 		}
 
@@ -134,20 +138,20 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 			key:   baseFileKey + ".br",
 			value: compress.Brotli11CLI(ctx, fullPath),
 		})
-		compressedFiles = append(compressedFiles, File{
-			Name: fromVersionPath + ".br",
-			// TODO: determine metadata
-		})
+		// compressedFiles = append(compressedFiles, File{
+		// 	Name: fromVersionPath + ".br",
+		// 	// TODO: determine metadata
+		// })
 
 		// gzip
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey + ".gz",
 			value: compress.Gzip9Native(bytes),
 		})
-		compressedFiles = append(compressedFiles, File{
-			Name: fromVersionPath + ".gz",
-			// TODO: determine metadata
-		})
+		// compressedFiles = append(compressedFiles, File{
+		// 	Name: fromVersionPath + ".gz",
+		// 	// TODO: determine metadata
+		// })
 	}
 
 	return kvs, compressedFiles, nil
