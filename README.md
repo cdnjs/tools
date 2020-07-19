@@ -8,7 +8,6 @@ Repository that contains various tools for maintaining cdnjs.
 - [checker](./cmd/checker)
 - [packages](./cmd/packages)
 - [autoupdate](./cmd/autoupdate)
-- [kv](./cmd/kv)
 
 ## Configuration
 

@@ -40,11 +40,6 @@ func getAPI() *cloudflare.API {
 	return a
 }
 
-// ReadKV reads from Workers KV.
-func ReadKV(key string) ([]byte, error) {
-	return api.ReadWorkersKV(context.Background(), namespaceID, key)
-}
-
 // Ensure a response is successful and the error is nil.
 func checkSuccess(r cloudflare.Response, err error) error {
 	if err != nil {
