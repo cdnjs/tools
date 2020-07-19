@@ -2,7 +2,11 @@ package kv
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"path"
 
 	"github.com/cdnjs/tools/compress"
@@ -90,10 +94,6 @@ var (
 // 	}
 // }
 
-func getMetadata(payload []byte) (*Metadata, error) {
-	return &Metadata{}, nil
-}
-
 // Gets the requests to update a number of files in KV in compressed format.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
@@ -114,9 +114,25 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		fullPath := path.Join(fullPathToVersion, fromVersionPath)
 		baseFileKey := path.Join(baseVersionPath, fromVersionPath)
 
+		// stat file
+		info, err := os.Stat(fullPath)
+		if err != nil {
+			return kvs, compressedFiles, err
+		}
+
+		// read file bytes
 		bytes, err := ioutil.ReadFile(fullPath)
 		if err != nil {
 			return kvs, compressedFiles, err
+		}
+
+		// set metadata
+		hash := md5.Sum(bytes)
+		etag := hex.EncodeToString(hash[:])
+		lastModified := info.ModTime().Format(http.TimeFormat)
+		meta := &Metadata{
+			ETag:         etag,
+			LastModified: lastModified,
 		}
 
 		if _, ok := doNotCompress[ext]; ok {
@@ -125,6 +141,7 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 			kvs = append(kvs, &writeRequest{
 				key:   baseFileKey,
 				value: bytes,
+				meta:  meta,
 			})
 			// compressedFiles = append(compressedFiles, File{
 			// 	Name: fromVersionPath,
@@ -137,6 +154,7 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey + ".br",
 			value: compress.Brotli11CLI(ctx, fullPath),
+			meta:  meta,
 		})
 		// compressedFiles = append(compressedFiles, File{
 		// 	Name: fromVersionPath + ".br",
@@ -147,6 +165,7 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey + ".gz",
 			value: compress.Gzip9Native(bytes),
+			meta:  meta,
 		})
 		// compressedFiles = append(compressedFiles, File{
 		// 	Name: fromVersionPath + ".gz",

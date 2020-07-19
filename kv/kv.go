@@ -30,7 +30,7 @@ type writeRequest struct {
 // particular KV.
 type Metadata struct {
 	ETag         string `json:"etag"`
-	LastModified string `json:"lastmodified"`
+	LastModified string `json:"last_modified"`
 }
 
 // Gets a new *cloudflare.API.
