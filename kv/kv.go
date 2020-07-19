@@ -65,7 +65,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 
 	for _, kv := range kvs {
 		if unencodedSize := int64(len(kv.value)); unencodedSize > util.MaxFileSize {
-			util.Debugf(ctx, "ignoring oversized file: %s (%d)", kv.key, unencodedSize)
+			util.Debugf(ctx, "ignoring oversized file: %s (%d)\n", kv.key, unencodedSize)
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
@@ -86,11 +86,12 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 			}
 			metasize := int64(len(bytes))
 			if metasize > util.MaxMetadataSize {
-				util.Debugf(ctx, "ignoring oversized metadata: %s (%d)", kv.key, metasize)
-				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s", kv.key, metasize, bytes))
+				util.Debugf(ctx, "ignoring oversized metadata: %s (%d)\n", kv.key, metasize)
+				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s\n", kv.key, metasize, bytes))
 				continue
 			}
-			writePair.Metadata = bytes
+			util.Debugf(ctx, "writing metadata: %s\n", bytes)
+			writePair.Metadata = kv.meta
 			size += metasize
 		}
 		if totalSize+size > util.MaxBulkWritePayload {
