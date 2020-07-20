@@ -2,12 +2,12 @@ package kv
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/util"
@@ -57,12 +57,14 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 		}
 
 		// set metadata
-		hash := md5.Sum(bytes)
-		etag := hex.EncodeToString(hash[:])
-		lastModified := info.ModTime().Format(http.TimeFormat)
+		lastModifiedTime := info.ModTime()
+		lastModifiedSeconds := lastModifiedTime.UnixNano() / int64(time.Second)
+		lastModifiedStr := lastModifiedTime.Format(http.TimeFormat)
+		etag := fmt.Sprintf("W/%x-%x", lastModifiedSeconds, info.Size())
+
 		meta := &Metadata{
 			ETag:         etag,
-			LastModified: lastModified,
+			LastModified: lastModifiedStr,
 		}
 
 		if _, ok := doNotCompress[ext]; ok {
