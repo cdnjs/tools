@@ -20,18 +20,18 @@ var (
 		".br": true,
 		".gz": true,
 	}
-	// these file extensions will be uploaded to KV
-	// but not compessed
-	doNotCompress = map[string]bool{
-		".woff":  true,
-		".woff2": true,
-	}
+	// // these file extensions will be uploaded to KV
+	// // but not compessed
+	// doNotCompress = map[string]bool{
+	// 	".woff":  true,
+	// 	".woff2": true,
+	// }
 )
 
-// Gets the requests to update a number of files in KV in compressed format.
+// Gets the requests to update a number of files in KV.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
-func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, error) {
+func getWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, error) {
 	baseVersionPath := path.Join(pkg, version)
 	var kvs []*writeRequest
 
@@ -67,16 +67,17 @@ func updateCompressedFilesRequests(ctx context.Context, pkg, version, fullPathTo
 			LastModified: lastModifiedStr,
 		}
 
-		if _, ok := doNotCompress[ext]; ok {
-			// will insert to KV without compressing further
-			util.Debugf(ctx, "file will not be compressed in kv write: %s\n", fromVersionPath)
-			kvs = append(kvs, &writeRequest{
-				key:   baseFileKey,
-				value: bytes,
-				meta:  meta,
-			})
-			continue
-		}
+		// TODO: Stop pushing uncompressed when Worker is fixed.
+		//if _, ok := doNotCompress[ext]; ok {
+		// will insert to KV without compressing further
+		//	util.Debugf(ctx, "file will not be compressed in kv write: %s\n", fromVersionPath)
+		kvs = append(kvs, &writeRequest{
+			key:   baseFileKey,
+			value: bytes,
+			meta:  meta,
+		})
+		//	continue
+		//}
 
 		// brotli
 		kvs = append(kvs, &writeRequest{
@@ -138,12 +139,12 @@ func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromV
 
 	// create bulk of requests
 	var kvs []*writeRequest
-	compressedReqs, err := updateCompressedFilesRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	reqs, err := getWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
 		return err
 	}
 
-	kvs = append(kvs, compressedReqs...)
+	kvs = append(kvs, reqs...)
 
 	// write bulk to KV
 	return encodeAndWriteKVBulk(ctx, kvs)
