@@ -84,7 +84,7 @@ func updateRootRequest(pkg string) *writeRequest {
 	if err != nil {
 		// assume key not found or malformed JSON
 		// so we will rewrite this entry
-		// FIX THIS -- NO ASSUMPTIONS -> PARSE THE ERROR!
+		// FIX THIS -- WE SHOULD HAVE NO ASSUMPTIONS -> PARSE THE ERROR INSTEAD!
 		r.Packages = []string{pkg}
 	} else {
 		r.Packages = insertToSortedListIfNotPresent(r.Packages, pkg)
@@ -106,7 +106,7 @@ func updatePackageRequest(pkg, version string) *writeRequest {
 	if err != nil {
 		// assume key not found or malformed JSON
 		// so we will rewrite this entry
-		// FIX THIS -- NO ASSUMPTIONS -> PARSE THE ERROR!
+		// FIX THIS -- WE SHOULD HAVE NO ASSUMPTIONS -> PARSE THE ERROR INSTEAD!
 		p.Versions = []string{version}
 	} else {
 		p.Versions = insertToSortedListIfNotPresent(p.Versions, version)
@@ -124,11 +124,11 @@ func updatePackageRequest(pkg, version string) *writeRequest {
 }
 
 // Gets the request to update a version entry in KV with a number of file assets.
-func updateVersionRequest(pkg, version string, files []string) *writeRequest {
+func updateVersionRequest(pkg, version string, fromVersionPaths []string) *writeRequest {
 	key := path.Join(pkg, version)
 
-	sort.Strings(files)
-	v, err := json.Marshal(files)
+	sort.Strings(fromVersionPaths)
+	v, err := json.Marshal(fromVersionPaths)
 	util.Check(err)
 
 	return &writeRequest{
