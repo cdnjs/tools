@@ -27,12 +27,6 @@ type Package struct {
 	Versions []string `json:"versions"`
 }
 
-// Version contains the list of Files for a
-// particular version.
-// For now, it is just a []string, but may be a struct containing
-// further metadata in the future.
-type Version []string
-
 // GetRoot gets the root node in KV containing the list of packages.
 func GetRoot() (Root, error) {
 	var r Root
@@ -53,17 +47,6 @@ func GetPackage(key string) (Package, error) {
 	}
 	err = json.Unmarshal(bytes, &p)
 	return p, err
-}
-
-// GetVersion gets the version metadata from KV.
-func GetVersion(key string) (Version, error) {
-	var v Version
-	bytes, err := ReadMetadata(key)
-	if err != nil {
-		return v, err
-	}
-	err = json.Unmarshal(bytes, &v)
-	return v, err
 }
 
 // Perform a binary search, inserting a string into the sorted list if not present.
@@ -124,6 +107,8 @@ func updatePackageRequest(pkg, version string) *writeRequest {
 }
 
 // Gets the request to update a version entry in KV with a number of file assets.
+// Note: for now, a `version` entry is just a []string of assets, but this could become
+// a struct if more metadata is added.
 func updateVersionRequest(pkg, version string, fromVersionPaths []string) *writeRequest {
 	key := path.Join(pkg, version)
 
