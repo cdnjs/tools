@@ -60,7 +60,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 		lastModifiedTime := info.ModTime()
 		lastModifiedSeconds := lastModifiedTime.UnixNano() / int64(time.Second)
 		lastModifiedStr := lastModifiedTime.Format(http.TimeFormat)
-		etag := fmt.Sprintf("W/%x-%x", lastModifiedSeconds, info.Size())
+		etag := fmt.Sprintf("%x-%x", lastModifiedSeconds, info.Size())
 
 		meta := &FileMetadata{
 			ETag:         etag,
