@@ -53,8 +53,8 @@ func checkSuccess(r cloudflare.Response, err error) error {
 	return nil
 }
 
-// ReadMetadata reads metadata from Workers KV.
-func ReadMetadata(key, namespaceID string) ([]byte, error) {
+// Read reads an entry from Workers KV.
+func Read(key, namespaceID string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 

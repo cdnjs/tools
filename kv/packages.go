@@ -19,9 +19,12 @@ type Package struct {
 }
 
 // GetPackage gets the package metadata from KV.
+//
+// TODO:
+// Currently unused. Will be used by ReadPackageJSON in the future.
 func GetPackage(key string) (Package, error) {
 	var p Package
-	bytes, err := ReadMetadata(key, packagesNamespaceID)
+	bytes, err := Read(key, packagesNamespaceID)
 	if err != nil {
 		return p, err
 	}
