@@ -84,6 +84,11 @@ func StandardDebugf(ctx context.Context, format string, v ...interface{}) {
 	}
 }
 
+// StandardInfof is a LogFunc that calls Printf.
+func StandardInfof(ctx context.Context, format string, v ...interface{}) {
+	Printf(ctx, format, v...)
+}
+
 // Generic function used to call a LogFunc stored in the context using a ContextKey key,
 // calling a default LogFunc if the key is not set.
 func logf(ctx context.Context, key ContextKey, defaultLogf LogFunc, format string, v ...interface{}) {
@@ -92,6 +97,12 @@ func logf(ctx context.Context, key ContextKey, defaultLogf LogFunc, format strin
 	} else {
 		defaultLogf(ctx, format, v...)
 	}
+}
+
+// Infof is a LogFunc that attempts to call the Info LogFunc in the context, defaulting
+// to StandardInfof if unset.
+func Infof(ctx context.Context, format string, v ...interface{}) {
+	logf(ctx, Info, StandardInfof, format, v...)
 }
 
 // Debugf is a LogFunc that attempts to call the Debug LogFunc in the context, defaulting

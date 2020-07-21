@@ -35,6 +35,9 @@ const (
 
 	// Err is the LogFunc that is called when outputting an error.
 	Err
+
+	// Info is the LogFunc that is called when outputting an info.
+	Info
 )
 
 // ContextWithEntries creates a context with a variadic number of key-value
