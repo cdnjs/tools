@@ -12,23 +12,25 @@ import (
 )
 
 var (
-	namespaceID = util.GetEnv("WORKERS_KV_NAMESPACE_ID")
-	accountID   = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
-	apiToken    = util.GetEnv("WORKERS_KV_API_TOKEN")
-	api         = getAPI()
+	filesNamespaceID    = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
+	versionsNamespaceID = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
+	packagesNamespaceID = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
+	accountID           = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
+	apiToken            = util.GetEnv("WORKERS_KV_API_TOKEN")
+	api                 = getAPI()
 )
 
 // Represents a KV write request, consisting of
-// a string key and []byte value.
+// a string key, a []byte value, and file metadata.
 type writeRequest struct {
 	key   string
 	value []byte
-	meta  *Metadata
+	meta  *FileMetadata
 }
 
-// Metadata represents metadata for a
+// FileMetadata represents metadata for a
 // particular KV.
-type Metadata struct {
+type FileMetadata struct {
 	ETag         string `json:"etag"`
 	LastModified string `json:"last_modified"`
 }
@@ -51,6 +53,11 @@ func checkSuccess(r cloudflare.Response, err error) error {
 	return nil
 }
 
+// Read reads an entry from Workers KV.
+func Read(key, namespaceID string) ([]byte, error) {
+	return api.ReadWorkersKV(context.Background(), namespaceID, key)
+}
+
 // Encodes a byte array to a base64 string.
 func encodeToBase64(bytes []byte) string {
 	return base64.StdEncoding.EncodeToString(bytes)
@@ -58,7 +65,7 @@ func encodeToBase64(bytes []byte) string {
 
 // Encodes key-value pairs to base64 and writes them to KV
 // in multiple bulk requests.
-func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
+func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string) error {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
 	var totalSize int64
@@ -125,6 +132,9 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest) error {
 // Note that this function will also compress the files, generating brotli/gzip entries
 // to KV where necessary, as well as minifying js, compressing png/jpeg/css, etc.
 //
+// Note this function will NOT update package metadata. This will happen later to avoid
+// KV race conditions updating the package's entry for latest version.
+//
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
 func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) error {
@@ -132,5 +142,13 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 	if err != nil {
 		return err
 	}
-	return updateKV(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+
+	// write files to KV
+	fromVersionPaths, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	if err != nil {
+		return err
+	}
+
+	// write version metadata to KV
+	return updateKVVersion(ctx, pkg, version, fromVersionPaths)
 }

@@ -133,6 +133,15 @@ func main() {
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						commitPackageVersion(ctx, pckg, *latestVersion, f)
 						packages.GitPush(ctx, cdnjsPath)
+
+						// TODO:
+						// Later need to change ReadPackageJSON to read the kv.Package from KV.
+						// If the kv.Package does not exist, we will create one.
+						// Otherwise we will update the existing one's latest version.
+						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
+						if err := kv.UpdateKVPackage(ctx, pckg.Name, *latestVersion); err != nil {
+							util.Debugf(ctx, "failed to update KV package metadata: %s\n", err)
+						}
 					}
 				}
 			}

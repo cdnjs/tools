@@ -31,7 +31,7 @@ var (
 // Gets the requests to update a number of files in KV.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
-func getWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, error) {
+func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, error) {
 	baseVersionPath := path.Join(pkg, version)
 	var kvs []*writeRequest
 
@@ -62,7 +62,7 @@ func getWriteRequests(ctx context.Context, pkg, version, fullPathToVersion strin
 		lastModifiedStr := lastModifiedTime.Format(http.TimeFormat)
 		etag := fmt.Sprintf("W/%x-%x", lastModifiedSeconds, info.Size())
 
-		meta := &Metadata{
+		meta := &FileMetadata{
 			ETag:         etag,
 			LastModified: lastModifiedStr,
 		}
@@ -122,30 +122,21 @@ func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromV
 	return util.ListFilesInVersion(ctx, fullPathToVersion)
 }
 
-// Updates KV with new version, writing to all of the necessary data structures.
-//
-// TODO:
-// Will want to push to a queue or write to disk journal somewhere
-// when an operation is about to be attempted and when an
-// operation completes successfully. This is to help recover from
-// silent failures that result in inconsistent states.
-func updateKV(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) error {
+// Updates KV with new version's files.
+func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
 	// minify/optimize existing files, adding any new files generated (ex: .min.js)
 	// note: encoding in brotli/gzip will occur later for each of these files
 	fromVersionPaths, err := optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
 	if err != nil {
-		return err
+		return fromVersionPaths, err
 	}
 
 	// create bulk of requests
-	var kvs []*writeRequest
-	reqs, err := getWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	reqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
-		return err
+		return fromVersionPaths, err
 	}
 
-	kvs = append(kvs, reqs...)
-
 	// write bulk to KV
-	return encodeAndWriteKVBulk(ctx, kvs)
+	return fromVersionPaths, encodeAndWriteKVBulk(ctx, reqs, filesNamespaceID)
 }
