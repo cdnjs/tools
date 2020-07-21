@@ -25,6 +25,7 @@ jobs:
           prerelease: false
 
       - uses: actions/upload-release-asset@v1
+        name: release algolia
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -34,6 +35,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - uses: actions/upload-release-asset@v1
+        name: release autoupdate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -43,6 +45,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - uses: actions/upload-release-asset@v1
+        name: release checker
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -52,12 +55,23 @@ jobs:
           asset_content_type: application/octet-stream
 
       - uses: actions/upload-release-asset@v1
+        name: release packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./bin/packages
           asset_name: packages
+          asset_content_type: application/octet-stream
+
+      - uses: actions/upload-release-asset@v1
+        name: release kv
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/kv
+          asset_name: kv
           asset_content_type: application/octet-stream
 
   test:
