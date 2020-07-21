@@ -16,7 +16,8 @@ Repository that contains various tools for maintaining cdnjs.
 - `SENTRY_DSN` sentry data source name (DSN)
 - `DISABLE_KV` set to disable writes to workers KV
 - `WORKERS_KV_FILES_NAMESPACE_ID` workers kv namespace ID for files
-- `WORKERS_KV_METADATA_NAMESPACE_ID` workers kv namespace ID for metadata
+- `WORKERS_KV_VERSIONS_NAMESPACE_ID` workers kv namespace ID containing metadata for versions
+- `WORKERS_KV_PACKAGES_NAMESPACE_ID` workers kv namespace ID containing metadata for packages
 - `WORKERS_KV_ACCOUNT_ID` workers kv account ID
 - `WORKERS_KV_API_TOKEN` workers kv api token
 
