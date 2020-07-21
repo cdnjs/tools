@@ -13,7 +13,8 @@ import (
 
 var (
 	filesNamespaceID    = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
-	metadataNamespaceID = util.GetEnv("WORKERS_KV_METADATA_NAMESPACE_ID")
+	versionsNamespaceID = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
+	packagesNamespaceID = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
 	accountID           = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
 	apiToken            = util.GetEnv("WORKERS_KV_API_TOKEN")
 	api                 = getAPI()
@@ -53,8 +54,8 @@ func checkSuccess(r cloudflare.Response, err error) error {
 }
 
 // ReadMetadata reads metadata from Workers KV.
-func ReadMetadata(key string) ([]byte, error) {
-	return api.ReadWorkersKV(context.Background(), metadataNamespaceID, key)
+func ReadMetadata(key, namespaceID string) ([]byte, error) {
+	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 
 // Encodes a byte array to a base64 string.
@@ -131,6 +132,9 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 // Note that this function will also compress the files, generating brotli/gzip entries
 // to KV where necessary, as well as minifying js, compressing png/jpeg/css, etc.
 //
+// Note this function will NOT update package metadata. This will happen later to avoid
+// KV race conditions updating the package's entry for latest version.
+//
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
 func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) error {
@@ -139,10 +143,12 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 		return err
 	}
 
+	// write files to KV
 	fromVersionPaths, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
 		return err
 	}
 
-	return updateKVMetadata(ctx, pkg, version, fromVersionPaths)
+	// write version metadata to KV
+	return updateKVVersion(ctx, pkg, version, fromVersionPaths)
 }
