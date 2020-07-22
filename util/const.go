@@ -28,4 +28,7 @@ const (
 	// MaxMetadataSize is the maximum metadata in bytes that can be stored for a
 	// particular KV entry.
 	MaxMetadataSize int64 = 1024
+
+	// MaxBulkKeys is the maximum number of keys that can be pushed to KV in one bulk request.
+	MaxBulkKeys int64 = 1e4
 )
