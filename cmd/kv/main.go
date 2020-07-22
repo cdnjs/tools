@@ -31,6 +31,15 @@ func main() {
 
 			kv.InsertFromDisk(logger, pckgs)
 		}
+	case "upload-meta":
+		{
+			pckgs := flag.Args()[1:]
+			if len(pckgs) == 0 {
+				panic("no packages specified")
+			}
+
+			kv.InsertMetadataFromDisk(logger, pckgs)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
