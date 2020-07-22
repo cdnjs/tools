@@ -15,8 +15,6 @@ var (
 )
 
 func main() {
-	var maxPkgs int
-	flag.IntVar(&maxPkgs, "max", 5, "maximum packages to push to KV")
 	flag.Parse()
 
 	if util.IsDebug() {
