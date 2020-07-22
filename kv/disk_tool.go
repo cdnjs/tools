@@ -39,6 +39,7 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 		pckg, readerr := packages.ReadPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
 		util.Check(readerr)
 
+		util.Infof(ctx, "Inserting package metadata: %s\n", pckg.Name)
 		err := UpdateKVPackage(ctx, pckg)
 		util.Check(err)
 	}
