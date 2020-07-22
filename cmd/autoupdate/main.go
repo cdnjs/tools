@@ -215,56 +215,20 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersio
 	util.Check(err)
 }
 
-// Filter a list of files by extensions
-func filterByExt(files []string, extensions map[string]bool) []string {
-	var matches []string
-	for _, file := range files {
-		ext := path.Ext(file)
-		if v, ok := extensions[ext]; ok && v {
-			matches = append(matches, file)
-		}
-	}
-	return matches
-}
-
-func compressNewVersion(ctx context.Context, version newVersionToCommit) {
+// Optimizes/minifies files on disk for a particular package version.
+func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 	files := version.pckg.AllFiles(version.newVersion)
 
-	// jpeg
-	{
-		files := filterByExt(files, compress.JpegExt)
-		for _, file := range files {
-			absfile := path.Join(version.versionPath, file)
-			compress.Jpeg(ctx, absfile)
-		}
-	}
-	// png
-	{
-		// if a `.donotoptimizepng` is present in the package ignore png
-		// compression
-		_, err := os.Stat(path.Join(version.pckg.Path(), ".donotoptimizepng"))
-		if os.IsNotExist(err) {
-			files := filterByExt(files, compress.PngExt)
-			for _, file := range files {
-				absfile := path.Join(version.versionPath, file)
-				compress.Png(ctx, absfile)
-			}
-		}
-	}
-	// js
-	{
-		files := filterByExt(files, compress.JsExt)
-		for _, file := range files {
-			absfile := path.Join(version.versionPath, file)
-			compress.Js(ctx, absfile)
-		}
-	}
-	// css
-	{
-		files := filterByExt(files, compress.CSSExt)
-		for _, file := range files {
-			absfile := path.Join(version.versionPath, file)
-			compress.CSS(ctx, absfile)
+	for _, f := range files {
+		switch path.Ext(f) {
+		case ".jpg", ".jpeg":
+			compress.Jpeg(ctx, path.Join(version.versionPath, f))
+		case ".png":
+			compress.Png(ctx, path.Join(version.versionPath, f))
+		case ".js":
+			compress.Js(ctx, path.Join(version.versionPath, f))
+		case ".css":
+			compress.CSS(ctx, path.Join(version.versionPath, f))
 		}
 	}
 }
@@ -285,8 +249,8 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 	for _, newVersionToCommit := range newVersionsToCommit {
 		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
 
-		// Compress assets
-		compressNewVersion(ctx, newVersionToCommit)
+		// Optimize/minifiy assets (compressing br/gz will occur later)
+		optimizeAndMinify(ctx, newVersionToCommit)
 
 		// Add to git the new version directory
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
