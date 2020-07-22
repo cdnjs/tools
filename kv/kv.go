@@ -102,7 +102,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			size += metasize
 		}
 		totalKeys++
-		if totalSize+size > util.MaxBulkWritePayload || totalKeys == util.MaxBulkKeys {
+		if totalSize+size > util.MaxBulkWritePayload || totalKeys > util.MaxBulkKeys {
 			// Create a new bulk since we are over a limit.
 			bulkWrites = append(bulkWrites, bulkWrite)
 			bulkWrite = []*cloudflare.WorkersKVPair{}
