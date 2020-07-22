@@ -68,7 +68,7 @@ func encodeToBase64(bytes []byte) string {
 func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string) error {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
-	var totalSize int64
+	var totalSize, totalKeys int64
 
 	for _, kv := range kvs {
 		if unencodedSize := int64(len(kv.value)); unencodedSize > util.MaxFileSize {
@@ -101,13 +101,13 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			writePair.Metadata = kv.meta
 			size += metasize
 		}
-		if totalSize+size > util.MaxBulkWritePayload {
-			// Create a new bulk since we are over the limit.
-			// Note, this cannot happen on the first index,
-			// since util.MaxFileSize must be less than util.MaxBulkWritePayload.
+		totalKeys++
+		if totalSize+size > util.MaxBulkWritePayload || totalKeys > util.MaxBulkKeys {
+			// Create a new bulk since we are over a limit.
 			bulkWrites = append(bulkWrites, bulkWrite)
 			bulkWrite = []*cloudflare.WorkersKVPair{}
 			totalSize = 0
+			totalKeys = 0
 		}
 		bulkWrite = append(bulkWrite, writePair)
 		totalSize += size
