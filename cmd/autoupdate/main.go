@@ -139,7 +139,8 @@ func main() {
 						// If the kv.Package does not exist, we will create one.
 						// Otherwise we will update the existing one's latest version.
 						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
-						if err := kv.UpdateKVPackage(ctx, pckg.Name, *latestVersion); err != nil {
+						pckg.Version = latestVersion
+						if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 							util.Debugf(ctx, "failed to update KV package metadata: %s\n", err)
 						}
 					}
