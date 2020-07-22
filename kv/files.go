@@ -97,40 +97,9 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 	return kvs, nil
 }
 
-// Optimizes/minifies files on disk for a particular package version.
-// Note that the package's metadata in KV must be updated before this function call
-// (ex. whether or not to optimize PNG).
-//
-// TODO:
-// Eventually remove the autoupdater's `compressNewVersion()` function,
-// as we will not depend on disk files such as `.donotoptimizepng`.
-// Also remove `filterByExt()` since it is cleaner with a switch.
-func optimizeAndMinify(ctx context.Context, pkg, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
-	for _, fromV := range fromVersionPaths {
-		fullPath := path.Join(fullPathToVersion, fromV)
-		switch path.Ext(fromV) {
-		case ".jpg", ".jpeg":
-			compress.Jpeg(ctx, fullPath)
-		case ".png":
-			compress.Png(ctx, fullPath)
-		case ".js":
-			compress.Js(ctx, fullPath)
-		case ".css":
-			compress.CSS(ctx, fullPath)
-		}
-	}
-	return util.ListFilesInVersion(ctx, fullPathToVersion)
-}
-
 // Updates KV with new version's files.
+// The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
 func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
-	// minify/optimize existing files, adding any new files generated (ex: .min.js)
-	// note: encoding in brotli/gzip will occur later for each of these files
-	fromVersionPaths, err := optimizeAndMinify(ctx, pkg, fullPathToVersion, fromVersionPaths)
-	if err != nil {
-		return fromVersionPaths, err
-	}
-
 	// create bulk of requests
 	reqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {

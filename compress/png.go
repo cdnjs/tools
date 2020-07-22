@@ -7,11 +7,6 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// PngExt are png extensions the compression handles.
-var PngExt = map[string]bool{
-	".png": true,
-}
-
 // Png performs an in-place compression of the file.
 func Png(ctx context.Context, file string) {
 	args := []string{
