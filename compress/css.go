@@ -12,10 +12,6 @@ import (
 
 // Extensions the compression handle
 var (
-	CSSExt = map[string]bool{
-		".css": true,
-	}
-
 	basePath = util.GetBotBasePath()
 	cleanCSS = path.Join(basePath, "tools", "node_modules/clean-css-cli/bin/cleancss")
 )
