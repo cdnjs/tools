@@ -129,13 +129,6 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					// INSTEAD OF CHANGING READ PACKAGES JSON
-					// CAN I JUST TAKE THE PCKG AND MARSHAL IT AND ADD A `VERSION ATTR`???
-					// OR JUST COPY FIELDS DIRECTLY???
-
-					// STILL NEED TO READ THE PACKAGE FROM KV AND PARSE IT INTO A PACKAGE, BUT THAT SHOULD BE FINE
-					// DESTPCKG, ERR := KV.READPACKAGEJSON()
-
 					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						commitPackageVersion(ctx, pckg, *latestVersion, f)
@@ -146,7 +139,8 @@ func main() {
 						// If the kv.Package does not exist, we will create one.
 						// Otherwise we will update the existing one's latest version.
 						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
-						if err := kv.UpdateKVPackage(ctx, pckg.Name, *latestVersion); err != nil {
+						pckg.Version = latestVersion
+						if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 							util.Debugf(ctx, "failed to update KV package metadata: %s\n", err)
 						}
 					}

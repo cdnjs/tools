@@ -13,13 +13,17 @@ import (
 
 // ReadPackageJSON parses a JSON file into a Package.
 func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
-	var jsondata map[string]interface{}
-
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
 	}
 
+	return ReadPackageJSONBytes(ctx, file, data)
+}
+
+// ReadPackageJSONBytes parses a JSON bytes into a Package.
+func ReadPackageJSONBytes(ctx context.Context, file string, data []byte) (*Package, error) {
+	var jsondata map[string]interface{}
 	jsonerr := json.Unmarshal(data, &jsondata)
 	if jsonerr != nil {
 		return nil, errors.Wrapf(jsonerr, "failed to parse %s", file)
