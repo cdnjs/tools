@@ -54,7 +54,7 @@ func main() {
 				os.Exit(1)
 			}
 		}
-	case "print-meta":
+	case "meta":
 		{
 			fields := flag.Args()[1:]
 			if len(fields) == 0 {
