@@ -74,8 +74,8 @@ func printMeta(nestedFields []string) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
 	packagesPath := util.GetPackagesPath()
 
-	missingTypes := make(map[string]int)
-	types := make(map[string]int)
+	missingTypes := make(map[string][]string)
+	types := make(map[string][]string)
 
 	for _, f := range packages.GetPackagesJSONFiles(ctx) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
@@ -107,23 +107,29 @@ func printMeta(nestedFields []string) {
 
 			t := reflect.TypeOf(unknown)
 			if i == len(nestedFields) {
-				util.Infof(ctx, "SUCCESS %s\n", cur)
-				types[t.String()]++
+				util.Infof(ctx, "SUCCESS %s - %s\n", cur, t.String())
+				types[t.String()] = append(types[t.String()], f)
 				continue
 			}
 
 			util.Infof(ctx, "MISSING %s\n", cur)
-			missingTypes[cur]++
+			missingTypes[cur] = append(missingTypes[cur], f)
 			break
 		}
 	}
 
 	util.Infof(ctx, "\n\nSummary of Types\n")
 	for k, v := range types {
-		util.Infof(ctx, "SUCCESS (%d): %s\n", v, k)
+		util.Infof(ctx, "SUCCESS (%d): %s\n", len(v), k)
+		if len(v) < 25 {
+			util.Infof(ctx, "%s\n\n", v)
+		}
 	}
 	for k, v := range missingTypes {
-		util.Infof(ctx, "MISSING (%d): %s\n", v, k)
+		util.Infof(ctx, "MISSING (%d): %s\n", len(v), k)
+		if len(v) < 25 {
+			util.Infof(ctx, "\t: %s\n", v)
+		}
 	}
 }
 
