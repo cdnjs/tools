@@ -25,5 +25,5 @@ make kv && ./bin/kv upload-meta jquery mathjax fontawesome
 Gets all metadata associated with a package in KV.
 
 ```
-make kv && ./bin/kv get-meta jquery
+make kv && ./bin/kv meta jquery
 ```
