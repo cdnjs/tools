@@ -16,15 +16,24 @@ Outputs the distribution of packages that contain a particular JSON property (or
 
 For example:
 
-```make checker && ./bin/checker print-meta author email```
+```
+make checker && ./bin/checker print-meta author email
+```
 
 This will find the the distribution of packages that contain both properties:
 
-`{"author": {"email" : <>}}`
+```
+{"author": {"email" : <>}}
+```
 
 ones that contain no `email`:
-`{"author": <>}` 
+
+```
+{"author": <>}
+```
 
 and ones that do not have `author` at all:
 
-`{}`
+```
+{}
+```
