@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"fmt"
 	"log"
 	"path"
 
@@ -64,7 +65,13 @@ func OutputAllMeta(logger *log.Logger, pckgname string) {
 			if version, err := GetVersion(ctx, v); err != nil {
 				util.Infof(ctx, "(%d/%d) Failed to get version: %s\n", i+1, len(versions), err)
 			} else {
-				util.Infof(ctx, "(%d/%d) Parsed %s: %v\n", i+1, len(versions), v, version)
+				var output string
+				if len(version) > 25 {
+					output = fmt.Sprintf("(%d assets)", len(version))
+				} else {
+					output = fmt.Sprintf("%v", version)
+				}
+				util.Infof(ctx, "(%d/%d) Parsed %s: %s\n", i+1, len(versions), v, output)
 			}
 		}
 	}
