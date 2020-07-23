@@ -12,4 +12,6 @@ Output how many package files match and whether they will be ignored for a numbe
 
 ## `print-meta`
 
-Outputs a respective property from all package metadata.
+Outputs the distribution of packages that contain a particular JSON property (or sub-property).
+
+```make checker && ./bin/checker print-meta author email```
