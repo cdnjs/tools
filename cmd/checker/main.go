@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -55,37 +56,78 @@ func main() {
 		}
 	case "print-meta":
 		{
-			field := flag.Arg(1)
-			if field == "" {
-				panic("field cannot be empty")
+			fields := flag.Args()[1:]
+			if len(fields) == 0 {
+				panic("no fields specified")
 			}
 
-			printMeta(field)
+			printMeta(fields)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
 }
 
-func printMeta(field string) {
-	// create context with field prefix
-	ctx := util.ContextWithEntries(util.GetStandardEntries(field, logger)...)
+func printMeta(nestedFields []string) {
+	mainField := nestedFields[0]
+
+	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
 	packagesPath := util.GetPackagesPath()
 
+	types := make(map[string]int)
+
 	for _, f := range packages.GetPackagesJSONFiles(ctx) {
-		ctx = util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
 		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
 		util.Check(err)
 
-		m := make(map[string]interface{})
-		util.Check(json.Unmarshal(bytes, &m))
+		var unknown interface{}
+		util.Check(json.Unmarshal(bytes, &unknown))
 
-		if v, ok := m[field]; ok {
-			util.Infof(ctx, "%v\n", v)
-		} else {
-			util.Infof(ctx, "MISSING\n")
+		var cur string
+
+		for i := 0; i < len(nestedFields); i++ {
+			cur = path.Join(cur, nestedFields[i])
+
+			u := unknown
+			switch u.(type) {
+			case string:
+			case map[string]interface{}:
+				if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
+					unknown = res
+					continue
+				}
+			default:
+				panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
+			}
+
+			t := reflect.TypeOf(unknown)
+			v := reflect.ValueOf(unknown)
+			if i == len(nestedFields)-1 {
+				util.Infof(ctx, "SUCCESS %s: %s - %v\n", t, v)
+				types[t.String()]++
+				continue
+			}
+
+			util.Infof(ctx, "FAIL %s: %s - %v\n", t, v)
+			types[path.Join(cur, t.String())]++
+
+			// missing
+			// if v, ok := m[field]; ok {
+			// 	t := reflect.TypeOf(v)
+			// 	types[t.String()]++
+			// 	util.Infof(ctx, "%s - %v\n", t, reflect.ValueOf(v))
+			// } else {
+			// 	types["MISSING"]++
+			// 	util.Infof(ctx, "MISSING\n")
+			// }
 		}
+	}
+
+	util.Infof(ctx, "\nSummary of Types\n")
+	for k, v := range types {
+		util.Infof(ctx, "%s - %d packages\n", k, v)
 	}
 }
 
