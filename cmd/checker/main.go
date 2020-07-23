@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -51,8 +53,34 @@ func main() {
 				os.Exit(1)
 			}
 		}
+	case "print-meta":
+		{
+			printMeta(flag.Arg(1))
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
+	}
+}
+
+func printMeta(field string) {
+	// create context with field prefix
+	ctx := util.ContextWithEntries(util.GetStandardEntries(field, logger)...)
+	packagesPath := util.GetPackagesPath()
+
+	for _, f := range packages.GetPackagesJSONFiles(ctx) {
+		ctx = util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
+		util.Check(err)
+
+		m := make(map[string]interface{})
+		util.Check(json.Unmarshal(bytes, &m))
+
+		if v, ok := m[field]; ok {
+			util.Infof(ctx, "%v\n", v)
+		} else {
+			util.Infof(ctx, "MISSING\n")
+		}
 	}
 }
 
