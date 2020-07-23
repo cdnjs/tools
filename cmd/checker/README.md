@@ -18,5 +18,13 @@ For example:
 
 ```make checker && ./bin/checker print-meta author email```
 
-This will find the the distribution of packages that contain `{"author": {"email" : <>}}`, as
-well as note the ones that contain no `email` (`{"author": <>}`) and ones that do not have `author` whatsoever (`{}`).
+This will find the the distribution of packages that contain both properties:
+
+`{"author": {"email" : <>}}`
+
+ones that contain no `email`:
+`{"author": <>}` 
+
+and ones that do not have `author` at all:
+
+`{}`
