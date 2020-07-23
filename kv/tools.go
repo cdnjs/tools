@@ -44,3 +44,13 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 		util.Check(err)
 	}
 }
+
+// OutputAllMeta is a helper tool to output all metadata associated with a package.
+func OutputAllMeta(logger *log.Logger, pckgname string) {
+	//	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
+
+	// output package metadata
+
+	// output versions metadata
+
+}

@@ -40,6 +40,15 @@ func main() {
 
 			kv.InsertMetadataFromDisk(logger, pckgs)
 		}
+	case "meta":
+		{
+			pckg := flag.Arg(1)
+			if pckg == "" {
+				panic("no package specified")
+			}
+
+			kv.OutputAllMeta(logger, pckgs)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
