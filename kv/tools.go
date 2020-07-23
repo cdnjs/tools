@@ -47,10 +47,25 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 
 // OutputAllMeta is a helper tool to output all metadata associated with a package.
 func OutputAllMeta(logger *log.Logger, pckgname string) {
-	//	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 
 	// output package metadata
+	if pckg, err := GetPackage(ctx, pckgname); err != nil {
+		util.Infof(ctx, "Failed to get package meta: %s\n", err)
+	} else {
+		util.Infof(ctx, "Parsed package: %v\n", pckg)
+	}
 
 	// output versions metadata
-
+	if versions, err := GetVersions(ctx, pckgname); err != nil {
+		util.Infof(ctx, "Failed to get versions: %s\n", err)
+	} else {
+		for _, v := range versions {
+			if version, err := GetVersion(ctx, v); err != nil {
+				util.Infof(ctx, "Failed to get version: %s\n", err)
+			} else {
+				util.Infof(ctx, "Parsed version: %v\n", version)
+			}
+		}
+	}
 }
