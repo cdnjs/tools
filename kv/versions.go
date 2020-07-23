@@ -10,9 +10,8 @@ import (
 )
 
 // GetVersions gets the list of KV version keys for a particular package.
-func GetVersions(ctx context.Context, pckgname string) ([]string, error) {
-	var versions []string
-	return versions, nil
+func GetVersions(pckgname string) ([]string, error) {
+	return ListByPrefix(pckgname+"/", versionsNamespaceID)
 }
 
 // GetVersion gets metadata for a particular version.

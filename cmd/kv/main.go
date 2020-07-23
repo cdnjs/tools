@@ -47,7 +47,7 @@ func main() {
 				panic("no package specified")
 			}
 
-			kv.OutputAllMeta(logger, pckgs)
+			kv.OutputAllMeta(logger, pckg)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))

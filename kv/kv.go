@@ -58,6 +58,27 @@ func Read(key, namespaceID string) ([]byte, error) {
 	return api.ReadWorkersKV(context.Background(), namespaceID, key)
 }
 
+// ListByPrefix returns all KVs that start with a prefix.
+// Note this function is used for testing only. For practical uses,
+// use the Cursor option to avoid being limited to 1000 KVs at a time.
+func ListByPrefix(prefix, namespaceID string) ([]string, error) {
+	o := cloudflare.ListWorkersKVsOptions{
+		Prefix: &prefix,
+	}
+
+	resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]string, len(resp.Result))
+	for i := 0; i < len(resp.Result); i++ {
+		results[i] = resp.Result[i].Name
+	}
+
+	return results, nil
+}
+
 // Encodes a byte array to a base64 string.
 func encodeToBase64(bytes []byte) string {
 	return base64.StdEncoding.EncodeToString(bytes)

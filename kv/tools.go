@@ -53,18 +53,18 @@ func OutputAllMeta(logger *log.Logger, pckgname string) {
 	if pckg, err := GetPackage(ctx, pckgname); err != nil {
 		util.Infof(ctx, "Failed to get package meta: %s\n", err)
 	} else {
-		util.Infof(ctx, "Parsed package: %v\n", pckg)
+		util.Infof(ctx, "Parsed package: %s\n", pckg)
 	}
 
 	// output versions metadata
-	if versions, err := GetVersions(ctx, pckgname); err != nil {
+	if versions, err := GetVersions(pckgname); err != nil {
 		util.Infof(ctx, "Failed to get versions: %s\n", err)
 	} else {
-		for _, v := range versions {
+		for i, v := range versions {
 			if version, err := GetVersion(ctx, v); err != nil {
-				util.Infof(ctx, "Failed to get version: %s\n", err)
+				util.Infof(ctx, "(%d/%d) Failed to get version: %s\n", i+1, len(versions), err)
 			} else {
-				util.Infof(ctx, "Parsed version: %v\n", version)
+				util.Infof(ctx, "(%d/%d) Parsed %s: %v\n", i+1, len(versions), v, version)
 			}
 		}
 	}
