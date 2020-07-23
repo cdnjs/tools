@@ -74,6 +74,7 @@ func printMeta(nestedFields []string) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
 	packagesPath := util.GetPackagesPath()
 
+	missingTypes := make(map[string]int)
 	types := make(map[string]int)
 
 	for _, f := range packages.GetPackagesJSONFiles(ctx) {
@@ -87,47 +88,42 @@ func printMeta(nestedFields []string) {
 
 		var cur string
 
-		for i := 0; i < len(nestedFields); i++ {
-			cur = path.Join(cur, nestedFields[i])
+		for i := 0; i <= len(nestedFields); i++ {
 
 			u := unknown
-			switch u.(type) {
-			case string:
-			case map[string]interface{}:
-				if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
-					unknown = res
-					continue
+			if i < len(nestedFields) {
+				cur += "." + nestedFields[i]
+				switch u.(type) {
+				case string:
+				case map[string]interface{}:
+					if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
+						unknown = res
+						continue
+					}
+				default:
+					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
 				}
-			default:
-				panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
 			}
 
 			t := reflect.TypeOf(unknown)
-			v := reflect.ValueOf(unknown)
-			if i == len(nestedFields)-1 {
-				util.Infof(ctx, "SUCCESS %s: %s - %v\n", t, v)
+			if i == len(nestedFields) {
+				util.Infof(ctx, "SUCCESS %s\n", cur)
 				types[t.String()]++
 				continue
 			}
 
-			util.Infof(ctx, "FAIL %s: %s - %v\n", t, v)
-			types[path.Join(cur, t.String())]++
-
-			// missing
-			// if v, ok := m[field]; ok {
-			// 	t := reflect.TypeOf(v)
-			// 	types[t.String()]++
-			// 	util.Infof(ctx, "%s - %v\n", t, reflect.ValueOf(v))
-			// } else {
-			// 	types["MISSING"]++
-			// 	util.Infof(ctx, "MISSING\n")
-			// }
+			util.Infof(ctx, "FAIL %s\n", cur)
+			missingTypes[cur]++
+			break
 		}
 	}
 
-	util.Infof(ctx, "\nSummary of Types\n")
+	util.Infof(ctx, "\n\nSummary of Types\n")
 	for k, v := range types {
-		util.Infof(ctx, "%s - %d packages\n", k, v)
+		util.Infof(ctx, "SUCCESS (%d): %s\n", v, k)
+	}
+	for k, v := range missingTypes {
+		util.Infof(ctx, "MISSING (%d): %s\n", v, k)
 	}
 }
 
