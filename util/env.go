@@ -41,6 +41,11 @@ func GetCDNJSPath() string {
 	return path.Join(GetBotBasePath(), "cdnjs")
 }
 
+// GetPackagesPath gets the path to the packages repo.
+func GetPackagesPath() string {
+	return path.Join(GetBotBasePath(), "packages", "packages")
+}
+
 // GetCDNJSPackages gets the path to the cdnjs libraries.
 func GetCDNJSPackages() string {
 	return path.Join(GetCDNJSPath(), "ajax", "libs")

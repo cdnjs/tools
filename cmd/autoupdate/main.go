@@ -28,7 +28,7 @@ func init() {
 
 var (
 	basePath     = util.GetBotBasePath()
-	packagesPath = path.Join(basePath, "packages", "packages")
+	packagesPath = util.GetPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
 
 	// initialize standard debug logger
@@ -37,12 +37,6 @@ var (
 	// default context (no logger prefix)
 	defaultCtx = util.ContextWithEntries(util.GetStandardEntries("", logger)...)
 )
-
-func getPackages(ctx context.Context) []string {
-	list, err := util.ListFilesGlob(ctx, packagesPath, "*/*.json")
-	util.Check(err)
-	return list
-}
 
 type version interface {
 	Get() string             // Get the version.
@@ -88,7 +82,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM)
 
-	for _, f := range getPackages(defaultCtx) {
+	for _, f := range packages.GetPackagesJSONFiles(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
