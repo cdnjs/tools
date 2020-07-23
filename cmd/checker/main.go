@@ -89,7 +89,6 @@ func printMeta(nestedFields []string) {
 		var cur string
 
 		for i := 0; i <= len(nestedFields); i++ {
-
 			u := unknown
 			if i < len(nestedFields) {
 				cur += "." + nestedFields[i]
@@ -101,6 +100,7 @@ func printMeta(nestedFields []string) {
 						continue
 					}
 				default:
+					// assuming only strings and keys that map to strings
 					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
 				}
 			}
