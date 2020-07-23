@@ -20,12 +20,12 @@ var (
 		".br": true,
 		".gz": true,
 	}
-	// // these file extensions will be uploaded to KV
-	// // but not compessed
-	// doNotCompress = map[string]bool{
-	// 	".woff":  true,
-	// 	".woff2": true,
-	// }
+	// these file extensions will be uploaded to KV
+	// but not compessed
+	doNotCompress = map[string]bool{
+		".woff":  true,
+		".woff2": true,
+	}
 )
 
 // Gets the requests to update a number of files in KV.
@@ -67,17 +67,17 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 			LastModified: lastModifiedStr,
 		}
 
-		// TODO: Stop pushing uncompressed when Worker is fixed.
-		//if _, ok := doNotCompress[ext]; ok {
-		// will insert to KV without compressing further
-		//	util.Debugf(ctx, "file will not be compressed in kv write: %s\n", fromVersionPath)
+		// TODO: Stop pushing uncompressed for all files when Worker is fixed.
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey,
 			value: bytes,
 			meta:  meta,
 		})
-		//	continue
-		//}
+
+		if _, ok := doNotCompress[ext]; ok {
+			// will only insert uncompressed to KV
+			continue
+		}
 
 		// brotli
 		kvs = append(kvs, &writeRequest{
