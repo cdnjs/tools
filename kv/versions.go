@@ -9,6 +9,22 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
+// GetVersions gets the list of KV version keys for a particular package.
+func GetVersions(pckgname string) ([]string, error) {
+	return ListByPrefix(pckgname+"/", versionsNamespaceID)
+}
+
+// GetVersion gets metadata for a particular version.
+func GetVersion(ctx context.Context, key string) ([]string, error) {
+	bytes, err := Read(key, versionsNamespaceID)
+	if err != nil {
+		return nil, err
+	}
+	var assets []string
+	err = json.Unmarshal(bytes, &assets)
+	return assets, err
+}
+
 // Gets the request to update a version entry in KV with a number of file assets.
 // Note: for now, a `version` entry is just a []string of assets, but this could become
 // a struct if more metadata is added.
