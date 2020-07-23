@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -51,8 +54,76 @@ func main() {
 				os.Exit(1)
 			}
 		}
+	case "meta":
+		{
+			fields := flag.Args()[1:]
+			if len(fields) == 0 {
+				panic("no fields specified")
+			}
+
+			printMeta(fields)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
+	}
+}
+
+func printMeta(nestedFields []string) {
+	mainField := nestedFields[0]
+
+	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
+	packagesPath := util.GetPackagesPath()
+
+	missingTypes := make(map[string]int)
+	types := make(map[string]int)
+
+	for _, f := range packages.GetPackagesJSONFiles(ctx) {
+		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
+		util.Check(err)
+
+		var unknown interface{}
+		util.Check(json.Unmarshal(bytes, &unknown))
+
+		var cur string
+
+		for i := 0; i <= len(nestedFields); i++ {
+			u := unknown
+			if i < len(nestedFields) {
+				cur += "." + nestedFields[i]
+				switch u.(type) {
+				case string:
+				case map[string]interface{}:
+					if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
+						unknown = res
+						continue
+					}
+				default:
+					// assuming only strings and keys that map to strings
+					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
+				}
+			}
+
+			t := reflect.TypeOf(unknown)
+			if i == len(nestedFields) {
+				util.Infof(ctx, "SUCCESS %s\n", cur)
+				types[t.String()]++
+				continue
+			}
+
+			util.Infof(ctx, "MISSING %s\n", cur)
+			missingTypes[cur]++
+			break
+		}
+	}
+
+	util.Infof(ctx, "\n\nSummary of Types\n")
+	for k, v := range types {
+		util.Infof(ctx, "SUCCESS (%d): %s\n", v, k)
+	}
+	for k, v := range missingTypes {
+		util.Infof(ctx, "MISSING (%d): %s\n", v, k)
 	}
 }
 

@@ -11,6 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GetPackagesJSONFiles gets the paths of the human-readable JSON files from within the `packagesPath`.
+func GetPackagesJSONFiles(ctx context.Context) []string {
+	list, err := util.ListFilesGlob(ctx, util.GetPackagesPath(), "*/*.json")
+	util.Check(err)
+	return list
+}
+
 // ReadPackageJSON parses a JSON file into a Package.
 func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
 	data, err := ioutil.ReadFile(file)
