@@ -55,7 +55,12 @@ func main() {
 		}
 	case "print-meta":
 		{
-			printMeta(flag.Arg(1))
+			field := flag.Arg(1)
+			if field == "" {
+				panic("field cannot be empty")
+			}
+
+			printMeta(field)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
