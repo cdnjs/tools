@@ -112,7 +112,7 @@ func printMeta(nestedFields []string) {
 				continue
 			}
 
-			util.Infof(ctx, "FAIL %s\n", cur)
+			util.Infof(ctx, "MISSING %s\n", cur)
 			missingTypes[cur]++
 			break
 		}
