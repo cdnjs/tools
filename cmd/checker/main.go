@@ -63,6 +63,15 @@ func main() {
 
 			printMeta(fields)
 		}
+	case "meta-list":
+		{
+			fields := flag.Args()[1:]
+			if len(fields) == 0 {
+				panic("no fields specified")
+			}
+
+			printMetaList(fields)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
@@ -129,6 +138,69 @@ func printMeta(nestedFields []string) {
 		util.Infof(ctx, "MISSING (%d): %s\n", len(v), k)
 		if len(v) < 25 {
 			util.Infof(ctx, "\t: %s\n", v)
+		}
+	}
+}
+
+func printMetaList(nestedFields []string) {
+	mainField := nestedFields[0]
+
+	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
+	packagesPath := util.GetPackagesPath()
+
+	keys := make(map[string][]string)
+
+	for _, f := range packages.GetPackagesJSONFiles(ctx) {
+		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
+
+		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
+		util.Check(err)
+
+		var unknown interface{}
+		util.Check(json.Unmarshal(bytes, &unknown))
+
+		var cur string
+
+		for i := 0; i <= len(nestedFields); i++ {
+			u := unknown
+			if i < len(nestedFields) {
+				cur += "." + nestedFields[i]
+				switch u.(type) {
+				case string:
+				case map[string]interface{}:
+					if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
+						unknown = res
+						continue
+					}
+				default:
+					// assuming only strings and keys that map to strings
+					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
+				}
+			}
+
+			if i == len(nestedFields) {
+				switch u.(type) {
+				case map[string]interface{}:
+					var ks []string
+					for k := range unknown.(map[string]interface{}) {
+						keys[k] = append(keys[k], f)
+						ks = append(ks, k)
+						util.Infof(ctx, "KEYS %v\n", ks)
+					}
+				default:
+					util.Infof(ctx, "ignored\n")
+				}
+				continue
+			}
+			break
+		}
+	}
+
+	util.Infof(ctx, "\n\nSummary of Keys in Object\n")
+	for k, v := range keys {
+		util.Infof(ctx, "KEYS (%d): %s\n", len(v), k)
+		if len(v) < 25 {
+			util.Infof(ctx, "%s\n\n", v)
 		}
 	}
 }
