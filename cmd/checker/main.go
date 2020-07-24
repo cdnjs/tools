@@ -54,6 +54,10 @@ func main() {
 				os.Exit(1)
 			}
 		}
+	case "schema":
+		{
+			test()
+		}
 	case "meta":
 		{
 			fields := flag.Args()[1:]
