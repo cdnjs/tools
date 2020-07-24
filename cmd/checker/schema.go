@@ -109,7 +109,26 @@ const (
             "description": "This will be the full name of the library, as stored on cdnjs.",
             "type": "string"
         },
-        "repository": {}
+        "repository": {
+            "description": "The repository for the library, if known, in standard repository format.",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "docs": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "type",
+                "url"
+            ],
+            "additionalProperties": false
+        }
     },
     "required": [
         "filename",
