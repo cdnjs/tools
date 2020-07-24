@@ -70,10 +70,6 @@ func main() {
 	case "meta-list":
 		{
 			fields := flag.Args()[1:]
-			if len(fields) == 0 {
-				panic("no fields specified")
-			}
-
 			printMetaList(fields)
 		}
 	default:
@@ -147,7 +143,10 @@ func printMeta(nestedFields []string) {
 }
 
 func printMetaList(nestedFields []string) {
-	mainField := nestedFields[0]
+	var mainField string
+	if len(nestedFields) > 0 {
+		mainField = nestedFields[0]
+	}
 
 	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
 	packagesPath := util.GetPackagesPath()
