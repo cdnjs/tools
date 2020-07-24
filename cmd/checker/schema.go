@@ -83,16 +83,38 @@ const (
             "additionalProperties": false
         },
         "description": {
-            
+            "description": "The description of the library if it has been provided in the cdnjs package JSON file.",
+            "type": "string"
         },
-        "filename": {},
-        "homepage": {},
-        "keywords": {},
-        "license": {},
-        "name": {},
+        "filename": {
+            "description": "This will be the name of the default file for the library.",
+            "type": "string"
+        },
+        "homepage": {
+            "description": "A link to the homepage of the package, if one is defined in the cdnjs package JSON file. Normally, this is either the package repository or the package website.",
+            "type": "string"
+        },
+        "keywords": {
+            "description": "An array of keywords provided in the cdnjs package JSON for the library.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "license": {
+            "description": "The license defined for the library on cdnjs, as a string. If the library has a custom license, it may not be shown here.",
+            "type": "string"
+        },
+        "name": {
+            "description": "This will be the full name of the library, as stored on cdnjs.",
+            "type": "string"
+        },
         "repository": {}
     },
-    "required": [],
+    "required": [
+        "filename",
+        "name"
+    ],
     "additionalProperties": false
 }`
 )
