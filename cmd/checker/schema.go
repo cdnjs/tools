@@ -121,6 +121,9 @@ const (
                 },
                 "docs": {
                     "type": "string"
+                },
+                "directory": {
+                    "type": "string"
                 }
             },
             "required": [
