@@ -13,6 +13,7 @@ require (
 	github.com/karrick/godirwalk v1.15.6
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
+	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
