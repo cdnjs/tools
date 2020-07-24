@@ -25,17 +25,66 @@ const (
             "description": "The attributed author for the library, as defined in the cdnjs package JSON file for this library.",
             "type": "object",
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
-                "email": {
+                "phone": {
+                    "type": "string"
+                },
+                "twitter": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             },
             "additionalProperties": false
         },
-        "autoupdate": {},
-        "description": {},
+        "autoupdate": {
+            "description": "Subscribes the package to an autoupdating service when a new version is released.",
+            "type": "object",
+            "properties": {
+                "source": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                },
+                "fileMap": {
+                    "type": "array",
+                    "properties": {
+                        "basePath": {
+                            "type": "string"
+                        },
+                        "files": {
+                            "type": "array",
+                            "minItems": 1,
+                            "uniqueItems": true,
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "basePath",
+                        "files"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "source",
+                "target",
+                "fileMap"
+            ],
+            "additionalProperties": false
+        },
+        "description": {
+            
+        },
         "filename": {},
         "homepage": {},
         "keywords": {},
