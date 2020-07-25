@@ -31,12 +31,6 @@ const (
                 "name": {
                     "type": "string"
                 },
-                "phone": {
-                    "type": "string"
-                },
-                "twitter": {
-                    "type": "string"
-                },
                 "url": {
                     "type": "string"
                 }
@@ -134,7 +128,9 @@ const (
         }
     },
     "required": [
+        "description",
         "filename",
+        "keywords",
         "name"
     ],
     "additionalProperties": false
