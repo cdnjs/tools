@@ -9,7 +9,6 @@ import (
 )
 
 type SchemaTestCase struct {
-	name        string
 	filePath    string
 	valid       bool
 	invalidJSON bool
@@ -18,10 +17,67 @@ type SchemaTestCase struct {
 
 func TestSchema(t *testing.T) {
 	cases := []SchemaTestCase{
+		// author valid
 		{
-			name:     "authors/valid: missing email",
+			filePath: "schema_tests/authors/valid/missing_authors.json",
+			valid:    true,
+		},
+		{
 			filePath: "schema_tests/authors/valid/missing_email.json",
 			valid:    true,
+		},
+		{
+			filePath: "schema_tests/authors/valid/missing_url.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/authors/valid/multiple_authors.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/authors/valid/one_author.json",
+			valid:    true,
+		},
+		// author invalid
+		{
+			filePath: "schema_tests/authors/invalid/additional_property.json",
+			valid:    false,
+			errors:   []string{"authors.0: Additional property github is not allowed"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/duplicate_authors.json",
+			valid:    false,
+			errors:   []string{"authors: array items[0,1] must be unique"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/empty_array.json",
+			valid:    false,
+			errors:   []string{"authors: Array must have at least 1 items"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/empty_author_object.json",
+			valid:    false,
+			errors:   []string{"authors.0: name is required"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/empty_email.json",
+			valid:    false,
+			errors:   []string{"authors.0.email: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/empty_name.json",
+			valid:    false,
+			errors:   []string{"authors.0.name: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/empty_url.json",
+			valid:    false,
+			errors:   []string{"authors.0.url: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/authors/invalid/one_author_no_name.json",
+			valid:    false,
+			errors:   []string{"authors.0: name is required"},
 		},
 	}
 
@@ -39,13 +95,11 @@ func TestSchema(t *testing.T) {
 		return
 	}
 
-	// TODO: do I need these return stmts?
-
 	for _, tc := range cases {
 		tc := tc // capture range variable
 
 		// since all tests share the same input, this needs to run sequentially
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.filePath, func(t *testing.T) {
 			// read bytes of test file
 			testBytes, err := ioutil.ReadFile(tc.filePath)
 			assert.Nil(t, err)
@@ -81,7 +135,7 @@ func TestSchema(t *testing.T) {
 
 			// make sure all errors are accounted for
 			for _, resErr := range resErrs {
-				assert.Contains(t, resErr.String(), tc.errors)
+				assert.Contains(t, tc.errors, resErr.String())
 			}
 		})
 	}
