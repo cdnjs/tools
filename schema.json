@@ -62,7 +62,7 @@
                 },
                 "source": {
                     "type": "string",
-                    "pattern": "^(git|npm)$"
+                    "pattern": "^git|npm$"
                 },
                 "target": {
                     "type": "string",
@@ -109,7 +109,7 @@
         "name": {
             "description": "This will be the full name of the library, as stored on cdnjs.",
             "type": "string",
-            "minLength": 1
+            "pattern": "^[a-zA-Z0-9._-]+$"
         },
         "repository": {
             "description": "The repository for the library, if known, in standard repository format.",
@@ -121,7 +121,7 @@
                 },
                 "type": {
                     "type": "string",
-                    "pattern": "^(git|npm)$"
+                    "pattern": "^git|npm$"
                 },
                 "url": {
                     "type": "string",

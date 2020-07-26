@@ -17,9 +17,10 @@ type SchemaTestCase struct {
 
 func TestSchema(t *testing.T) {
 	const (
-		autoupdateSourceRegex = "^(git|npm)$"
+		autoupdateSourceRegex = "^git|npm$"
 		licenseRegex          = "^(\\(.+ OR .+\\)|[a-zA-Z0-9].*)$"
-		repositorySourceRegex = "^(git|npm)$"
+		nameRegex             = "^[a-zA-Z0-9._-]+$"
+		repositorySourceRegex = "^git|npm$"
 	)
 
 	cases := []SchemaTestCase{
@@ -305,6 +306,24 @@ func TestSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/license/invalid/invalid_single_license.json",
 			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+		},
+		// name valid
+		{
+			filePath: "schema_tests/name/valid/valid_name.json",
+			valid:    true,
+		},
+		// name invalid
+		{
+			filePath: "schema_tests/name/invalid/empty_name.json",
+			errors:   []string{"name: Does not match pattern '" + nameRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/name/invalid/invalid_name.json",
+			errors:   []string{"name: Does not match pattern '" + nameRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/name/invalid/missing_name.json",
+			errors:   []string{"(root): name is required"},
 		},
 	}
 
