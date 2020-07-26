@@ -202,6 +202,20 @@ func TestSchema(t *testing.T) {
 			valid:    false,
 			errors:   []string{"autoupdate.source: Does not match pattern '^(git|npm)$'"},
 		},
+		// description valid
+		{
+			filePath: "schema_tests/description/valid/valid_description.json",
+			valid:    true,
+		},
+		// description invalid
+		{
+			filePath: "schema_tests/description/invalid/empty_description.json",
+			errors:   []string{"description: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/description/invalid/missing_description.json",
+			errors:   []string{"(root): description is required"},
+		},
 	}
 
 	// read schema bytes
