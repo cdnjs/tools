@@ -17,4 +17,4 @@ bin/
 ._.DS_Store
 
 node_modules/
-*.json
+package.json

@@ -1,46 +1,3 @@
-package main
-
-import (
-	"fmt"
-	"io/ioutil"
-
-	"github.com/cdnjs/tools/util"
-	"github.com/xeipuuv/gojsonschema"
-)
-
-const (
-	validateAgainst = `
-{
-  "name": "a-happy-tyler",
-  "description": "Tyler is happy. Be like Tyler.",
-  "keywords": [
-    "tyler",
-    "happy"
-  ],
-  "author": {
-    "name": "Tyler Caslin",
-    "email": "tylercaslin47@gmail.com"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/tc80/a-happy-tyler.git"
-  },
-  "filename": "happy.js",
-  "autoupdate": {
-    "source": "git",
-    "target": "git://github.com/tc80/a-happy-tyler.git",
-    "fileMap": [
-      {
-        "basePath": "src",
-        "files": [
-          "*"
-        ]
-      }
-    ]
-  }
-}`
-	schema = `
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
@@ -66,7 +23,10 @@ const (
                         "minLength": 1
                     }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "required": [
+                    "name"
+                ]
             }
         },
         "autoupdate": {
@@ -172,40 +132,4 @@ const (
         "name"
     ],
     "additionalProperties": false
-}`
-)
-
-func test() {
-	// ensure license is valid spdx
-	// add tests -- make sure to account for nondeterminism
-
-	testbytes, err := ioutil.ReadFile("cmd/checker/test.json")
-	util.Check(err)
-
-	schemabytes, err := ioutil.ReadFile("cmd/checker/schema.json")
-	util.Check(err)
-
-	s, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemabytes))
-	// s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(schema))
-	util.Check(err)
-
-	res, err := s.Validate(gojsonschema.NewBytesLoader(testbytes))
-	// res, err := s.Validate(gojsonschema.NewStringLoader(validateAgainst))
-	util.Check(err)
-
-	// convert each error to ci error
-	fmt.Println(res.Valid(), res.Errors())
-
-	//
-
-	// input := gojsonschema.NewStringLoader(validateAgainst)
-
-	// res, err := gojsonschema.Validate(s, input)
-	// fmt.Println(res, err)
-	// s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(schema))
-	// util.Check(err)
-
-	// gojsonschema.FormatCheckers.Add()
-	// res, err := s.Validate(`something`)
-	// util.Check(err)
 }
