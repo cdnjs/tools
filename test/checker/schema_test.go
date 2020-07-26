@@ -244,6 +244,32 @@ func TestSchema(t *testing.T) {
 			filePath: "schema_tests/homepage/invalid/empty_homepage.json",
 			errors:   []string{"homepage: String length must be greater than or equal to 1"},
 		},
+		// keywords valid
+		{
+			filePath: "schema_tests/keywords/valid/multiple_keywords.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/keywords/valid/one_keyword.json",
+			valid:    true,
+		},
+		// keywords invalid
+		{
+			filePath: "schema_tests/keywords/invalid/duplicate_keywords.json",
+			errors:   []string{"keywords: array items[0,1] must be unique"},
+		},
+		{
+			filePath: "schema_tests/keywords/invalid/empty_keyword.json",
+			errors:   []string{"keywords.0: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/keywords/invalid/empty_keywords.json",
+			errors:   []string{"keywords: Array must have at least 1 items"},
+		},
+		{
+			filePath: "schema_tests/keywords/invalid/missing_keywords.json",
+			errors:   []string{"(root): keywords is required"},
+		},
 	}
 
 	// read schema bytes
