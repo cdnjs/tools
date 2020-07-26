@@ -216,6 +216,20 @@ func TestSchema(t *testing.T) {
 			filePath: "schema_tests/description/invalid/missing_description.json",
 			errors:   []string{"(root): description is required"},
 		},
+		// filename valid
+		{
+			filePath: "schema_tests/filename/valid/valid_filename.json",
+			valid:    true,
+		},
+		// filename invalid
+		{
+			filePath: "schema_tests/filename/invalid/empty_filename.json",
+			errors:   []string{"filename: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/filename/invalid/missing_filename.json",
+			errors:   []string{"(root): filename is required"},
+		},
 	}
 
 	// read schema bytes

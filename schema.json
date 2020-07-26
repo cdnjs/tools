@@ -84,7 +84,7 @@
         "filename": {
             "description": "This will be the name of the default file for the library.",
             "type": "string",
-            "pattern": ".+"
+            "minLength": 1
         },
         "homepage": {
             "description": "A link to the homepage of the package, if one is defined in the cdnjs package JSON file. Normally, this is either the package repository or the package website.",
