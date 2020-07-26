@@ -41,12 +41,6 @@ const (
             "description": "Subscribes the package to an autoupdating service when a new version is released.",
             "type": "object",
             "properties": {
-                "source": {
-                    "type": "string"
-                },
-                "target": {
-                    "type": "string"
-                },
                 "fileMap": {
                     "type": "array",
                     "properties": {
@@ -67,12 +61,18 @@ const (
                         "files"
                     ],
                     "additionalProperties": false
+                },
+                "source": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
                 }
             },
             "required": [
+                "fileMap",
                 "source",
-                "target",
-                "fileMap"
+                "target"
             ],
             "additionalProperties": false
         },
@@ -91,6 +91,8 @@ const (
         "keywords": {
             "description": "An array of keywords provided in the cdnjs package JSON for the library.",
             "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
             "items": {
                 "type": "string"
             }
@@ -107,16 +109,13 @@ const (
             "description": "The repository for the library, if known, in standard repository format.",
             "type": "object",
             "properties": {
+                "directory": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 },
                 "url": {
-                    "type": "string"
-                },
-                "docs": {
-                    "type": "string"
-                },
-                "directory": {
                     "type": "string"
                 }
             },
