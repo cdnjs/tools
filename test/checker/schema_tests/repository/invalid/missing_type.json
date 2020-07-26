@@ -12,16 +12,15 @@
             "url": "https://github.com/tc80"
         }
     ],
+    "homepage": "https://github.com/tc80",
     "license": "MIT",
     "repository": {
-        "type": "git",
         "url": "git://github.com/tc80/a-happy-tyler.git"
     },
     "filename": "happy.js",
-    "homepage": "https://github.com/tc80",
     "autoupdate": {
         "source": "git",
-        "target": "git://github.com/tc80/a-happy-tyler.git",
+        "target": "a-happy-tyler",
         "fileMap": [
             {
                 "basePath": "src",

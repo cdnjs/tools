@@ -115,13 +115,9 @@
             "description": "The repository for the library, if known, in standard repository format.",
             "type": "object",
             "properties": {
-                "directory": {
-                    "type": "string",
-                    "minLength": 1
-                },
                 "type": {
                     "type": "string",
-                    "pattern": "^git|npm$"
+                    "pattern": "^git$"
                 },
                 "url": {
                     "type": "string",
@@ -140,7 +136,8 @@
         "description",
         "filename",
         "keywords",
-        "name"
+        "name",
+        "repository"
     ],
     "additionalProperties": false
 }

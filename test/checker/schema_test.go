@@ -20,7 +20,7 @@ func TestSchema(t *testing.T) {
 		autoupdateSourceRegex = "^git|npm$"
 		licenseRegex          = "^(\\(.+ OR .+\\)|[a-zA-Z0-9].*)$"
 		nameRegex             = "^[a-zA-Z0-9._-]+$"
-		repositorySourceRegex = "^git|npm$"
+		repositoryTypeRegex   = "^git$"
 	)
 
 	cases := []SchemaTestCase{
@@ -324,6 +324,51 @@ func TestSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/name/invalid/missing_name.json",
 			errors:   []string{"(root): name is required"},
+		},
+		// repository valid
+		{
+			filePath: "schema_tests/repository/valid/type_git.json",
+			valid:    true,
+		},
+		// repository invalid
+		{
+			filePath: "schema_tests/repository/invalid/additional_property.json",
+			errors:   []string{"repository: Additional property custom_type is not allowed"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/empty_repository.json",
+			errors: []string{
+				"repository: type is required",
+				"repository: url is required",
+			},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/empty_type.json",
+			errors:   []string{"repository.type: Does not match pattern '" + repositoryTypeRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/empty_url.json",
+			errors:   []string{"repository.url: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/missing_repository.json",
+			errors:   []string{"(root): repository is required"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/missing_type.json",
+			errors:   []string{"repository: type is required"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/missing_url.json",
+			errors:   []string{"repository: url is required"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/type_npm.json",
+			errors:   []string{"repository.type: Does not match pattern '" + repositoryTypeRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/repository/invalid/type_svn.json",
+			errors:   []string{"repository.type: Does not match pattern '" + repositoryTypeRegex + "'"},
 		},
 	}
 
