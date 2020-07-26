@@ -16,19 +16,25 @@ type SchemaTestCase struct {
 }
 
 func TestSchema(t *testing.T) {
+	const (
+		autoupdateSourceRegex = "^(git|npm)$"
+		licenseRegex          = "^(\\(.+ OR .+\\)|[a-zA-Z0-9].*)$"
+		repositorySourceRegex = "^(git|npm)$"
+	)
+
 	cases := []SchemaTestCase{
-		// top-level valid
+		// (root) valid
 		{
-			filePath: "schema_tests/top_level/valid/all_properties.json",
+			filePath: "schema_tests/(root)/valid/all_properties.json",
 			valid:    true,
 		},
 		{
-			filePath: "schema_tests/top_level/valid/only_required_properties.json",
+			filePath: "schema_tests/(root)/valid/only_required_properties.json",
 			valid:    true,
 		},
-		// top-level invalid
+		// (root) invalid
 		{
-			filePath: "schema_tests/top_level/invalid/additional_properties.json",
+			filePath: "schema_tests/(root)/invalid/additional_properties.json",
 			valid:    false,
 			errors: []string{
 				"(root): Additional property licenses is not allowed",
@@ -37,7 +43,7 @@ func TestSchema(t *testing.T) {
 			},
 		},
 		{
-			filePath:    "schema_tests/top_level/invalid/invalid_json.txt",
+			filePath:    "schema_tests/(root)/invalid/invalid_json.txt",
 			invalidJSON: true,
 		},
 		// author valid
@@ -160,7 +166,7 @@ func TestSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/autoupdate/invalid/empty_source.json",
 			valid:    false,
-			errors:   []string{"autoupdate.source: Does not match pattern '^(git|npm)$'"},
+			errors:   []string{"autoupdate.source: Does not match pattern '" + autoupdateSourceRegex + "'"},
 		},
 		{
 			filePath: "schema_tests/autoupdate/invalid/empty_target.json",
@@ -200,7 +206,7 @@ func TestSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/autoupdate/invalid/source_svn.json",
 			valid:    false,
-			errors:   []string{"autoupdate.source: Does not match pattern '^(git|npm)$'"},
+			errors:   []string{"autoupdate.source: Does not match pattern '" + autoupdateSourceRegex + "'"},
 		},
 		// description valid
 		{
@@ -269,6 +275,36 @@ func TestSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/keywords/invalid/missing_keywords.json",
 			errors:   []string{"(root): keywords is required"},
+		},
+		// license valid
+		{
+			filePath: "schema_tests/license/valid/many_licenses.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/license/valid/missing_license.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/license/valid/single_license.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/license/valid/two_licenses.json",
+			valid:    true,
+		},
+		// license invalid
+		{
+			filePath: "schema_tests/license/invalid/empty_license.json",
+			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/license/invalid/invalid_multiple_licenses.json",
+			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+		},
+		{
+			filePath: "schema_tests/license/invalid/invalid_single_license.json",
+			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
 		},
 	}
 

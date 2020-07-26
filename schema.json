@@ -104,7 +104,7 @@
         "license": {
             "description": "The license defined for the library on cdnjs, as a string. If the library has a custom license, it may not be shown here.",
             "type": "string",
-            "minLength": 1
+            "pattern": "^(\\(.+ OR .+\\)|[a-zA-Z0-9].*)$"
         },
         "name": {
             "description": "This will be the full name of the library, as stored on cdnjs.",
