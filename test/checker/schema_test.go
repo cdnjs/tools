@@ -17,6 +17,29 @@ type SchemaTestCase struct {
 
 func TestSchema(t *testing.T) {
 	cases := []SchemaTestCase{
+		// top-level valid
+		{
+			filePath: "schema_tests/top_level/valid/all_properties.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/top_level/valid/only_required_properties.json",
+			valid:    true,
+		},
+		// top-level invalid
+		{
+			filePath: "schema_tests/top_level/invalid/additional_properties.json",
+			valid:    false,
+			errors: []string{
+				"(root): Additional property licenses is not allowed",
+				"(root): Additional property author is not allowed",
+				"(root): Additional property my_custom_property is not allowed",
+			},
+		},
+		{
+			filePath:    "schema_tests/top_level/invalid/invalid_json.txt",
+			invalidJSON: true,
+		},
 		// author valid
 		{
 			filePath: "schema_tests/authors/valid/missing_authors.json",
@@ -79,6 +102,106 @@ func TestSchema(t *testing.T) {
 			valid:    false,
 			errors:   []string{"authors.0: name is required"},
 		},
+		// autoupdate valid
+		{
+			filePath: "schema_tests/autoupdate/valid/empty_basepath.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/autoupdate/valid/multiple_filemaps.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/autoupdate/valid/multiple_files.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/autoupdate/valid/source_git.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/autoupdate/valid/source_npm.json",
+			valid:    true,
+		},
+		// autoupdate invalid
+		{
+			filePath: "schema_tests/autoupdate/invalid/additional_properties.json",
+			valid:    false,
+			errors: []string{
+				"autoupdate: Additional property repo is not allowed",
+				"autoupdate.fileMap.0: Additional property directory is not allowed",
+			},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/duplicate_filemap.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap: array items[0,1] must be unique"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/duplicate_files.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap.0.files: array items[0,1] must be unique"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/empty_file.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap.0.files.0: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/empty_filemap.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap: Array must have at least 1 items"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/empty_files.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap.0.files: Array must have at least 1 items"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/empty_source.json",
+			valid:    false,
+			errors:   []string{"autoupdate.source: Does not match pattern '^(git|npm)$'"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/empty_target.json",
+			valid:    false,
+			errors:   []string{"autoupdate.target: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_autoupdate.json",
+			valid:    false,
+			errors:   []string{"(root): autoupdate is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_basepath.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap.0: basePath is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_filemap.json",
+			valid:    false,
+			errors:   []string{"autoupdate: fileMap is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_files.json",
+			valid:    false,
+			errors:   []string{"autoupdate.fileMap.0: files is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_source.json",
+			valid:    false,
+			errors:   []string{"autoupdate: source is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/missing_target.json",
+			valid:    false,
+			errors:   []string{"autoupdate: target is required"},
+		},
+		{
+			filePath: "schema_tests/autoupdate/invalid/source_svn.json",
+			valid:    false,
+			errors:   []string{"autoupdate.source: Does not match pattern '^(git|npm)$'"},
+		},
 	}
 
 	// read schema bytes
@@ -122,9 +245,10 @@ func TestSchema(t *testing.T) {
 			}
 
 			if tc.valid {
-				// expect no errors
+				// expecting no errors
 				assert.True(t, res.Valid())
-				return
+				// don't return here, since we want all errors to be outputted
+				// in the case this assertion fails
 			}
 
 			// expecting errors
