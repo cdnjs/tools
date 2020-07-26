@@ -230,6 +230,20 @@ func TestSchema(t *testing.T) {
 			filePath: "schema_tests/filename/invalid/missing_filename.json",
 			errors:   []string{"(root): filename is required"},
 		},
+		// homepage valid
+		{
+			filePath: "schema_tests/homepage/valid/valid_homepage.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/homepage/valid/missing_homepage.json",
+			valid:    true,
+		},
+		// homepage invalid
+		{
+			filePath: "schema_tests/homepage/invalid/empty_homepage.json",
+			errors:   []string{"homepage: String length must be greater than or equal to 1"},
+		},
 	}
 
 	// read schema bytes
