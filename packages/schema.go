@@ -5,16 +5,16 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// Schema is the human-readable package schema.
-var Schema = initSchema()
+// HumanReadableSchema is the human-readable package schema.
+var HumanReadableSchema = initHumanReadableSchema()
 
-func initSchema() *gojsonschema.Schema {
-	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(schemaString))
+func initHumanReadableSchema() *gojsonschema.Schema {
+	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(humanReadableSchemaString))
 	util.Check(err)
 	return s
 }
 
-const schemaString = `{
+const humanReadableSchemaString = `{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
