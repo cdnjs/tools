@@ -141,6 +141,14 @@ func main() {
 			util.Check(err)
 			fmt.Println(string(str))
 		}
+	case "human":
+		{
+			fmt.Println(packages.HumanReadableSchemaString)
+		}
+	case "non-human":
+		{
+			fmt.Println(packages.NonHumanReadableSchemaString)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}

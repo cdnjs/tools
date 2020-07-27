@@ -113,7 +113,9 @@ func ReadNonHumanPackageJSONBytes(ctx context.Context, file string, bytes []byte
 	if authorsNil != authorNil {
 		return nil, errors.Wrapf(err, "`author` and `authors` must be either both nil or both non-nil - %s", file)
 	}
+
 	if !authorsNil {
+		// `authors` exists, so need to verify `author` is parsed correctly
 		author := *p.Author
 		parsedAuthor := parseAuthor(p.Authors)
 		if author != parsedAuthor {

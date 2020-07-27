@@ -12,21 +12,24 @@ var (
 
 	// NonHumanReadableSchema is the non-human-readable package schema used for
 	// storing metadata into KV.
+	// This depends on HumanReadableSchema so that the unit tests can be shared.
 	NonHumanReadableSchema = initNonHumanReadableSchema()
 )
 
 func initHumanReadableSchema() *gojsonschema.Schema {
-	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(humanReadableSchemaString))
+	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(HumanReadableSchemaString))
 	util.Check(err)
 	return s
 }
 func initNonHumanReadableSchema() *gojsonschema.Schema {
-	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(nonHumanReadableSchemaString))
+	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(NonHumanReadableSchemaString))
 	util.Check(err)
 	return s
 }
 
-const humanReadableSchemaString = `{
+// HumanReadableSchemaString is the stringified human-readable package schema used for
+// JSON files in cdnjs/packages.
+const HumanReadableSchemaString = `{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {` + humanReadableProperties + `
@@ -37,7 +40,9 @@ const humanReadableSchemaString = `{
     "additionalProperties": false
 }`
 
-const nonHumanReadableSchemaString = `{
+// NonHumanReadableSchemaString is the stringified non-human-readable package schema used for
+// storing metadata into KV.
+const NonHumanReadableSchemaString = `{
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {` + humanReadableProperties + `,` + nonHumanReadableProperties + `
@@ -187,7 +192,8 @@ const humanReadableProperties = `"authors": {
             "additionalProperties": false
         }`
 
-const nonHumanReadableProperties = `"author": {
+const nonHumanReadableProperties = `
+        "author": {
             "type": "string",
             "minLength": 1
         },
