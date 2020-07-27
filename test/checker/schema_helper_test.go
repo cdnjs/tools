@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,6 @@ type SchemaTestCase struct {
 	valid       bool
 	invalidJSON bool
 	errors      []string
-	content     string
 }
 
 func runSchemaTestCases(t *testing.T, schema *gojsonschema.Schema, cases []SchemaTestCase) {
@@ -29,9 +29,15 @@ func runSchemaTestCases(t *testing.T, schema *gojsonschema.Schema, cases []Schem
 
 		// since all tests share the same input, this needs to run sequentially
 		t.Run(tc.filePath, func(t *testing.T) {
+			// read bytes of test file
+			testBytes, err := ioutil.ReadFile(tc.filePath)
+			assert.Nil(t, err)
+			if err != nil {
+				return
+			}
 
 			// validate test file against schema
-			res, err := schema.Validate(gojsonschema.NewStringLoader(tc.content))
+			res, err := schema.Validate(gojsonschema.NewBytesLoader(testBytes))
 			if tc.invalidJSON {
 				// error will be non-nil if JSON loading fails
 				assert.NotNil(t, err)
