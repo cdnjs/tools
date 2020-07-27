@@ -3,6 +3,7 @@ package packages
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -12,16 +13,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// InvalidHumanReadableSchemaError represents a schema error
+// InvalidSchemaError represents a schema error
 // for a human-readable package.
-type InvalidHumanReadableSchemaError struct {
+type InvalidSchemaError struct {
 	Result *gojsonschema.Result
-	err    error
 }
 
 // Error is used to satisfy the error interface.
-func (i InvalidHumanReadableSchemaError) Error() string {
-	return i.err.Error()
+func (i InvalidSchemaError) Error() string {
+	return fmt.Sprintf("%v", i.Result)
 }
 
 // GetHumanPackageJSONFiles gets the paths of the human-readable JSON files from within the `packagesPath`.
@@ -31,8 +31,9 @@ func GetHumanPackageJSONFiles(ctx context.Context) []string {
 	return list
 }
 
-// ReadPackageJSON parses a JSON file into a Package.
-// If the schema is invalid, *gojsonschema.Result will be non-nil.
+// ReadHumanPackageJSON parses a JSON file into a Package.
+// It will validate the human-readable schema, returning an
+// InvalidSchemaError if the schema is invalid.
 func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -48,7 +49,7 @@ func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 
 	if !res.Valid() {
 		// invalid schema, so return result and custom error
-		return nil, InvalidHumanReadableSchemaError{res, err}
+		return nil, InvalidSchemaError{res}
 	}
 
 	// unmarshal JSON into package
@@ -61,11 +62,31 @@ func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 	return &p, nil
 }
 
-// ReadPackageJSONBytes parses a JSON file as bytes into a Package.
-func ReadPackageJSONBytes(ctx context.Context, file string, bytes []byte) (*Package, error) {
+// ReadNonHumanPackageJSONBytes parses a JSON file as bytes into a Package.
+// It will validate the non-human-readable schema, returning an
+// InvalidSchemaError if the schema is invalid.
+func ReadNonHumanPackageJSONBytes(ctx context.Context, file string, bytes []byte) (*Package, error) {
+	// validate the non-human readable JSON schema
+	res, err := NonHumanReadableSchema.Validate(gojsonschema.NewBytesLoader(bytes))
+	if err != nil {
+		// invalid JSON
+		return nil, errors.Wrapf(err, "failed to parse %s", file)
+	}
+
+	if !res.Valid() {
+		// invalid schema, so return result and custom error
+		return nil, InvalidSchemaError{res}
+	}
+
 	var p Package
 	if err := json.Unmarshal(bytes, &p); err != nil {
 		return nil, errors.Wrapf(err, "failed to parse %s", file)
+	}
+
+	// schema is valid, but we still need to ensure there are either
+	// both `author` and `authors` fields or neither
+	if (p.Author != nil && p.Author == nil) || (p.Author == nil && p.Authors != nil) {
+		return nil, errors.Wrapf(err, "`author` and `authors` must be either both nil or both non-nil - %s", file)
 	}
 
 	p.ctx = ctx

@@ -17,7 +17,9 @@ func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	return packages.ReadPackageJSONBytes(ctx, key, bytes)
+
+	// enforce schema when reading non-human package JSON
+	return packages.ReadNonHumanPackageJSONBytes(ctx, key, bytes)
 }
 
 // Gets the request to update a package metadata entry in KV with a new version.
@@ -27,6 +29,12 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 	v, err := json.Marshal(p)
 	if err != nil {
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
+	}
+
+	// enforce schema when writing non-human package JSON
+	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *p.Name, v)
+	if err != nil {
+		return err
 	}
 
 	req := &writeRequest{

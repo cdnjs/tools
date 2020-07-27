@@ -71,7 +71,7 @@ func showFiles(pckgPath string) {
 	// parse package JSON
 	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
-		if invalidHumanErr, ok := readerr.(packages.InvalidHumanReadableSchemaError); ok {
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors
 			for _, resErr := range invalidHumanErr.Result.Errors() {
 				err(ctx, resErr.String())
@@ -240,7 +240,7 @@ func lintPackage(pckgPath string) {
 
 	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
-		if invalidHumanErr, ok := readerr.(packages.InvalidHumanReadableSchemaError); ok {
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors
 			for _, resErr := range invalidHumanErr.Result.Errors() {
 				err(ctx, resErr.String())

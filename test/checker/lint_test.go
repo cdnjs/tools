@@ -14,7 +14,7 @@ import (
 type LintTestCase struct {
 	name     string
 	input    string
-	expected string
+	expected []string
 }
 
 const (
@@ -67,18 +67,20 @@ func TestCheckerLint(t *testing.T) {
 		{
 			name:     "error when invalid JSON",
 			input:    `{ "package":, }`,
-			expected: ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
+			expected: []string{ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value")},
 		},
 
 		{
 			name:  "show required fields",
 			input: `{}`,
-			expected: ciError(file, "(root): autoupdate is required") +
-				ciError(file, "(root): description is required") +
-				ciError(file, "(root): filename is required") +
-				ciError(file, "(root): keywords is required") +
-				ciError(file, "(root): name is required") +
-				ciError(file, "(root): repository is required"),
+			expected: []string{
+				ciError(file, "(root): autoupdate is required") +
+					ciError(file, "(root): description is required") +
+					ciError(file, "(root): filename is required") +
+					ciError(file, "(root): keywords is required") +
+					ciError(file, "(root): name is required") +
+					ciError(file, "(root): repository is required"),
+			},
 		},
 
 		{
@@ -118,7 +120,7 @@ func TestCheckerLint(t *testing.T) {
 		        ]
 		    }
 		}`,
-			expected: ciError(file, "(root): Additional property version is not allowed"),
+			expected: []string{ciError(file, "(root): Additional property version is not allowed")},
 		},
 
 		{
@@ -157,7 +159,7 @@ func TestCheckerLint(t *testing.T) {
 		        ]
 		    }
 		}`,
-			expected: ciError(file, "autoupdate.source: Does not match pattern '"+autoupdateSourceRegex+"'"),
+			expected: []string{ciError(file, "autoupdate.source: Does not match pattern '"+autoupdateSourceRegex+"'")},
 		},
 
 		{
@@ -196,7 +198,7 @@ func TestCheckerLint(t *testing.T) {
 		        ]
 		    }
 		}`,
-			expected: ciError(file, "package doesn't exist on npm"),
+			expected: []string{ciError(file, "package doesn't exist on npm")},
 		},
 
 		{
@@ -235,8 +237,10 @@ func TestCheckerLint(t *testing.T) {
 		        ]
 		    }
 		}`,
-			expected: ciWarn(file, "stars on GitHub is under 200") +
-				ciWarn(file, "package download per month on npm is under 800"),
+			expected: []string{
+				ciWarn(file, "stars on GitHub is under 200") +
+					ciWarn(file, "package download per month on npm is under 800"),
+			},
 		},
 
 		{
@@ -275,7 +279,7 @@ func TestCheckerLint(t *testing.T) {
 		        ]
 		    }
 		}`,
-			expected: ciWarn(file, "stars on GitHub is under 200"),
+			expected: []string{ciWarn(file, "stars on GitHub is under 200")},
 		},
 
 		{
@@ -311,9 +315,14 @@ func TestCheckerLint(t *testing.T) {
 				}
 			]
 		}`,
-			expected: ciError(file, "(root): autoupdate is required") +
-				ciError(file, "(root): Additional property npmName is not allowed") +
-				ciError(file, "(root): Additional property npmFileMap is not allowed"),
+			expected: []string{
+				ciError(file, "(root): autoupdate is required") +
+					ciError(file, "(root): Additional property npmName is not allowed") +
+					ciError(file, "(root): Additional property npmFileMap is not allowed"),
+				ciError(file, "(root): autoupdate is required") +
+					ciError(file, "(root): Additional property npmFileMap is not allowed") +
+					ciError(file, "(root): Additional property npmName is not allowed"),
+			},
 		},
 	}
 
@@ -338,7 +347,7 @@ func TestCheckerLint(t *testing.T) {
 			assert.Nil(t, err)
 
 			out := runChecker(httpTestProxy, "lint", file)
-			assert.Equal(t, tc.expected, out)
+			assert.Contains(t, tc.expected, out)
 
 			os.Remove(file)
 		})
