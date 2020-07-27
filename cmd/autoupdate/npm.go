@@ -19,7 +19,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	existingVersionSet := pckg.Versions()
 	util.Debugf(ctx, "existing npm versions: %v\n", existingVersionSet)
 
-	npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
+	npmVersions, _ := npm.GetVersions(ctx, *pckg.Autoupdate.Target)
 	lastExistingVersion, allExisting := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	// add all existing versions to all versions list
@@ -84,7 +84,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 	}
 
 	for _, version := range versions {
-		pckgpath := path.Join(pckg.Path(), version.Version)
+		pckgpath := path.Join(pckg.LibraryPath(), version.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
 			util.Debugf(ctx, "%s already exists; aborting", pckgpath)

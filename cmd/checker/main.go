@@ -18,6 +18,7 @@ import (
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var (
@@ -54,10 +55,6 @@ func main() {
 				os.Exit(1)
 			}
 		}
-	case "schema":
-		{
-			test()
-		}
 	case "meta":
 		{
 			fields := flag.Args()[1:]
@@ -81,12 +78,12 @@ func printMeta(nestedFields []string) {
 	mainField := nestedFields[0]
 
 	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
-	packagesPath := util.GetPackagesPath()
+	packagesPath := util.GetHumanPackagesPath()
 
 	missingTypes := make(map[string][]string)
 	types := make(map[string][]string)
 
-	for _, f := range packages.GetPackagesJSONFiles(ctx) {
+	for _, f := range packages.GetHumanPackageJSONFiles(ctx) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
 		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
@@ -149,11 +146,11 @@ func printMetaList(nestedFields []string) {
 	}
 
 	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
-	packagesPath := util.GetPackagesPath()
+	packagesPath := util.GetHumanPackagesPath()
 
 	keys := make(map[string][]string)
 
-	for _, f := range packages.GetPackagesJSONFiles(ctx) {
+	for _, f := range packages.GetHumanPackageJSONFiles(ctx) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
 		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
@@ -234,14 +231,14 @@ func showFiles(pckgPath string) {
 	}
 
 	// autoupdate exists, download latest versions based on source
-	src := pckg.Autoupdate.Source
+	src := *pckg.Autoupdate.Source
 	var versions []version
 	var downloadDir, noVersionsErr string
 	switch src {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(ctx, *pckg.Autoupdate.Target)
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -381,11 +378,11 @@ func makeGlobDebugLink(glob string, dir string) string {
 }
 
 func checkGitHubPopularity(ctx context.Context, pckg *packages.Package) bool {
-	if !strings.Contains(pckg.Repository.URL, "github.com") {
+	if !strings.Contains(*pckg.Repository.URL, "github.com") {
 		return false
 	}
 
-	if s := git.GetGitHubStars(pckg.Repository.URL); s.Stars < util.MinGitHubStars {
+	if s := git.GetGitHubStars(*pckg.Repository.URL); s.Stars < util.MinGitHubStars {
 		warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
 		return false
 	}
@@ -398,63 +395,57 @@ func lintPackage(pckgPath string) {
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
+	testbytes, errrr := ioutil.ReadFile(pckgPath)
+	util.Check(errrr)
+
+	schemabytes, errrr := ioutil.ReadFile("schema.json")
+	util.Check(errrr)
+
+	s, errrr := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemabytes))
+	util.Check(errrr)
+
+	res, errrr := s.Validate(gojsonschema.NewBytesLoader(testbytes))
+	util.Check(errrr) // should be valid json by now
+
+	for _, resErr := range res.Errors() {
+		err(ctx, resErr.String())
+	}
+
 	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
 	}
 
-	if pckg.Name == "" {
-		err(ctx, shouldNotBeEmpty(".name"))
-	}
+	switch *pckg.Autoupdate.Source {
+	case "npm":
+		{
+			// check that it exists
+			if !npm.Exists(*pckg.Autoupdate.Target) {
+				err(ctx, "package doesn't exist on npm")
+				break
+			}
 
-	if pckg.Version != nil {
-		err(ctx, shouldNotExist(".version"))
-	}
-
-	if pckg.Repository.URL == "" {
-		err(ctx, shouldNotBeEmpty(".repository.url"))
-	}
-
-	if pckg.Autoupdate != nil {
-		if pckg.Autoupdate.Source == "git" && pckg.Autoupdate.Target != pckg.Repository.URL {
-			err(ctx, ".autoupdate.target and .repository.url must not differ")
-		}
-
-		switch pckg.Autoupdate.Source {
-		case "npm":
-			{
-				// check that it exists
-				if !npm.Exists(pckg.Autoupdate.Target) {
-					err(ctx, "package doesn't exist on npm")
-					break
-				}
-
-				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
-					if !checkGitHubPopularity(ctx, pckg) {
-						warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
-					}
+			// check if it has enough downloads
+			if md := npm.GetMonthlyDownload(*pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
+				if !checkGitHubPopularity(ctx, pckg) {
+					warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
 				}
 			}
-		case "git":
-			{
-				checkGitHubPopularity(ctx, pckg)
-			}
-		default:
-			{
-				err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
-			}
 		}
-	} else {
-		err(ctx, ".autoupdate should not be null. Package will never auto-update")
+	case "git":
+		{
+			if *pckg.Autoupdate.Target == *pckg.Repository.URL {
+				err(ctx, ".autoupdate.target and .repository.url must not differ")
+			}
+			checkGitHubPopularity(ctx, pckg)
+		}
+	default:
+		{
+			// schema will enforce npm or git, so panic
+			panic(fmt.Sprintf("Unsupported .autoupdate.source: " + *pckg.Autoupdate.Source))
+		}
 	}
-
-	// ensure repo type is git
-	if pckg.Repository.Repotype != "git" {
-		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
-	}
-
 }
 
 // wrapper around outputting a checker error
@@ -466,12 +457,4 @@ func err(ctx context.Context, s string) {
 // wrapper around outputting a checker warning
 func warn(ctx context.Context, s string) {
 	util.Warnf(ctx, s)
-}
-
-func shouldNotBeEmpty(name string) string {
-	return fmt.Sprintf("%s should be specified", name)
-}
-
-func shouldNotExist(name string) string {
-	return fmt.Sprintf("%s should not exist", name)
 }

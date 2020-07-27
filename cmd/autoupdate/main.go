@@ -28,7 +28,7 @@ func init() {
 
 var (
 	basePath     = util.GetBotBasePath()
-	packagesPath = util.GetPackagesPath()
+	packagesPath = util.GetHumanPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
 
 	// initialize standard debug logger
@@ -82,7 +82,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM)
 
-	for _, f := range packages.GetPackagesJSONFiles(defaultCtx) {
+	for _, f := range packages.GetHumanPackageJSONFiles(defaultCtx) {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
@@ -100,12 +100,21 @@ func main() {
 		var allVersions []version
 
 		if pckg.Autoupdate != nil {
-			if pckg.Autoupdate.Source == "npm" {
-				util.Debugf(ctx, "running npm update")
-				newVersionsToCommit, allVersions = updateNpm(ctx, pckg)
-			} else if pckg.Autoupdate.Source == "git" {
-				util.Debugf(ctx, "running git update")
-				newVersionsToCommit, allVersions = updateGit(ctx, pckg)
+			switch *pckg.Autoupdate.Source {
+			case "npm":
+				{
+					util.Debugf(ctx, "running npm update")
+					newVersionsToCommit, allVersions = updateNpm(ctx, pckg)
+				}
+			case "git":
+				{
+					util.Debugf(ctx, "running git update")
+					newVersionsToCommit, allVersions = updateGit(ctx, pckg)
+				}
+			default:
+				{
+					panic(fmt.Sprintf("%s invalid autoupdate source: %s", *pckg.Name, *pckg.Autoupdate.Source))
+				}
 			}
 		}
 
@@ -123,7 +132,7 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(cdnjsPath, "ajax", "libs", pckg.Name, "package.json"))
+					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						commitPackageVersion(ctx, pckg, *latestVersion, f)
 						packages.GitPush(ctx, cdnjsPath)
@@ -202,7 +211,7 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersio
 	newPackageJSONData, err := packageJSONToString(packageJSON)
 	util.Check(err)
 
-	dest := path.Join(pckg.Path(), "package.json")
+	dest := path.Join(pckg.LibraryPath(), "package.json")
 	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	util.Check(err)
 
@@ -231,7 +240,7 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 // write all versions to KV
 func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 	for _, newVersionToCommit := range newVersionsToCommit {
-		pkg, version := newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
+		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
 		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
@@ -250,7 +259,7 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		// Add to git the new version directory
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 
-		commitMsg := fmt.Sprintf("Add %s v%s", newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
+		commitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 		metrics.ReportNewVersion(ctx)
@@ -264,8 +273,8 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVer
 	updateVersionInCdnjs(ctx, pckg, latestVersion, packageJSONPath)
 
 	// Add to git the updated package.json
-	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.Path(), "package.json"))
+	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
 
-	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", pckg.Name, latestVersion)
+	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", *pckg.Name, latestVersion)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 }

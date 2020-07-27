@@ -12,7 +12,7 @@ import (
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
 func InsertFromDisk(logger *log.Logger, pckgs []string) {
-	basePath := util.GetCDNJSPackages()
+	basePath := util.GetCDNJSLibrariesPath()
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
@@ -20,9 +20,9 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 		util.Check(readerr)
 
 		for _, version := range pckg.Versions() {
-			util.Infof(ctx, "Inserting %s (%s)\n", pckg.Name, version)
-			dir := path.Join(basePath, pckg.Name, version)
-			err := InsertNewVersionToKV(ctx, pckg.Name, version, dir)
+			util.Infof(ctx, "Inserting %s (%s)\n", *pckg.Name, version)
+			dir := path.Join(basePath, *pckg.Name, version)
+			err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir)
 			util.Check(err)
 		}
 	}
@@ -33,7 +33,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 // Note: In the future, the `package.json` files will be removed completely, and when dealing with
 // new packages we will read the respective JSON file in `cdnjs/packages` with the `version` attribute appended.
 func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
-	basePath := util.GetCDNJSPackages()
+	basePath := util.GetCDNJSLibrariesPath()
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
