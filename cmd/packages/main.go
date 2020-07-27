@@ -185,7 +185,7 @@ func validateHuman(pckgPath string, autoMissing bool) {
 	if len(errs) > 0 {
 		util.Infof(ctx, strings.Join(errs, ",")+"\n")
 	} else {
-		util.Infof(ctx, " ok \n")
+		util.Debugf(ctx, " ok \n")
 	}
 }
 
