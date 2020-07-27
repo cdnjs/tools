@@ -137,7 +137,7 @@ const humanReadableSchemaString = `{
                 },
                 "url": {
                     "type": "string",
-                    "minLength": 1
+                    "pattern": "github\\.com[/|:]([\\w\\.-]+)\/([\\w\\.-]+)\/?"
                 }
             },
             "required": [

@@ -96,7 +96,6 @@ func getAlternativeNames(name string) []string {
 	return names
 }
 
-// TODO: update schema with this regex
 var githubURL = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
 
 func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
