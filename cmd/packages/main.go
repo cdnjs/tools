@@ -85,6 +85,8 @@ func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package)
 
 func main() {
 	defer sentry.PanicHandler()
+	var autoMissing bool
+	flag.BoolVar(&autoMissing, "auto-missing", false, "autoupdate can be missing")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -152,8 +154,6 @@ func main() {
 		}
 	case "validate-human":
 		{
-			var autoMissing bool
-			flag.BoolVar(&autoMissing, "auto-missing", false, "autoupdate can be missing")
 			for _, path := range flag.Args()[1:] {
 				validateHuman(path, autoMissing)
 			}
