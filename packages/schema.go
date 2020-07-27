@@ -35,7 +35,12 @@ const HumanReadableSchemaString = `{
     "properties": {` + humanReadableProperties + `
     },
     "required": [
-        ` + humanReadableRootRequired + `
+        "autoupdate",
+        "description",
+        "filename",
+        "keywords",
+        "name",
+        "repository"
     ],
     "additionalProperties": false
 }`
@@ -48,20 +53,15 @@ const NonHumanReadableSchemaString = `{
     "properties": {` + humanReadableProperties + `,` + nonHumanReadableProperties + `
     },
     "required": [
-        ` + humanReadableRootRequired + `,` + nonHumanReadableRootRequired + `
-    ],
-    "additionalProperties": false
-}`
-
-const humanReadableRootRequired = `"autoupdate",
         "description",
         "filename",
         "keywords",
         "name",
-        "repository"`
-
-const nonHumanReadableRootRequired = `
-        "version"`
+        "repository",
+        "version"
+    ],
+    "additionalProperties": false
+}`
 
 const humanReadableProperties = `"authors": {
             "description": "The attributed author for the library, as defined in the cdnjs package JSON file for this library.",
