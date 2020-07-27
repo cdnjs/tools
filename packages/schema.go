@@ -1,8 +1,6 @@
 package packages
 
 import (
-	"fmt"
-
 	"github.com/cdnjs/tools/util"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -20,7 +18,6 @@ var (
 func initHumanReadableSchema() *gojsonschema.Schema {
 	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(humanReadableSchemaString))
 	util.Check(err)
-	fmt.Println(humanReadableSchemaString)
 	return s
 }
 func initNonHumanReadableSchema() *gojsonschema.Schema {

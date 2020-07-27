@@ -14,7 +14,7 @@ import (
 type LintTestCase struct {
 	name     string
 	input    string
-	expected []string
+	expected string
 }
 
 const (
@@ -22,6 +22,7 @@ const (
 	nonexistentPkg = "nonexistent"
 	normalPkg      = "normal"
 	unpopularRepo  = "user/unpopularRepo"
+	popularRepo    = "user/popularRepo"
 )
 
 // fakes the npm api and GitHub api for testing purposes
@@ -49,8 +50,12 @@ func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
 		{
 			fmt.Fprintf(w, `{"stargazers_count": 123}`)
 		}
+	case "api.github.com/repos/" + popularRepo:
+		{
+			fmt.Fprintf(w, `{"stargazers_count": 500}`)
+		}
 	default:
-		panic(fmt.Sprintf("unknown path: %s", r.Host + r.URL.Path))
+		panic(fmt.Sprintf("unknown path: %s", r.Host+r.URL.Path))
 	}
 }
 
@@ -60,142 +65,255 @@ func TestCheckerLint(t *testing.T) {
 
 	cases := []LintTestCase{
 		{
-			name:  "error when invalid JSON",
-			input: `{ "package":, }`,
-			expected: []string{
-				ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
-			},
+			name:     "error when invalid JSON",
+			input:    `{ "package":, }`,
+			expected: ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value"),
 		},
 
 		{
 			name:  "show required fields",
 			input: `{}`,
-			expected: []string{
-				ciError(file, ".name should be specified") +
-					ciError(file, ".repository.url should be specified") +
-					ciError(file, ".autoupdate should not be null. Package will never auto-update") +
-					ciError(file, "Unsupported .repository.type: "),
-			},
+			expected: ciError(file, "(root): autoupdate is required") +
+				ciError(file, "(root): description is required") +
+				ciError(file, "(root): filename is required") +
+				ciError(file, "(root): keywords is required") +
+				ciError(file, "(root): name is required") +
+				ciError(file, "(root): repository is required"),
 		},
 
 		{
 			name: "version should not be specified",
 			input: `{
-				"name": "foo",
-				"version": "v123456",
-				"repository": {
-					"type": "git",
-					"url": "git://ff"
-				},
-				"autoupdate": {
-					"source": "git",
-					"target": "git://ff"
-				}
-			}`,
-			expected: []string{
-				ciError(file, ".version should not exist"),
-			},
+			"version": "v123456",
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "git",
+		        "target": "git://github.com/tc80/a-happy-tyler.git",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: ciError(file, "(root): Additional property version is not allowed"),
 		},
 
 		{
 			name: "unknown autoupdate source",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git",
-					"url": "lol"
-				},
-				"autoupdate": {
-					"source": "ftp",
-					"target": "lol"
-				}
-			}`,
-			expected: []string{
-				ciError(file, "Unsupported .autoupdate.source: ftp"),
-			},
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "ftp",
+		        "target": "git://github.com/tc80/a-happy-tyler.git",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: ciError(file, "autoupdate.source: Does not match pattern '"+autoupdateSourceRegex+"'"),
 		},
 
 		{
 			name: "unknown package on npm",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git",
-					"url": "git://ff"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + nonexistentPkg + `"
-				}
-			}`,
-			expected: []string{
-				ciError(file, "package doesn't exist on npm"),
-			},
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "npm",
+		        "target": "` + nonexistentPkg + `",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: ciError(file, "package doesn't exist on npm"),
 		},
 
 		{
 			name: "check popularity (npm)",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git",
-					"url": "git://ff"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + unpopularPkg + `"
-				}
-			}`,
-			expected: []string{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/` + unpopularRepo + `"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "npm",
+		        "target": "` + unpopularPkg + `",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: ciWarn(file, "stars on GitHub is under 200") +
 				ciWarn(file, "package download per month on npm is under 800"),
-			},
 		},
 
 		{
 			name: "check popularity (git)",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git",
-					"url": "https://github.com/` + unpopularRepo + `.git"
-				},
-				"autoupdate": {
-					"source": "git",
-					"target": "https://github.com/` + unpopularRepo + `.git"
-				}
-			}`,
-			expected: []string{
-				ciWarn(file, "stars on GitHub is under 200"),
-			},
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "https://github.com/` + unpopularRepo + `.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "git",
+		        "target": "https://github.com/` + unpopularRepo + `.git",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: ciWarn(file, "stars on GitHub is under 200"),
 		},
 
 		{
 			name: "legacy NpmName and NpmFileMap should error",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git",
-					"url": "git://ff"
-				},
-				"npmName": "` + normalPkg + `",
-				"npmFileMap": [
-					{
-						"basePath": "",
-						"files": [
-							"*.css"
-						]
-					}
-				]
-
-			}`,
-			expected: []string{
-				ciError(file, "unknown field npmName") +
-					ciError(file, "unknown field npmFileMap") +
-					ciError(file, ".autoupdate should not be null. Package will never auto-update"),
-				ciError(file, "unknown field npmFileMap") +
-					ciError(file, "unknown field npmName") +
-					ciError(file, ".autoupdate should not be null. Package will never auto-update"),
-			},
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "https://github.com/` + unpopularRepo + `.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+			"npmName": "` + normalPkg + `",
+			"npmFileMap": [
+				{
+					"basePath": "",
+					"files": [
+						"*.css"
+					]
+				}
+			]
+		}`,
+			expected: ciError(file, "(root): autoupdate is required") +
+				ciError(file, "(root): Additional property npmName is not allowed") +
+				ciError(file, "(root): Additional property npmFileMap is not allowed"),
 		},
 	}
 
@@ -220,7 +338,7 @@ func TestCheckerLint(t *testing.T) {
 			assert.Nil(t, err)
 
 			out := runChecker(httpTestProxy, "lint", file)
-			assert.Contains(t, tc.expected, out)
+			assert.Equal(t, tc.expected, out)
 
 			os.Remove(file)
 		})

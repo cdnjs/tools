@@ -7,6 +7,14 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+const (
+	autoupdateSourceRegex = "^git|npm$"
+	licenseRegex          = "^(\\(.+ OR .+\\)|[a-zA-Z0-9].*)$"
+	nameRegex             = "^[a-zA-Z0-9._-]+$"
+	repositoryTypeRegex   = "^git$"
+	repositoryURLRegex    = "github\\.com[/|:]([\\w\\.-]+)/([\\w\\.-]+)/?"
+)
+
 type SchemaTestCase struct {
 	filePath    string
 	valid       bool

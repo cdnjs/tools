@@ -71,7 +71,14 @@ func showFiles(pckgPath string) {
 	// parse package JSON
 	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
-		err(ctx, readerr.Error())
+		if invalidHumanErr, ok := readerr.(packages.InvalidHumanReadableSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				err(ctx, resErr.String())
+			}
+		} else {
+			err(ctx, readerr.Error())
+		}
 		return
 	}
 
@@ -133,8 +140,7 @@ func showFiles(pckgPath string) {
 		}
 	default:
 		{
-			err(ctx, fmt.Sprintf("unknown autoupdate source: %s", src))
-			return
+			panic(fmt.Sprintf("unknown autoupdate source: %s", src))
 		}
 	}
 
@@ -270,7 +276,7 @@ func lintPackage(pckgPath string) {
 		}
 	case "git":
 		{
-			if *pckg.Autoupdate.Target == *pckg.Repository.URL {
+			if *pckg.Autoupdate.Target != *pckg.Repository.URL {
 				err(ctx, ".autoupdate.target and .repository.url must not differ")
 			}
 			checkGitHubPopularity(ctx, pckg)
