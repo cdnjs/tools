@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/packages"
@@ -149,8 +150,42 @@ func main() {
 		{
 			fmt.Println(packages.NonHumanReadableSchemaString)
 		}
+	case "validate-human":
+		{
+			var autoMissing bool
+			flag.BoolVar(&autoMissing, "auto-missing", false, "autoupdate can be missing")
+			for _, path := range flag.Args()[1:] {
+				validateHuman(path, autoMissing)
+			}
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
+	}
+}
+
+func validateHuman(pckgPath string, autoMissing bool) {
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgPath, logger)...)
+	var errs []string
+
+	_, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
+	if readerr != nil {
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				if autoMissing && resErr.String() == "(root): autoupdate is required" {
+					continue
+				}
+				errs = append(errs, resErr.String())
+			}
+		} else {
+			errs = append(errs, readerr.Error())
+		}
+	}
+	if len(errs) > 0 {
+		util.Infof(ctx, strings.Join(errs, ",")+"\n")
+	} else {
+		util.Infof(ctx, " ok \n")
 	}
 }
 

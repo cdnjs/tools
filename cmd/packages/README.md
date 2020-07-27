@@ -15,3 +15,7 @@ Prints the human-readable JSON schema used for cdnjs/packages to STDOUT.
 ## `non-human`
 
 Prints the non-human-readable JSON schema used for internal package management to STDOUT.
+
+## `validate human`
+
+Validate a human-readable JSON file against the schema. Will print `ok` if ok.
