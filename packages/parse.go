@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
 
@@ -58,8 +59,31 @@ func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 		return nil, errors.Wrapf(err, "failed to parse %s", file)
 	}
 
+	// if `authors` exists, parse `author` field
+	if p.Authors != nil {
+		author := parseAuthor(p.Authors)
+		p.Author = &author
+	}
+
 	p.ctx = ctx
 	return &p, nil
+}
+
+// If `authors` exists, we need to parse `author` field
+// for legacy compatibility with API.
+func parseAuthor(authors []Author) string {
+	var authorStrings []string
+	for _, author := range authors {
+		authorString := *author.Name
+		if author.Email != nil {
+			authorString += fmt.Sprintf(" <%s>", *author.Email)
+		}
+		if author.URL != nil {
+			authorString += fmt.Sprintf(" (%s)", *author.URL)
+		}
+		authorStrings = append(authorStrings, authorString)
+	}
+	return strings.Join(authorStrings, ",")
 }
 
 // ReadNonHumanPackageJSONBytes parses a JSON file as bytes into a Package.
@@ -85,8 +109,16 @@ func ReadNonHumanPackageJSONBytes(ctx context.Context, file string, bytes []byte
 
 	// schema is valid, but we still need to ensure there are either
 	// both `author` and `authors` fields or neither
-	if (p.Author != nil && p.Author == nil) || (p.Author == nil && p.Authors != nil) {
+	authorsNil, authorNil := p.Authors == nil, p.Author == nil
+	if authorsNil != authorNil {
 		return nil, errors.Wrapf(err, "`author` and `authors` must be either both nil or both non-nil - %s", file)
+	}
+	if !authorsNil {
+		author := *p.Author
+		parsedAuthor := parseAuthor(p.Authors)
+		if author != parsedAuthor {
+			return nil, fmt.Errorf("author parse: actual `%s` != expected `%s`", author, parsedAuthor)
+		}
 	}
 
 	p.ctx = ctx
