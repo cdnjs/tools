@@ -55,42 +55,34 @@ func TestHumanReadableSchema(t *testing.T) {
 		// author invalid
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/additional_property.json",
-			valid:    false,
 			errors:   []string{"authors.0: Additional property github is not allowed"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/duplicate_authors.json",
-			valid:    false,
 			errors:   []string{"authors: array items[0,1] must be unique"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_array.json",
-			valid:    false,
 			errors:   []string{"authors: Array must have at least 1 items"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_author_object.json",
-			valid:    false,
 			errors:   []string{"authors.0: name is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_email.json",
-			valid:    false,
 			errors:   []string{"authors.0.email: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_name.json",
-			valid:    false,
 			errors:   []string{"authors.0.name: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_url.json",
-			valid:    false,
 			errors:   []string{"authors.0.url: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/one_author_no_name.json",
-			valid:    false,
 			errors:   []string{"authors.0: name is required"},
 		},
 		// autoupdate valid
@@ -117,7 +109,6 @@ func TestHumanReadableSchema(t *testing.T) {
 		// autoupdate invalid
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/additional_properties.json",
-			valid:    false,
 			errors: []string{
 				"autoupdate: Additional property repo is not allowed",
 				"autoupdate.fileMap.0: Additional property directory is not allowed",
@@ -125,72 +116,58 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/duplicate_filemap.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap: array items[0,1] must be unique"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/duplicate_files.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap.0.files: array items[0,1] must be unique"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_file.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap.0.files.0: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_filemap.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap: Array must have at least 1 items"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_files.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap.0.files: Array must have at least 1 items"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_source.json",
-			valid:    false,
 			errors:   []string{"autoupdate.source: Does not match pattern '" + autoupdateSourceRegex + "'"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_target.json",
-			valid:    false,
 			errors:   []string{"autoupdate.target: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_autoupdate.json",
-			valid:    false,
 			errors:   []string{"(root): autoupdate is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_basepath.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap.0: basePath is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_filemap.json",
-			valid:    false,
 			errors:   []string{"autoupdate: fileMap is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_files.json",
-			valid:    false,
 			errors:   []string{"autoupdate.fileMap.0: files is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_source.json",
-			valid:    false,
 			errors:   []string{"autoupdate: source is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_target.json",
-			valid:    false,
 			errors:   []string{"autoupdate: target is required"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/source_svn.json",
-			valid:    false,
 			errors:   []string{"autoupdate.source: Does not match pattern '" + autoupdateSourceRegex + "'"},
 		},
 		// description valid
@@ -314,6 +291,14 @@ func TestHumanReadableSchema(t *testing.T) {
 			filePath: "schema_tests/human_schema_tests/repository/valid/type_git.json",
 			valid:    true,
 		},
+		{
+			filePath: "schema_tests/human_schema_tests/repository/valid/type_hg.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/repository/valid/type_svn.json",
+			valid:    true,
+		},
 		// repository invalid
 		{
 			filePath: "schema_tests/human_schema_tests/repository/invalid/additional_property.json",
@@ -332,7 +317,7 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/repository/invalid/empty_url.json",
-			errors:   []string{"repository.url: Does not match pattern '" + repositoryURLRegex + "'"},
+			errors:   []string{"repository.url: String length must be greater than or equal to 1"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/repository/invalid/missing_repository.json",
@@ -347,22 +332,8 @@ func TestHumanReadableSchema(t *testing.T) {
 			errors:   []string{"repository: url is required"},
 		},
 		{
-			filePath: "schema_tests/human_schema_tests/repository/invalid/type_git_invalid_url.json",
-			errors:   []string{"repository.url: Does not match pattern '" + repositoryURLRegex + "'"},
-		},
-		{
 			filePath: "schema_tests/human_schema_tests/repository/invalid/type_npm.json",
-			errors: []string{
-				"repository.type: Does not match pattern '" + repositoryTypeRegex + "'",
-				"repository.url: Does not match pattern '" + repositoryURLRegex + "'",
-			},
-		},
-		{
-			filePath: "schema_tests/human_schema_tests/repository/invalid/type_svn.json",
-			errors: []string{
-				"repository.type: Does not match pattern '" + repositoryTypeRegex + "'",
-				"repository.url: Does not match pattern '" + repositoryURLRegex + "'",
-			},
+			errors:   []string{"repository.type: Does not match pattern '" + repositoryTypeRegex + "'"},
 		},
 	}
 

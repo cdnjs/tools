@@ -15,8 +15,8 @@
     "homepage": "https://github.com/tc80",
     "license": "MIT",
     "repository": {
-        "type": "git",
-        "url": "git://git.com/tc80/a-happy-tyler.git"
+        "type": "svn",
+        "url": "https://www.svn-is-a-valid-link.com/package/a-happy-tyler"
     },
     "filename": "happy.js",
     "autoupdate": {

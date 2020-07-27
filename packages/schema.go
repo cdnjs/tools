@@ -57,7 +57,6 @@ const NonHumanReadableSchemaString = `{
         "filename",
         "keywords",
         "name",
-        "repository",
         "version"
     ],
     "additionalProperties": false
@@ -178,11 +177,11 @@ const humanReadableProperties = `"authors": {
             "properties": {
                 "type": {
                     "type": "string",
-                    "pattern": "^git$"
+                    "pattern": "^git|hg|svn$"
                 },
                 "url": {
                     "type": "string",
-                    "pattern": "github\\.com[/|:]([\\w\\.-]+)\/([\\w\\.-]+)\/?"
+                    "minLength": 1
                 }
             },
             "required": [

@@ -269,9 +269,6 @@ func lintPackage(pckgPath string) {
 		}
 	case "git":
 		{
-			if *pckg.Autoupdate.Target != *pckg.Repository.URL {
-				err(ctx, ".autoupdate.target and .repository.url must not differ")
-			}
 			checkGitHubPopularity(ctx, pckg)
 		}
 	default:
