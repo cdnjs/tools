@@ -398,13 +398,7 @@ func lintPackage(pckgPath string) {
 	testbytes, errrr := ioutil.ReadFile(pckgPath)
 	util.Check(errrr)
 
-	schemabytes, errrr := ioutil.ReadFile("schema.json")
-	util.Check(errrr)
-
-	s, errrr := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemabytes))
-	util.Check(errrr)
-
-	res, errrr := s.Validate(gojsonschema.NewBytesLoader(testbytes))
+	res, errrr := packages.Schema.Validate(gojsonschema.NewBytesLoader(testbytes))
 	util.Check(errrr) // should be valid json by now
 
 	for _, resErr := range res.Errors() {

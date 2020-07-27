@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/cdnjs/tools/packages"
 	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -372,20 +373,6 @@ func TestSchema(t *testing.T) {
 		},
 	}
 
-	// read schema bytes
-	schemaBytes, err := ioutil.ReadFile("../../schema.json")
-	assert.Nil(t, err)
-	if err != nil {
-		return
-	}
-
-	// parse schema
-	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaBytes))
-	assert.Nil(t, err)
-	if err != nil {
-		return
-	}
-
 	for _, tc := range cases {
 		tc := tc // capture range variable
 
@@ -399,7 +386,7 @@ func TestSchema(t *testing.T) {
 			}
 
 			// validate test file against schema
-			res, err := schema.Validate(gojsonschema.NewBytesLoader(testBytes))
+			res, err := packages.Schema.Validate(gojsonschema.NewBytesLoader(testBytes))
 			if tc.invalidJSON {
 				// error will be non-nil if JSON loading fails
 				assert.NotNil(t, err)
