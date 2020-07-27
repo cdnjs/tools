@@ -82,12 +82,6 @@ func showFiles(pckgPath string) {
 		return
 	}
 
-	// check for autoupdate
-	if pckg.Autoupdate == nil {
-		err(ctx, "autoupdate not found")
-		return
-	}
-
 	// autoupdate exists, download latest versions based on source
 	src := *pckg.Autoupdate.Source
 	var versions []version
@@ -174,11 +168,10 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 	filesToCopy := p.NpmFilesFrom(downloadDir)
 
 	if len(filesToCopy) == 0 {
-		errormsg := ""
-		errormsg += fmt.Sprintf("No files will be published for version %s.\n", v.Get())
+		errormsg := fmt.Sprintf("No files will be published for version %s.\n", v.Get())
 
-		for _, filemap := range p.NpmFileMap {
-			for _, pattern := range filemap.Files {
+		for _, fileMap := range p.Autoupdate.FileMap {
+			for _, pattern := range fileMap.Files {
 				errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, downloadDir))
 			}
 		}

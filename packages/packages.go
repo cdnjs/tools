@@ -48,7 +48,7 @@ type Package struct {
 
 	// human-readable properties
 	Authors     []Author    `json:"authors"`
-	Autoupdate  *Autoupdate `json:"autoupdate"`
+	Autoupdate  Autoupdate  `json:"autoupdate"`
 	Description *string     `json:"description"`
 	Filename    *string     `json:"filename"`
 	Homepage    *string     `json:"homepage"`
@@ -58,8 +58,7 @@ type Package struct {
 	Repository  *Repository `json:"repository"`
 
 	// additional properties
-	NpmFileMap []FileMap
-	Version    *string `json:"version"`
+	Version *string `json:"version"`
 
 	// legacy
 	Author *string `json:"author"`
@@ -114,7 +113,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	// map used to determine if a file path has already been processed
 	seen := make(map[string]bool)
 
-	for _, fileMap := range p.NpmFileMap {
+	for _, fileMap := range p.Autoupdate.FileMap {
 		for _, pattern := range fileMap.Files {
 			basePath := path.Join(base, *fileMap.BasePath)
 

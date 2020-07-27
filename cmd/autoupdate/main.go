@@ -99,22 +99,20 @@ func main() {
 		var newVersionsToCommit []newVersionToCommit
 		var allVersions []version
 
-		if pckg.Autoupdate != nil {
-			switch *pckg.Autoupdate.Source {
-			case "npm":
-				{
-					util.Debugf(ctx, "running npm update")
-					newVersionsToCommit, allVersions = updateNpm(ctx, pckg)
-				}
-			case "git":
-				{
-					util.Debugf(ctx, "running git update")
-					newVersionsToCommit, allVersions = updateGit(ctx, pckg)
-				}
-			default:
-				{
-					panic(fmt.Sprintf("%s invalid autoupdate source: %s", *pckg.Name, *pckg.Autoupdate.Source))
-				}
+		switch *pckg.Autoupdate.Source {
+		case "npm":
+			{
+				util.Debugf(ctx, "running npm update")
+				newVersionsToCommit, allVersions = updateNpm(ctx, pckg)
+			}
+		case "git":
+			{
+				util.Debugf(ctx, "running git update")
+				newVersionsToCommit, allVersions = updateGit(ctx, pckg)
+			}
+		default:
+			{
+				panic(fmt.Sprintf("%s invalid autoupdate source: %s", *pckg.Name, *pckg.Autoupdate.Source))
 			}
 		}
 

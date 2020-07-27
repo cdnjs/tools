@@ -271,92 +271,140 @@ b.js
 `,
 		},
 
-		// 		{
-		// 			name: "oversized file",
-		// 			input: `{
-		// 				"name": "foo",
-		// 				"repository": {
-		// 					"type": "git"
-		// 				},
-		// 				"autoupdate": {
-		// 					"source": "npm",
-		// 					"target": "` + oversizedFilesPkg + `",
-		// 					"fileMap": [
-		// 						{ "basePath":"", "files":["*.js"] }
-		// 					]
-		// 				}
-		// 			}`,
-		// 			expected: `
+		{
+			name: "oversized file",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + oversizedFilesPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
+			expected: `
 
-		// most recent version: 0.0.2
-		// ` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
-		// ` + "```" + `
-		// b.js
-		// ` + "```" + `
+most recent version: 0.0.2
+` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
+` + "```" + `
+b.js
+` + "```" + `
 
-		// 0 last version(s):
-		// `,
-		// 		},
+0 last version(s):
+`,
+		},
 
-		// 		{
-		// 			name: "unpublished field",
-		// 			input: `{
-		// 				"name": "foo",
-		// 				"repository": {
-		// 					"type": "git"
-		// 				},
-		// 				"autoupdate": {
-		// 					"source": "npm",
-		// 					"target": "` + unpublishedFieldPkg + `",
-		// 					"fileMap": [
-		// 						{ "basePath":"", "files":["*.js"] }
-		// 					]
-		// 				}
-		// 			}`,
-		// 			expected: `
+		{
+			name: "unpublished field",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + unpublishedFieldPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
+			expected: `
 
-		// most recent version: 1.3.1
+most recent version: 1.3.1
 
-		// ` + "```" + `
-		// a.js
-		// b.js
-		// c.js
-		// ` + "```" + `
+` + "```" + `
+a.js
+b.js
+c.js
+` + "```" + `
 
-		// 0 last version(s):
-		// `,
-		// 		},
+0 last version(s):
+`,
+		},
 
-		// 		{
-		// 			name: "sort by time stamp",
-		// 			input: `{
-		// 				"name": "foo",
-		// 				"repository": {
-		// 					"type": "git"
-		// 				},
-		// 				"autoupdate": {
-		// 					"source": "npm",
-		// 					"target": "` + sortByTimeStampPkg + `",
-		// 					"fileMap": [
-		// 						{ "basePath":"", "files":["*.js"] }
-		// 					]
-		// 				}
-		// 			}`,
-		// 			expected: `
+		{
+			name: "sort by time stamp",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + sortByTimeStampPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
+			expected: `
 
-		// most recent version: 2.0.0
+most recent version: 2.0.0
 
-		// ` + "```" + `
-		// 2.js
-		// ` + "```" + `
+` + "```" + `
+2.js
+` + "```" + `
 
-		// 4 last version(s):
-		// - 3.0.0: 1 file(s) matched :heavy_check_mark:
-		// - 1.0.0: 1 file(s) matched :heavy_check_mark:
-		// - 5.0.0: 1 file(s) matched :heavy_check_mark:
-		// - 4.0.0: 1 file(s) matched :heavy_check_mark:
-		// `,
-		// 		},
+4 last version(s):
+- 3.0.0: 1 file(s) matched :heavy_check_mark:
+- 1.0.0: 1 file(s) matched :heavy_check_mark:
+- 5.0.0: 1 file(s) matched :heavy_check_mark:
+- 4.0.0: 1 file(s) matched :heavy_check_mark:
+`,
+		},
 	}
 
 	testproxy := &http.Server{
