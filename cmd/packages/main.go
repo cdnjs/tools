@@ -85,8 +85,9 @@ func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package)
 
 func main() {
 	defer sentry.PanicHandler()
-	var autoMissing bool
-	flag.BoolVar(&autoMissing, "auto-missing", false, "autoupdate can be missing")
+	var missingAuto, missingRepo bool
+	flag.BoolVar(&missingAuto, "missing-auto", false, "autoupdate can be missing")
+	flag.BoolVar(&missingRepo, "missing-repo", false, "repository can be missing")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -155,7 +156,7 @@ func main() {
 	case "validate-human":
 		{
 			for _, path := range flag.Args()[1:] {
-				validateHuman(path, autoMissing)
+				validateHuman(path, missingAuto, missingRepo)
 			}
 		}
 	default:
@@ -163,7 +164,7 @@ func main() {
 	}
 }
 
-func validateHuman(pckgPath string, autoMissing bool) {
+func validateHuman(pckgPath string, missingAuto, missingRepo bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgPath, logger)...)
 	var errs []string
@@ -173,7 +174,10 @@ func validateHuman(pckgPath string, autoMissing bool) {
 		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors
 			for _, resErr := range invalidHumanErr.Result.Errors() {
-				if autoMissing && resErr.String() == "(root): autoupdate is required" {
+				if missingAuto && resErr.String() == "(root): autoupdate is required" {
+					continue
+				}
+				if missingRepo && resErr.String() == "(root): repository is required" {
 					continue
 				}
 				errs = append(errs, resErr.String())

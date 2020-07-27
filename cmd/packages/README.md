@@ -19,3 +19,4 @@ Prints the non-human-readable JSON schema used for internal package management t
 ## `validate-human`
 
 Validate a human-readable JSON file against the schema. Will print `ok` if ok.
+Pass `-missing-auto` and/or `-missing-repo` to ignore the errors when a (legacy) package does not contain `.autoupdate` or `.repository`, respectively.
