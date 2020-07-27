@@ -93,7 +93,7 @@ func main() {
 		default:
 		}
 
-		pckg, err := packages.ReadPackageJSON(ctx, path.Join(packagesPath, f))
+		pckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(packagesPath, f))
 		util.Check(err)
 
 		var newVersionsToCommit []newVersionToCommit
@@ -132,7 +132,7 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					destpckg, err := packages.ReadPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
+					destpckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						commitPackageVersion(ctx, pckg, *latestVersion, f)
 						packages.GitPush(ctx, cdnjsPath)

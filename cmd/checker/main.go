@@ -218,7 +218,7 @@ func showFiles(pckgPath string) {
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	// parse package JSON
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return
@@ -411,7 +411,7 @@ func lintPackage(pckgPath string) {
 		err(ctx, resErr.String())
 	}
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
 		err(ctx, readerr.Error())
 		return

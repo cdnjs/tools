@@ -16,7 +16,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
+		pckg, readerr := packages.ReadHumanPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
 		util.Check(readerr)
 
 		for _, version := range pckg.Versions() {
@@ -37,7 +37,7 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
+		pckg, readerr := packages.ReadHumanPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
 		util.Check(readerr)
 
 		util.Infof(ctx, "Inserting package metadata: %s\n", pckg.Name)

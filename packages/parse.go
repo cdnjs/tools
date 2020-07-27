@@ -18,7 +18,7 @@ func GetHumanPackageJSONFiles(ctx context.Context) []string {
 }
 
 // ReadPackageJSON parses a JSON file into a Package.
-func ReadPackageJSON(ctx context.Context, file string) (*Package, error) {
+func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
