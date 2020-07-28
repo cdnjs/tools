@@ -141,7 +141,7 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					destpckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
+					destpckg, err := packages.ReadNonHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						pckg.Version = latestVersion
 
