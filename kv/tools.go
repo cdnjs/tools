@@ -1,7 +1,9 @@
 package kv
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"path"
 
@@ -28,20 +30,39 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 	}
 }
 
-// InsertMetadataFromDisk is a helper tool to insert a number of packages' respective metadata from disk.
-// It will read the respective `package.json` files in `cdnjs/cdnjs/` and insert them directly to KV.
-// Note: In the future, the `package.json` files will be removed completely, and when dealing with
-// new packages we will read the respective JSON file in `cdnjs/packages` with the `version` attribute appended.
+// InsertMetadataFromDisk is a helper tool to insert a number of packages' respective non-human-readable metadata from disk.
+// It will read the respective version in the `package.json` files in `cdnjs/cdnjs/` as well as the main
+// metadata in cdnjs/packages/.
 func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
-	basePath := util.GetCDNJSLibrariesPath()
-
 	for _, pckgname := range pckgs {
+		humanPath := path.Join(util.GetHumanPackagesPath(), string(pckgname[0]), pckgname+".json")
+		nonHumanPath := path.Join(util.GetCDNJSLibrariesPath(), pckgname, "package.json")
+
+		// parse human-readable
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadHumanPackageJSON(ctx, path.Join(basePath, pckgname, "package.json"))
+		pckg, readerr := packages.ReadHumanPackageJSON(ctx, humanPath)
 		util.Check(readerr)
 
-		util.Infof(ctx, "Inserting package metadata: %s\n", pckg.Name)
-		err := UpdateKVPackage(ctx, pckg)
+		// parse non-human-readable and assume it is in legacy format
+		legacyPkg := make(map[string]interface{})
+		bytes, err := ioutil.ReadFile(nonHumanPath)
+		util.Check(err)
+		util.Check(json.Unmarshal(bytes, &legacyPkg))
+
+		// add version field to human-readable package
+		version, ok := legacyPkg["version"]
+		if !ok {
+			panic(fmt.Sprintf("no `version` in %s", nonHumanPath))
+		}
+		versionString, ok := version.(string)
+		if !ok {
+			panic(fmt.Sprintf("`version` is not a string in %s", nonHumanPath))
+		}
+		pckg.Version = &versionString
+
+		// insert to KV
+		util.Infof(ctx, "Inserting package metadata: %s\n", *pckg.Name)
+		err = UpdateKVPackage(ctx, pckg)
 		util.Check(err)
 	}
 }

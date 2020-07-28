@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -130,17 +128,23 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
+					// WARNING:
+					//
+					// THIS WILL CURRENTLY FAIL BECAUSE PACKAGE.JSON IS NOT IN CORRECT FORMAT
+					// NEED TO FIRST REWRITE ALL EXISTING PACKAGE.JSON FILES FIRST USING kv.InsertMetadataFromDisk()
 					destpckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
-						commitPackageVersion(ctx, pckg, *latestVersion, f)
+						pckg.Version = latestVersion
+
+						commitPackageVersion(ctx, pckg, f)
 						packages.GitPush(ctx, cdnjsPath)
 
 						// TODO:
 						// Later need to change ReadPackageJSON to read the kv.Package from KV.
 						// If the kv.Package does not exist, we will create one.
+						//		TODO: parse error from KV and ensure it is an `key not exist` error
 						// Otherwise we will update the existing one's latest version.
 						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
-						pckg.Version = latestVersion
 						if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 							util.Debugf(ctx, "failed to update KV package metadata: %s\n", err)
 						}
@@ -185,35 +189,22 @@ func getLatestVersion(versions []version) *string {
 	return latest
 }
 
-func packageJSONToString(packageJSON map[string]interface{}) ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-	encoder.SetIndent("", "  ")
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(packageJSON)
-	return buffer.Bytes(), err
-}
-
 // Copy the package.json to the cdnjs repo and update its version.
-func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, newVersion, packageJSONPath string) {
-	var packageJSON map[string]interface{}
-
-	packageJSONData, err := ioutil.ReadFile(path.Join(packagesPath, packageJSONPath))
+func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJSONPath string) {
+	// marshal into JSON
+	bytes, err := json.Marshal(pckg)
 	util.Check(err)
 
-	util.Check(json.Unmarshal(packageJSONData, &packageJSON))
-
-	// Rewrite the version of the package.json to the latest update from the bot
-	packageJSON["version"] = newVersion
-
-	newPackageJSONData, err := packageJSONToString(packageJSON)
+	// enforce schema when writing non-human package JSON
+	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *pckg.Name, bytes)
 	util.Check(err)
 
+	// open and write to package.json file
 	dest := path.Join(pckg.LibraryPath(), "package.json")
 	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	util.Check(err)
 
-	_, err = file.WriteString(string(newPackageJSONData))
+	_, err = file.Write(bytes)
 	util.Check(err)
 }
 
@@ -264,15 +255,15 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 	}
 }
 
-func commitPackageVersion(ctx context.Context, pckg *packages.Package, latestVersion, packageJSONPath string) {
-	util.Debugf(ctx, "adding latest version to package.json %s", latestVersion)
+func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJSONPath string) {
+	util.Debugf(ctx, "adding latest version to package.json %s", *pckg.Version)
 
 	// Update package.json file
-	updateVersionInCdnjs(ctx, pckg, latestVersion, packageJSONPath)
+	updateVersionInCdnjs(ctx, pckg, packageJSONPath)
 
 	// Add to git the updated package.json
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
 
-	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", *pckg.Name, latestVersion)
+	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 }

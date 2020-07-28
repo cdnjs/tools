@@ -23,8 +23,7 @@ func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 }
 
 // Gets the request to update a package metadata entry in KV with a new version.
-// TODO: Add `version` field and if `authors` exists, add `author` field for legacy
-// compatibility with API.
+// Must have the `version` field by now.
 func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 	v, err := json.Marshal(p)
 	if err != nil {
