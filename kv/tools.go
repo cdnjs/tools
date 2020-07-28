@@ -41,7 +41,21 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 		// parse human-readable
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := packages.ReadHumanPackageJSON(ctx, humanPath)
-		util.Check(readerr)
+		if readerr != nil {
+			if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+				for _, resErr := range invalidHumanErr.Result.Errors() {
+					if resErr.String() == "(root): autoupdate is required" {
+						continue // (legacy) ignore missing .autoupdate
+					}
+					if resErr.String() == "(root): repository is required" {
+						continue // (legacy) ignore missing .repository
+					}
+					panic(resErr.String())
+				}
+			} else {
+				panic(readerr.Error())
+			}
+		}
 
 		// parse non-human-readable and assume it is in legacy format
 		legacyPkg := make(map[string]interface{})
