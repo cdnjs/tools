@@ -62,7 +62,8 @@ const NonHumanReadableSchemaString = `{
     "additionalProperties": false
 }`
 
-const humanReadableProperties = `"authors": {
+const humanReadableProperties = `
+        "authors": {
             "description": "The attributed author for the library, as defined in the cdnjs package JSON file for this library.",
             "type": "array",
             "minItems": 1,
