@@ -193,7 +193,7 @@ const humanReadableProperties = `
             "anyOf": [
                 {
                     "type": "string",
-                    "pattern": "^(\\(.+ OR .+\\)|[a-zA-Z0-9-].*)$"
+                    "pattern": "^(\\(.+ (OR|AND) .+\\)|[a-zA-Z0-9-].*)$"
                 },
                 {
                     "type": "null"

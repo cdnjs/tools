@@ -10,7 +10,7 @@ import (
 
 const (
 	autoupdateSourceRegex = "^git|npm$"
-	licenseRegex          = "^(\\(.+ OR .+\\)|[a-zA-Z0-9-].*)$"
+	licenseRegex          = "^(\\(.+ (OR|AND) .+\\)|[a-zA-Z0-9-].*)$"
 	nameRegex             = "^[a-zA-Z0-9._-]+$"
 	repositoryTypeRegex   = "^git|hg|svn$"
 )

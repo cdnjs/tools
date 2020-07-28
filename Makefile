@@ -23,6 +23,11 @@ autoupdate:
 kv:
 	go build $(GO_BUILD_ARGS) -o bin/kv ./cmd/kv
 
+.PHONY: schema
+schema:
+	./bin/packages human > schema_human.json
+	./bin/packages non-human > schema_non_human.json
+
 .PHONY: clean
 clean:
 	rm -rfv bin/*

@@ -252,7 +252,11 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		// license valid
 		{
-			filePath: "schema_tests/human_schema_tests/license/valid/many_licenses.json",
+			filePath: "schema_tests/human_schema_tests/license/valid/many_licenses_and_or.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/license/valid/many_licenses_or.json",
 			valid:    true,
 		},
 		{
