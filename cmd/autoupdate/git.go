@@ -133,9 +133,8 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 			continue
 		}
 
-		util.Check(os.MkdirAll(pckgpath, os.ModePerm))
-
 		if len(filesToCopy) > 0 {
+			util.Check(os.MkdirAll(pckgpath, os.ModePerm))
 			for _, fileMoveOp := range filesToCopy {
 				absFrom := path.Join(gitpath, fileMoveOp.From)
 				absDest := path.Join(pckgpath, fileMoveOp.To)
