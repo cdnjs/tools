@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -192,7 +191,7 @@ func getLatestVersion(versions []version) *string {
 // Copy the package.json to the cdnjs repo and update its version.
 func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJSONPath string) {
 	// marshal into JSON
-	bytes, err := json.Marshal(pckg)
+	bytes, err := pckg.Marshal()
 	util.Check(err)
 
 	// enforce schema when writing non-human package JSON
