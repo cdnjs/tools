@@ -25,7 +25,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	var newVersionsToCommit []newVersionToCommit
 	var allVersions []version
 
-	packageGitcache := path.Join(gitCache, pckg.Name)
+	packageGitcache := path.Join(gitCache, *pckg.Name)
 	// If the local copy of the package's git doesn't exists, Clone it. If it does
 	// just fetch new tags
 	if _, err := os.Stat(packageGitcache); os.IsNotExist(err) {
@@ -121,7 +121,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
 		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
-		pckgpath := path.Join(pckg.Path(), gitversion.Version)
+		pckgpath := path.Join(pckg.LibraryPath(), gitversion.Version)
 
 		if _, err := os.Stat(pckgpath); !os.IsNotExist(err) {
 			util.Debugf(ctx, "%s already exists; aborting\n", pckgpath)

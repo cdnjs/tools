@@ -1,7 +1,9 @@
 package packages
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path"
 	"sort"
@@ -10,78 +12,76 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// Repository represents a repository.
-type Repository struct {
-	Repotype string `json:"type"`
-	URL      string `json:"url"`
-}
-
 // Author represents an author.
 type Author struct {
-	Name  string  `json:"name"`
-	Email string  `json:"email"`
+	Name  *string `json:"name,omitempty"`
+	Email *string `json:"email,omitempty"`
 	URL   *string `json:"url,omitempty"`
-}
-
-// License represents a license.
-type License struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
-// FileMap represents a number of files located
-// under a base path.
-type FileMap struct {
-	BasePath string   `json:"basePath"`
-	Files    []string `json:"files"`
 }
 
 // Autoupdate is used to update particular files from
 // a source type located at a target destination.
 type Autoupdate struct {
-	Source  string     `json:"source"`
-	Target  string     `json:"target"`
-	FileMap *[]FileMap `json:"fileMap,omitempty"`
+	Source  *string   `json:"source,omitempty"`
+	Target  *string   `json:"target,omitempty"`
+	FileMap []FileMap `json:"fileMap,omitempty"`
 }
 
-// Asset associates a number of files as strings
-// with a version.
-type Asset struct {
-	Version string   `json:"version"`
-	Files   []string `json:"files"`
+// FileMap represents a number of files located
+// under a base path.
+type FileMap struct {
+	BasePath *string  `json:"basePath"` // can be empty
+	Files    []string `json:"files,omitempty"`
 }
 
-// Package represents a package.
+// Repository represents a repository.
+type Repository struct {
+	Type *string `json:"type,omitempty"`
+	URL  *string `json:"url,omitempty"`
+}
+
+// Package holds metadata about a package.
+// Its human-readable properties come from cdnjs/packages.
+// The additional properties are used to manage the package.
+// Any legacy properties are used to avoid any breaking changes in the API.
 type Package struct {
-	ctx context.Context
-	// Cache list of versions for the package
-	versions []string
+	ctx      context.Context // context
+	versions []string        // cache list of versions
 
-	Title       string
-	Name        string
-	Description string
-	Version     *string
-	Author      Author
-	Homepage    string
-	Keywords    []string
-	Repository  Repository
-	Filename    string
-	NpmFileMap  []FileMap
-	License     *License
-	Autoupdate  *Autoupdate
+	// human-readable properties
+	Authors     []Author    `json:"authors,omitempty"`
+	Autoupdate  *Autoupdate `json:"autoupdate,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Filename    *string     `json:"filename,omitempty"`
+	Homepage    *string     `json:"homepage,omitempty"`
+	Keywords    []string    `json:"keywords,omitempty"`
+	License     *string     `json:"license,omitempty"`
+	Name        *string     `json:"name,omitempty"`
+	Repository  *Repository `json:"repository,omitempty"`
+
+	// additional properties
+	Version *string `json:"version,omitempty"`
+
+	// legacy
+	Author *string `json:"author,omitempty"`
+	// TODO: Remove this when we remove package.min.js generation
+	Assets []Asset `json:"assets,omitempty"`
 }
 
-func stringInObject(key string, object map[string]interface{}) string {
-	value := object[key]
-	if str, ok := value.(string); ok {
-		return str
+// Marshal marshals the package into JSON, not escaping HTML characters.
+func (p *Package) Marshal() ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(p); err != nil {
+		return nil, err
 	}
-	return ""
+	return buffer.Bytes(), nil
 }
 
 // Path returns the location of the package in the cdnjs repo.
-func (p *Package) Path() string {
-	return path.Join(util.GetCDNJSPackages(), p.Name)
+func (p *Package) LibraryPath() string {
+	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
 }
 
 // Versions gets the versions from git for a particular package.
@@ -89,7 +89,7 @@ func (p *Package) Versions() (versions []string) {
 	if p.versions != nil {
 		return p.versions
 	}
-	p.versions = GitListPackageVersions(p.ctx, p.Path())
+	p.versions = GitListPackageVersions(p.ctx, p.LibraryPath())
 	return p.versions
 }
 
@@ -100,13 +100,16 @@ func (p *Package) CalculateVersionSRIs(version string) map[string]string {
 
 	for _, relFile := range p.AllFiles(version) {
 		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
-			absFile := path.Join(p.Path(), version, relFile)
+			absFile := path.Join(p.LibraryPath(), version, relFile)
 			sriFileMap[relFile] = sri.CalculateFileSRI(absFile)
 		}
 	}
 
 	return sriFileMap
 }
+
+// TODO: Remove when no longer writing files to disk, and all files can
+// be removed after temporarily processed and uploaded to KV.
 
 // NpmFileMoveOp represents an operation to move files
 // from a source destination to a target destination.
@@ -123,9 +126,9 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	// map used to determine if a file path has already been processed
 	seen := make(map[string]bool)
 
-	for _, fileMap := range p.NpmFileMap {
+	for _, fileMap := range p.Autoupdate.FileMap {
 		for _, pattern := range fileMap.Files {
-			basePath := path.Join(base, fileMap.BasePath)
+			basePath := path.Join(base, *fileMap.BasePath)
 
 			// find files that match glob
 			list, err := util.ListFilesGlob(p.ctx, basePath, pattern)
@@ -155,7 +158,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				// file is ok
 				out = append(out, NpmFileMoveOp{
-					From: path.Join(fileMap.BasePath, f),
+					From: path.Join(*fileMap.BasePath, f),
 					To:   f,
 				})
 			}
@@ -169,7 +172,7 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 func (p *Package) AllFiles(version string) []string {
 	out := make([]string, 0)
 
-	absPath := path.Join(p.Path(), version)
+	absPath := path.Join(p.LibraryPath(), version)
 	list, err := util.ListFilesInVersion(p.ctx, absPath)
 	util.Check(err)
 	out = append(out, list...)
@@ -177,8 +180,15 @@ func (p *Package) AllFiles(version string) []string {
 	return out
 }
 
-// Assets gets all the assets for a particular package.
-func (p *Package) Assets() []Asset {
+// Asset associates a number of files as strings
+// with a version.
+type Asset struct {
+	Version string   `json:"version"`
+	Files   []string `json:"files"`
+}
+
+// GetAssets gets all the assets for a particular package.
+func (p *Package) GetAssets() []Asset {
 	assets := make([]Asset, 0)
 
 	for _, version := range p.Versions() {

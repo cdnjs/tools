@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -54,153 +51,8 @@ func main() {
 				os.Exit(1)
 			}
 		}
-	case "meta":
-		{
-			fields := flag.Args()[1:]
-			if len(fields) == 0 {
-				panic("no fields specified")
-			}
-
-			printMeta(fields)
-		}
-	case "meta-list":
-		{
-			fields := flag.Args()[1:]
-			printMetaList(fields)
-		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
-	}
-}
-
-func printMeta(nestedFields []string) {
-	mainField := nestedFields[0]
-
-	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
-	packagesPath := util.GetPackagesPath()
-
-	missingTypes := make(map[string][]string)
-	types := make(map[string][]string)
-
-	for _, f := range packages.GetPackagesJSONFiles(ctx) {
-		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
-
-		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
-		util.Check(err)
-
-		var unknown interface{}
-		util.Check(json.Unmarshal(bytes, &unknown))
-
-		var cur string
-
-		for i := 0; i <= len(nestedFields); i++ {
-			u := unknown
-			if i < len(nestedFields) {
-				cur += "." + nestedFields[i]
-				switch u.(type) {
-				case string:
-				case map[string]interface{}:
-					if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
-						unknown = res
-						continue
-					}
-				default:
-					// assuming only strings and keys that map to strings
-					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
-				}
-			}
-
-			t := reflect.TypeOf(unknown)
-			if i == len(nestedFields) {
-				util.Infof(ctx, "SUCCESS %s - %s\n", cur, t.String())
-				types[t.String()] = append(types[t.String()], f)
-				continue
-			}
-
-			util.Infof(ctx, "MISSING %s\n", cur)
-			missingTypes[cur] = append(missingTypes[cur], f)
-			break
-		}
-	}
-
-	util.Infof(ctx, "\n\nSummary of Types\n")
-	for k, v := range types {
-		util.Infof(ctx, "SUCCESS (%d): %s\n", len(v), k)
-		if len(v) < 25 {
-			util.Infof(ctx, "%s\n\n", v)
-		}
-	}
-	for k, v := range missingTypes {
-		util.Infof(ctx, "MISSING (%d): %s\n", len(v), k)
-		if len(v) < 25 {
-			util.Infof(ctx, "\t: %s\n", v)
-		}
-	}
-}
-
-func printMetaList(nestedFields []string) {
-	var mainField string
-	if len(nestedFields) > 0 {
-		mainField = nestedFields[0]
-	}
-
-	ctx := util.ContextWithEntries(util.GetStandardEntries(mainField, logger)...)
-	packagesPath := util.GetPackagesPath()
-
-	keys := make(map[string][]string)
-
-	for _, f := range packages.GetPackagesJSONFiles(ctx) {
-		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
-
-		bytes, err := ioutil.ReadFile(path.Join(packagesPath, f))
-		util.Check(err)
-
-		var unknown interface{}
-		util.Check(json.Unmarshal(bytes, &unknown))
-
-		var cur string
-
-		for i := 0; i <= len(nestedFields); i++ {
-			u := unknown
-			if i < len(nestedFields) {
-				cur += "." + nestedFields[i]
-				switch u.(type) {
-				case string:
-				case map[string]interface{}:
-					if res, ok := unknown.(map[string]interface{})[nestedFields[i]]; ok {
-						unknown = res
-						continue
-					}
-				default:
-					// assuming only strings and keys that map to strings
-					panic(fmt.Sprintf("(%s) - unexpected type: %s", f, reflect.TypeOf(unknown)))
-				}
-			}
-
-			if i == len(nestedFields) {
-				switch u.(type) {
-				case map[string]interface{}:
-					var ks []string
-					for k := range unknown.(map[string]interface{}) {
-						keys[k] = append(keys[k], f)
-						ks = append(ks, k)
-						util.Infof(ctx, "KEYS %v\n", ks)
-					}
-				default:
-					util.Infof(ctx, "ignored\n")
-				}
-				continue
-			}
-			break
-		}
-	}
-
-	util.Infof(ctx, "\n\nSummary of Keys in Object\n")
-	for k, v := range keys {
-		util.Infof(ctx, "KEYS (%d): %s\n", len(v), k)
-		if len(v) < 25 {
-			util.Infof(ctx, "%s\n\n", v)
-		}
 	}
 }
 
@@ -217,27 +69,30 @@ func showFiles(pckgPath string) {
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	// parse package JSON
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
-		err(ctx, readerr.Error())
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				err(ctx, resErr.String())
+			}
+		} else {
+			err(ctx, readerr.Error())
+		}
 		return
 	}
 
-	// check for autoupdate
-	if pckg.Autoupdate == nil {
-		err(ctx, "autoupdate not found")
-		return
-	}
+	checkFilename(ctx, pckg)
 
 	// autoupdate exists, download latest versions based on source
-	src := pckg.Autoupdate.Source
+	src := *pckg.Autoupdate.Source
 	var versions []version
 	var downloadDir, noVersionsErr string
 	switch src {
 	case "npm":
 		{
 			// get npm versions and sort
-			npmVersions, _ := npm.GetVersions(ctx, pckg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(ctx, *pckg.Autoupdate.Target)
 			sort.Sort(npm.ByTimeStamp(npmVersions))
 
 			// cast to interface
@@ -281,8 +136,7 @@ func showFiles(pckgPath string) {
 		}
 	default:
 		{
-			err(ctx, fmt.Sprintf("unknown autoupdate source: %s", src))
-			return
+			panic(fmt.Sprintf("unknown autoupdate source: %s", src))
 		}
 	}
 
@@ -316,18 +170,10 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 	filesToCopy := p.NpmFilesFrom(downloadDir)
 
 	if len(filesToCopy) == 0 {
-		errormsg := ""
-		errormsg += fmt.Sprintf("No files will be published for version %s.\n", v.Get())
+		errormsg := fmt.Sprintf("No files will be published for version %s.\n", v.Get())
 
-		// determine if a pattern has been seen before
-		seen := make(map[string]bool)
-
-		for _, filemap := range p.NpmFileMap {
-			for _, pattern := range filemap.Files {
-				if _, ok := seen[pattern]; ok {
-					continue // skip duplicate pattern
-				}
-				seen[pattern] = true
+		for _, fileMap := range p.Autoupdate.FileMap {
+			for _, pattern := range fileMap.Files {
 				errormsg += fmt.Sprintf("[Click here to debug your glob pattern `%s`](%s).\n", pattern, makeGlobDebugLink(pattern, downloadDir))
 			}
 		}
@@ -335,11 +181,20 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 		return
 	}
 
+	var filenameFound bool
+
 	fmt.Printf("\n```\n")
 	for _, file := range filesToCopy {
 		fmt.Printf("%s\n", file.To)
+		if p.Filename != nil && !filenameFound && file.To == *p.Filename {
+			filenameFound = true
+		}
 	}
 	fmt.Printf("```\n")
+
+	if p.Filename != nil && !filenameFound {
+		err(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", *p.Filename, v.Get()))
+	}
 }
 
 // Prints the matching files of a number of last versions.
@@ -377,15 +232,24 @@ func makeGlobDebugLink(glob string, dir string) string {
 }
 
 func checkGitHubPopularity(ctx context.Context, pckg *packages.Package) bool {
-	if !strings.Contains(pckg.Repository.URL, "github.com") {
+	if !strings.Contains(*pckg.Repository.URL, "github.com") {
 		return false
 	}
 
-	if s := git.GetGitHubStars(pckg.Repository.URL); s.Stars < util.MinGitHubStars {
+	if s := git.GetGitHubStars(*pckg.Repository.URL); s.Stars < util.MinGitHubStars {
 		warn(ctx, fmt.Sprintf("stars on GitHub is under %d", util.MinGitHubStars))
 		return false
 	}
 	return true
+}
+
+func checkFilename(ctx context.Context, pckg *packages.Package) {
+	// warn if filename is not present
+	// current, only a few packages have exceptions
+	// that allow them to have missing filenames
+	if pckg.Filename == nil {
+		warn(ctx, "filename is missing")
+	}
 }
 
 func lintPackage(pckgPath string) {
@@ -394,63 +258,47 @@ func lintPackage(pckgPath string) {
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadPackageJSON(ctx, pckgPath)
+	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
 	if readerr != nil {
-		err(ctx, readerr.Error())
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				err(ctx, resErr.String())
+			}
+		} else {
+			err(ctx, readerr.Error())
+		}
 		return
 	}
 
-	if pckg.Name == "" {
-		err(ctx, shouldNotBeEmpty(".name"))
-	}
+	checkFilename(ctx, pckg)
 
-	if pckg.Version != nil {
-		err(ctx, shouldNotExist(".version"))
-	}
+	switch *pckg.Autoupdate.Source {
+	case "npm":
+		{
+			// check that it exists
+			if !npm.Exists(*pckg.Autoupdate.Target) {
+				err(ctx, "package doesn't exist on npm")
+				break
+			}
 
-	if pckg.Repository.URL == "" {
-		err(ctx, shouldNotBeEmpty(".repository.url"))
-	}
-
-	if pckg.Autoupdate != nil {
-		if pckg.Autoupdate.Source == "git" && pckg.Autoupdate.Target != pckg.Repository.URL {
-			err(ctx, ".autoupdate.target and .repository.url must not differ")
-		}
-
-		switch pckg.Autoupdate.Source {
-		case "npm":
-			{
-				// check that it exists
-				if !npm.Exists(pckg.Autoupdate.Target) {
-					err(ctx, "package doesn't exist on npm")
-					break
-				}
-
-				// check if it has enough downloads
-				if md := npm.GetMonthlyDownload(pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
-					if !checkGitHubPopularity(ctx, pckg) {
-						warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
-					}
+			// check if it has enough downloads
+			if md := npm.GetMonthlyDownload(*pckg.Autoupdate.Target); md.Downloads < util.MinNpmMonthlyDownloads {
+				if !checkGitHubPopularity(ctx, pckg) {
+					warn(ctx, fmt.Sprintf("package download per month on npm is under %d", util.MinNpmMonthlyDownloads))
 				}
 			}
-		case "git":
-			{
-				checkGitHubPopularity(ctx, pckg)
-			}
-		default:
-			{
-				err(ctx, "Unsupported .autoupdate.source: "+pckg.Autoupdate.Source)
-			}
 		}
-	} else {
-		err(ctx, ".autoupdate should not be null. Package will never auto-update")
+	case "git":
+		{
+			checkGitHubPopularity(ctx, pckg)
+		}
+	default:
+		{
+			// schema will enforce npm or git, so panic
+			panic(fmt.Sprintf("unsupported .autoupdate.source: " + *pckg.Autoupdate.Source))
+		}
 	}
-
-	// ensure repo type is git
-	if pckg.Repository.Repotype != "git" {
-		err(ctx, "Unsupported .repository.type: "+pckg.Repository.Repotype)
-	}
-
 }
 
 // wrapper around outputting a checker error
@@ -462,12 +310,4 @@ func err(ctx context.Context, s string) {
 // wrapper around outputting a checker warning
 func warn(ctx context.Context, s string) {
 	util.Warnf(ctx, s)
-}
-
-func shouldNotBeEmpty(name string) string {
-	return fmt.Sprintf("%s should be specified", name)
-}
-
-func shouldNotExist(name string) string {
-	return fmt.Sprintf("%s should not exist", name)
 }

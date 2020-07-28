@@ -230,18 +230,34 @@ func TestCheckerShowFiles(t *testing.T) {
 		{
 			name: "show files on npm",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + jsFilesPkg + `",
-					"fileMap": [
-						{ "basePath":"", "files":["*.js"] }
-					]
-				}
-			}`,
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "a.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + jsFilesPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
 			expected: `
 
 most recent version: 0.0.2
@@ -256,20 +272,80 @@ b.js
 		},
 
 		{
+			name: "most recent version does not contain filename",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "not_included.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + jsFilesPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
+			expected: `
+
+most recent version: 0.0.2
+
+` + "```" + `
+a.js
+b.js
+` + "```" + `
+` + ciError(file, "Filename `not_included.js` not found in most recent version `0.0.2`.%0A") + `
+0 last version(s):
+`,
+		},
+
+		{
 			name: "oversized file",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + oversizedFilesPkg + `",
-					"fileMap": [
-						{ "basePath":"", "files":["*.js"] }
-					]
-				}
-			}`,
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "b.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + oversizedFilesPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
 			expected: `
 
 most recent version: 0.0.2
@@ -285,18 +361,34 @@ b.js
 		{
 			name: "unpublished field",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + unpublishedFieldPkg + `",
-					"fileMap": [
-						{ "basePath":"", "files":["*.js"] }
-					]
-				}
-			}`,
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "a.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + unpublishedFieldPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
 			expected: `
 
 most recent version: 1.3.1
@@ -314,18 +406,34 @@ c.js
 		{
 			name: "sort by time stamp",
 			input: `{
-				"name": "foo",
-				"repository": {
-					"type": "git"
-				},
-				"autoupdate": {
-					"source": "npm",
-					"target": "` + sortByTimeStampPkg + `",
-					"fileMap": [
-						{ "basePath":"", "files":["*.js"] }
-					]
-				}
-			}`,
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "2.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + sortByTimeStampPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
 			expected: `
 
 most recent version: 2.0.0

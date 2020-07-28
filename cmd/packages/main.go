@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/cdnjs/tools/cloudstorage"
 	"github.com/cdnjs/tools/packages"
@@ -33,11 +33,11 @@ func init() {
 	sentry.Init()
 }
 
-func encodeJSON(packages []*outputPackage) (string, error) {
+func encodeJSON(pkgs []*packages.Package) (string, error) {
 	out := struct {
-		Packages []*outputPackage `json:"packages"`
+		Packages []*packages.Package `json:"packages"`
 	}{
-		packages,
+		pkgs,
 	}
 
 	buffer := &bytes.Buffer{}
@@ -47,12 +47,12 @@ func encodeJSON(packages []*outputPackage) (string, error) {
 	return buffer.String(), err
 }
 
-func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
+func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package) {
 	for f := range jobs {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
-		p, err := packages.ReadPackageJSON(ctx, f)
+		p, err := packages.ReadNonHumanPackageJSON(ctx, f)
 		if err != nil {
 			util.Printf(ctx, "error while processing package: %s\n", err)
 			results <- nil
@@ -78,12 +78,16 @@ func generatePackageWorker(jobs <-chan string, results chan<- *outputPackage) {
 		}
 
 		util.Printf(ctx, "OK\n")
-		results <- generatePackage(ctx, p)
+		p.Assets = p.GetAssets()
+		results <- p
 	}
 }
 
 func main() {
 	defer sentry.PanicHandler()
+	var missingAuto, missingRepo bool
+	flag.BoolVar(&missingAuto, "missing-auto", false, "autoupdate can be missing")
+	flag.BoolVar(&missingRepo, "missing-repo", false, "repository can be missing")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -107,7 +111,7 @@ func main() {
 		}
 	case "generate":
 		{
-			files, err := filepath.Glob(path.Join(util.GetCDNJSPackages(), "*", "package.json"))
+			files, err := filepath.Glob(path.Join(util.GetCDNJSLibrariesPath(), "*", "package.json"))
 			util.Check(err)
 
 			numJobs := len(files)
@@ -116,7 +120,7 @@ func main() {
 			}
 
 			jobs := make(chan string, numJobs)
-			results := make(chan *outputPackage, numJobs)
+			results := make(chan *packages.Package, numJobs)
 
 			// spawn workers
 			for w := 1; w <= runtime.NumCPU()*10; w++ {
@@ -130,7 +134,7 @@ func main() {
 			close(jobs)
 
 			// collect results
-			out := make([]*outputPackage, 0)
+			out := make([]*packages.Package, 0)
 			for i := 1; i <= numJobs; i++ {
 				if res := <-results; res != nil {
 					out = append(out, res)
@@ -141,90 +145,60 @@ func main() {
 			util.Check(err)
 			fmt.Println(string(str))
 		}
+	case "human":
+		{
+			fmt.Println(packages.HumanReadableSchemaString)
+		}
+	case "non-human":
+		{
+			fmt.Println(packages.NonHumanReadableSchemaString)
+		}
+	case "validate-human":
+		{
+			for _, path := range flag.Args()[1:] {
+				validateHuman(path, missingAuto, missingRepo)
+			}
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
 }
 
-// Struct used to serialize packages
-type outputPackage struct {
-	Name        string            `json:"name"`
-	Filename    string            `json:"filename"`
-	Version     string            `json:"version"`
-	Description string            `json:"description"`
-	Repository  map[string]string `json:"repository"`
-	Keywords    []string          `json:"keywords"`
-	// Author is either a name or an object with name and email
-	Author   interface{} `json:"author"`
-	Homepage string      `json:"homepage,omitempty"`
-	// TODO: is this needed?
-	Autoupdate *packages.Autoupdate `json:"autoupdate,omitempty"`
-	// License is either a license or a list of licenses
-	License interface{} `json:"license,omitempty"`
-	Assets  interface{} `json:"assets"`
-}
+func validateHuman(pckgPath string, missingAuto, missingRepo bool) {
+	// create context with file path prefix, checker logger
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgPath, logger)...)
+	var errs []string
 
-func generatePackage(ctx context.Context, p *packages.Package) *outputPackage {
-	out := outputPackage{}
-
-	out.Name = p.Name
-	out.Version = *p.Version
-	out.Description = p.Description
-	out.Filename = p.Filename
-	out.Repository = map[string]string{
-		"type": p.Repository.Repotype,
-		"url":  p.Repository.URL,
-	}
-	out.Keywords = p.Keywords
-
-	if p.Homepage != "" {
-		out.Homepage = p.Homepage
-	}
-
-	if p.Author.Email != "" && p.Author.Name != "" {
-		out.Author = map[string]string{
-			"name":  p.Author.Name,
-			"email": p.Author.Email,
-		}
-	} else if p.Author.URL != nil && p.Author.Name != "" {
-		out.Author = map[string]string{
-			"name": p.Author.Name,
-			"url":  *p.Author.URL,
-		}
-	} else if p.Author.Name != "" {
-		out.Author = p.Author.Name
-	}
-
-	if p.Autoupdate != nil {
-		// TODO: for some reason remove FileMap
-		p.Autoupdate.FileMap = nil
-		out.Autoupdate = p.Autoupdate
-	}
-
-	if p.License != nil {
-		if p.License.URL != "" {
-			out.License = map[string]string{
-				"name": p.License.Name,
-				"url":  p.License.URL,
+	_, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
+	if readerr != nil {
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				if missingAuto && resErr.String() == "(root): autoupdate is required" {
+					continue
+				}
+				if missingRepo && resErr.String() == "(root): repository is required" {
+					continue
+				}
+				errs = append(errs, resErr.String())
 			}
 		} else {
-			out.License = p.License.Name
+			errs = append(errs, readerr.Error())
 		}
 	}
-
-	out.Assets = p.Assets()
-
-	return &out
+	if len(errs) > 0 {
+		util.Infof(ctx, strings.Join(errs, ",")+"\n")
+	}
 }
 
 func hasSRI(p *packages.Package, version string) bool {
-	sriPath := path.Join(util.SRIPath, p.Name, version+".json")
+	sriPath := path.Join(util.SRIPath, *p.Name, version+".json")
 	_, statErr := os.Stat(sriPath)
 	return !os.IsNotExist(statErr)
 }
 
 func writeSRIJSON(p *packages.Package, version string, content []byte) {
-	sriDir := path.Join(util.SRIPath, p.Name)
+	sriDir := path.Join(util.SRIPath, *p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))
 	}
