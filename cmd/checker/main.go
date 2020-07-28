@@ -179,11 +179,21 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 		return
 	}
 
+	filename := *p.Filename
+	var filenameFound bool
+
 	fmt.Printf("\n```\n")
 	for _, file := range filesToCopy {
 		fmt.Printf("%s\n", file.To)
+		if !filenameFound && file.To == filename {
+			filenameFound = true
+		}
 	}
 	fmt.Printf("```\n")
+
+	if !filenameFound {
+		err(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", filename, v.Get()))
+	}
 }
 
 // Prints the matching files of a number of last versions.

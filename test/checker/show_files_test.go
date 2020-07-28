@@ -248,7 +248,7 @@ func TestCheckerShowFiles(t *testing.T) {
 		        "type": "git",
 		        "url": "git://github.com/tc80/a-happy-tyler.git"
 		    },
-		    "filename": "happy.js",
+		    "filename": "a.js",
 		    "homepage": "https://github.com/tc80",
 			"autoupdate": {
 				"source": "npm",
@@ -267,6 +267,50 @@ a.js
 b.js
 ` + "```" + `
 
+0 last version(s):
+`,
+		},
+
+		{
+			name: "most recent version does not contain filename",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/tc80/a-happy-tyler.git"
+		    },
+		    "filename": "not_included.js",
+		    "homepage": "https://github.com/tc80",
+			"autoupdate": {
+				"source": "npm",
+				"target": "` + jsFilesPkg + `",
+				"fileMap": [
+					{ "basePath":"", "files":["*.js"] }
+				]
+			}
+		}`,
+			expected: `
+
+most recent version: 0.0.2
+
+` + "```" + `
+a.js
+b.js
+` + "```" + `
+` + ciError(file, "Filename `not_included.js` not found in most recent version `0.0.2`.%0A") + `
 0 last version(s):
 `,
 		},
@@ -292,7 +336,7 @@ b.js
 		        "type": "git",
 		        "url": "git://github.com/tc80/a-happy-tyler.git"
 		    },
-		    "filename": "happy.js",
+		    "filename": "b.js",
 		    "homepage": "https://github.com/tc80",
 			"autoupdate": {
 				"source": "npm",
@@ -335,7 +379,7 @@ b.js
 		        "type": "git",
 		        "url": "git://github.com/tc80/a-happy-tyler.git"
 		    },
-		    "filename": "happy.js",
+		    "filename": "a.js",
 		    "homepage": "https://github.com/tc80",
 			"autoupdate": {
 				"source": "npm",
@@ -380,7 +424,7 @@ c.js
 		        "type": "git",
 		        "url": "git://github.com/tc80/a-happy-tyler.git"
 		    },
-		    "filename": "happy.js",
+		    "filename": "2.js",
 		    "homepage": "https://github.com/tc80",
 			"autoupdate": {
 				"source": "npm",
