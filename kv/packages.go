@@ -29,17 +29,19 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
 	}
-
+	fmt.Printf("%s\n", v)
 	// enforce schema when writing non-human package JSON
 	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *p.Name, v)
 	if err != nil {
 		return err
 	}
 
-	req := &writeRequest{
-		key:   *p.Name,
-		value: v,
-	}
+	// req := &writeRequest{
+	// 	key:   *p.Name,
+	// 	value: v,
+	// }
 
-	return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID)
+	fmt.Printf("%s\n", v)
+	return nil
+	//return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID)
 }

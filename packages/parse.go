@@ -22,7 +22,11 @@ type InvalidSchemaError struct {
 
 // Error is used to satisfy the error interface.
 func (i InvalidSchemaError) Error() string {
-	return fmt.Sprintf("%v", i.Result)
+	var errors []string
+	for _, resErr := range i.Result.Errors() {
+		errors = append(errors, resErr.String())
+	}
+	return strings.Join(errors, ",")
 }
 
 // GetHumanPackageJSONFiles gets the paths of the human-readable JSON files from within the `packagesPath`.

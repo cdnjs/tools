@@ -71,7 +71,10 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_email.json",
-			errors:   []string{"authors.0.email: String length must be greater than or equal to 1"},
+			errors: []string{
+				"authors.0.email: String length must be greater than or equal to 1",
+				"authors.0.email: Must validate at least one schema (anyOf)",
+			},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_name.json",
@@ -79,7 +82,10 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/empty_url.json",
-			errors:   []string{"authors.0.url: String length must be greater than or equal to 1"},
+			errors: []string{
+				"authors.0.url: String length must be greater than or equal to 1",
+				"authors.0.url: Must validate at least one schema (anyOf)",
+			},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/authors/invalid/one_author_no_name.json",
@@ -210,7 +216,10 @@ func TestHumanReadableSchema(t *testing.T) {
 		// homepage invalid
 		{
 			filePath: "schema_tests/human_schema_tests/homepage/invalid/empty_homepage.json",
-			errors:   []string{"homepage: String length must be greater than or equal to 1"},
+			errors: []string{
+				"homepage: String length must be greater than or equal to 1",
+				"homepage: Must validate at least one schema (anyOf)",
+			},
 		},
 		// keywords valid
 		{
@@ -258,15 +267,24 @@ func TestHumanReadableSchema(t *testing.T) {
 		// license invalid
 		{
 			filePath: "schema_tests/human_schema_tests/license/invalid/empty_license.json",
-			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+			errors: []string{
+				"license: Does not match pattern '" + licenseRegex + "'",
+				"license: Must validate at least one schema (anyOf)",
+			},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/license/invalid/invalid_multiple_licenses.json",
-			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+			errors: []string{
+				"license: Does not match pattern '" + licenseRegex + "'",
+				"license: Must validate at least one schema (anyOf)",
+			},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/license/invalid/invalid_single_license.json",
-			errors:   []string{"license: Does not match pattern '" + licenseRegex + "'"},
+			errors: []string{
+				"license: Does not match pattern '" + licenseRegex + "'",
+				"license: Must validate at least one schema (anyOf)",
+			},
 		},
 		// name valid
 		{

@@ -72,16 +72,30 @@ const humanReadableProperties = `
                 "type": "object",
                 "properties": {
                     "email": {
-                        "type": "string",
-                        "minLength": 1
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     },
                     "name": {
                         "type": "string",
                         "minLength": 1
                     },
                     "url": {
-                        "type": "string",
-                        "minLength": 1
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "additionalProperties": false,
@@ -149,8 +163,15 @@ const humanReadableProperties = `
         },
         "homepage": {
             "description": "A link to the homepage of the package, if one is defined in the cdnjs package JSON file. Normally, this is either the package repository or the package website.",
-            "type": "string",
-            "minLength": 1
+            "anyOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "null"
+                }
+            ]
         },
         "keywords": {
             "description": "An array of keywords provided in the cdnjs package JSON for the library.",
@@ -164,8 +185,15 @@ const humanReadableProperties = `
         },
         "license": {
             "description": "The license defined for the library on cdnjs, as a string. If the library has a custom license, it may not be shown here.",
-            "type": "string",
-            "pattern": "^(\\(.+ OR .+\\)|[a-zA-Z0-9-].*)$"
+            "anyOf": [
+                {
+                    "type": "string",
+                    "pattern": "^(\\(.+ OR .+\\)|[a-zA-Z0-9-].*)$"
+                },
+                {
+                    "type": "null"
+                }
+            ]
         },
         "name": {
             "description": "This will be the full name of the library, as stored on cdnjs.",
@@ -194,8 +222,15 @@ const humanReadableProperties = `
 
 const nonHumanReadableProperties = `
         "author": {
-            "type": "string",
-            "minLength": 1
+            "anyOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "null"
+                }
+            ]
         },
         "version": {
             "type": "string",
