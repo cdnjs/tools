@@ -40,9 +40,9 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 
 		// parse human-readable
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadHumanPackageJSON(ctx, humanPath)
-		if readerr != nil {
-			if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+		pckg, err := packages.ReadHumanPackageJSON(ctx, humanPath)
+		if err != nil {
+			if invalidHumanErr, ok := err.(packages.InvalidSchemaError); ok {
 				for _, resErr := range invalidHumanErr.Result.Errors() {
 					if resErr.String() == "(root): autoupdate is required" {
 						continue // (legacy) ignore missing .autoupdate
@@ -52,8 +52,14 @@ func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 					}
 					panic(resErr.String())
 				}
+
+				// we know the package is only missing .autoupdate or .repository, so this is OK
+				pckg, err = packages.ReadHumanPackageJSONUnsafe(ctx, humanPath)
+				if err != nil {
+					panic(fmt.Sprintf("unsafe read `%s` fail: %s", humanPath, err))
+				}
 			} else {
-				panic(readerr.Error())
+				panic(err.Error())
 			}
 		}
 

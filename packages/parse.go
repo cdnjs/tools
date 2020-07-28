@@ -57,6 +57,23 @@ func ReadHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
 		return nil, InvalidSchemaError{res}
 	}
 
+	return unmarshalHumanPackage(ctx, file, bytes)
+}
+
+// ReadHumanPackageJSONUnsafe reads the human-readable JSON without
+// validating against the schema.
+func ReadHumanPackageJSONUnsafe(ctx context.Context, file string) (*Package, error) {
+	bytes, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read %s", file)
+	}
+
+	return unmarshalHumanPackage(ctx, file, bytes)
+}
+
+// Unmarshals the human-readable JSON into a *Package,
+// setting the legacy `author` field if needed.
+func unmarshalHumanPackage(ctx context.Context, file string, bytes []byte) (*Package, error) {
 	// unmarshal JSON into package
 	var p Package
 	if err := json.Unmarshal(bytes, &p); err != nil {

@@ -36,6 +36,8 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		return err
 	}
 
+	// push bytes to package.json file too
+
 	// req := &writeRequest{
 	// 	key:   *p.Name,
 	// 	value: v,

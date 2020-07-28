@@ -188,8 +188,6 @@ func validateHuman(pckgPath string, missingAuto, missingRepo bool) {
 	}
 	if len(errs) > 0 {
 		util.Infof(ctx, strings.Join(errs, ",")+"\n")
-	} else {
-		util.Debugf(ctx, " ok \n")
 	}
 }
 
