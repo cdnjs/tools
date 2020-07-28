@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path"
+	"strings"
 
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -35,7 +36,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 // metadata in cdnjs/packages/.
 func InsertMetadataFromDisk(logger *log.Logger, pckgs []string) {
 	for _, pckgname := range pckgs {
-		humanPath := path.Join(util.GetHumanPackagesPath(), string(pckgname[0]), pckgname+".json")
+		humanPath := path.Join(util.GetHumanPackagesPath(), strings.ToLower(string(pckgname[0])), pckgname+".json")
 		nonHumanPath := path.Join(util.GetCDNJSLibrariesPath(), pckgname, "package.json")
 
 		// parse human-readable

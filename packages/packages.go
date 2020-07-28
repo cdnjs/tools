@@ -14,30 +14,30 @@ import (
 
 // Author represents an author.
 type Author struct {
-	Name  *string `json:"name"`
-	Email *string `json:"email"`
-	URL   *string `json:"url"`
+	Name  *string `json:"name,omitempty"`
+	Email *string `json:"email,omitempty"`
+	URL   *string `json:"url,omitempty"`
 }
 
 // Autoupdate is used to update particular files from
 // a source type located at a target destination.
 type Autoupdate struct {
-	Source  *string   `json:"source"`
-	Target  *string   `json:"target"`
-	FileMap []FileMap `json:"fileMap"`
+	Source  *string   `json:"source,omitempty"`
+	Target  *string   `json:"target,omitempty"`
+	FileMap []FileMap `json:"fileMap,omitempty"`
 }
 
 // FileMap represents a number of files located
 // under a base path.
 type FileMap struct {
-	BasePath *string  `json:"basePath"`
-	Files    []string `json:"files"`
+	BasePath *string  `json:"basePath"` // can be empty
+	Files    []string `json:"files,omitempty"`
 }
 
 // Repository represents a repository.
 type Repository struct {
-	Type *string `json:"type"`
-	URL  *string `json:"url"`
+	Type *string `json:"type,omitempty"`
+	URL  *string `json:"url,omitempty"`
 }
 
 // Package holds metadata about a package.
@@ -49,21 +49,21 @@ type Package struct {
 	versions []string        // cache list of versions
 
 	// human-readable properties
-	Authors     []Author    `json:"authors"`
-	Autoupdate  Autoupdate  `json:"autoupdate"`
-	Description *string     `json:"description"`
-	Filename    *string     `json:"filename"`
-	Homepage    *string     `json:"homepage"`
-	Keywords    []string    `json:"keywords"`
-	License     *string     `json:"license"`
-	Name        *string     `json:"name"`
-	Repository  *Repository `json:"repository"`
+	Authors     []Author    `json:"authors,omitempty"`
+	Autoupdate  *Autoupdate `json:"autoupdate,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Filename    *string     `json:"filename,omitempty"`
+	Homepage    *string     `json:"homepage,omitempty"`
+	Keywords    []string    `json:"keywords,omitempty"`
+	License     *string     `json:"license,omitempty"`
+	Name        *string     `json:"name,omitempty"`
+	Repository  *Repository `json:"repository,omitempty"`
 
 	// additional properties
-	Version *string `json:"version"`
+	Version *string `json:"version,omitempty"`
 
 	// legacy
-	Author *string `json:"author"`
+	Author *string `json:"author,omitempty"`
 	// TODO: Remove this when we remove package.min.js generation
 	Assets []Asset `json:"assets,omitempty"`
 }

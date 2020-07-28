@@ -30,6 +30,7 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
 	}
 
+	fmt.Printf("Enforcing schema for: %s\n", v)
 	// enforce schema when writing non-human package JSON
 	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *p.Name, v)
 	if err != nil {

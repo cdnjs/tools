@@ -91,7 +91,21 @@ func main() {
 		}
 
 		pckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(packagesPath, f))
-		util.Check(err)
+		if err != nil {
+			if invalidHumanErr, ok := err.(packages.InvalidSchemaError); ok {
+				for _, resErr := range invalidHumanErr.Result.Errors() {
+					if resErr.String() == "(root): autoupdate is required" {
+						continue // (legacy) ignore missing .autoupdate
+					}
+					if resErr.String() == "(root): repository is required" {
+						continue // (legacy) ignore missing .repository
+					}
+					panic(resErr.String()) // unhandled schema problem
+				}
+				continue // ignore this legacy package
+			}
+			panic(err) // something else went wrong
+		}
 
 		var newVersionsToCommit []newVersionToCommit
 		var allVersions []version
