@@ -20,10 +20,7 @@ func TestNonHumanReadableSchema(t *testing.T) {
 		// author invalid
 		{
 			filePath: "schema_tests/non_human_schema_tests/author/invalid/empty_author.json",
-			errors: []string{
-				"author: String length must be greater than or equal to 1",
-				"author: Must validate at least one schema (anyOf)",
-			},
+			errors:   []string{"author: String length must be greater than or equal to 1"},
 		},
 		// autoupdate valid
 		{

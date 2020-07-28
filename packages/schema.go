@@ -70,30 +70,16 @@ const humanReadableProperties = `
                 "type": "object",
                 "properties": {
                     "email": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "type": "string",
+                        "minLength": 1
                     },
                     "name": {
                         "type": "string",
                         "minLength": 1
                     },
                     "url": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
+                        "type": "string",
+                        "minLength": 1
                     }
                 },
                 "additionalProperties": false,
@@ -156,27 +142,13 @@ const humanReadableProperties = `
         },
         "filename": {
             "description": "This will be the name of the default file for the library.",
-            "anyOf": [
-                {
-                    "type": "string",
-                    "minLength": 1
-                },
-                {
-                    "type": "null"
-                }
-            ]
+            "type": "string",
+            "minLength": 1
         },
         "homepage": {
             "description": "A link to the homepage of the package, if one is defined in the cdnjs package JSON file. Normally, this is either the package repository or the package website.",
-            "anyOf": [
-                {
-                    "type": "string",
-                    "minLength": 1
-                },
-                {
-                    "type": "null"
-                }
-            ]
+            "type": "string",
+            "minLength": 1
         },
         "keywords": {
             "description": "An array of keywords provided in the cdnjs package JSON for the library.",
@@ -190,15 +162,8 @@ const humanReadableProperties = `
         },
         "license": {
             "description": "The license defined for the library on cdnjs, as a string. If the library has a custom license, it may not be shown here.",
-            "anyOf": [
-                {
-                    "type": "string",
-                    "pattern": "^(\\(.+ (OR|AND) .+\\)|[a-zA-Z0-9-].*)$"
-                },
-                {
-                    "type": "null"
-                }
-            ]
+            "type": "string",
+            "pattern": "^(\\(.+ (OR|AND) .+\\)|[a-zA-Z0-9-].*)$"
         },
         "name": {
             "description": "This will be the full name of the library, as stored on cdnjs.",
@@ -227,15 +192,8 @@ const humanReadableProperties = `
 
 const nonHumanReadableProperties = `
         "author": {
-            "anyOf": [
-                {
-                    "type": "string",
-                    "minLength": 1
-                },
-                {
-                    "type": "null"
-                }
-            ]
+            "type": "string",
+            "minLength": 1
         },
         "version": {
             "type": "string",
