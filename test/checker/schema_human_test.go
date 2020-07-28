@@ -192,17 +192,20 @@ func TestHumanReadableSchema(t *testing.T) {
 		},
 		// filename valid
 		{
+			filePath: "schema_tests/human_schema_tests/filename/valid/missing_filename.json",
+			valid:    true,
+		},
+		{
 			filePath: "schema_tests/human_schema_tests/filename/valid/valid_filename.json",
 			valid:    true,
 		},
 		// filename invalid
 		{
 			filePath: "schema_tests/human_schema_tests/filename/invalid/empty_filename.json",
-			errors:   []string{"filename: String length must be greater than or equal to 1"},
-		},
-		{
-			filePath: "schema_tests/human_schema_tests/filename/invalid/missing_filename.json",
-			errors:   []string{"(root): filename is required"},
+			errors: []string{
+				"filename: Must validate at least one schema (anyOf)",
+				"filename: String length must be greater than or equal to 1",
+			},
 		},
 		// homepage valid
 		{

@@ -82,6 +82,8 @@ func showFiles(pckgPath string) {
 		return
 	}
 
+	checkFilename(ctx, pckg)
+
 	// autoupdate exists, download latest versions based on source
 	src := *pckg.Autoupdate.Source
 	var versions []version
@@ -179,20 +181,19 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, dir string
 		return
 	}
 
-	filename := *p.Filename
 	var filenameFound bool
 
 	fmt.Printf("\n```\n")
 	for _, file := range filesToCopy {
 		fmt.Printf("%s\n", file.To)
-		if !filenameFound && file.To == filename {
+		if p.Filename != nil && !filenameFound && file.To == *p.Filename {
 			filenameFound = true
 		}
 	}
 	fmt.Printf("```\n")
 
-	if !filenameFound {
-		err(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", filename, v.Get()))
+	if p.Filename != nil && !filenameFound {
+		err(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", *p.Filename, v.Get()))
 	}
 }
 
@@ -242,6 +243,15 @@ func checkGitHubPopularity(ctx context.Context, pckg *packages.Package) bool {
 	return true
 }
 
+func checkFilename(ctx context.Context, pckg *packages.Package) {
+	// warn if filename is not present
+	// current, only a few packages have exceptions
+	// that allow them to have missing filenames
+	if pckg.Filename == nil {
+		warn(ctx, "filename is missing")
+	}
+}
+
 func lintPackage(pckgPath string) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
@@ -260,6 +270,8 @@ func lintPackage(pckgPath string) {
 		}
 		return
 	}
+
+	checkFilename(ctx, pckg)
 
 	switch *pckg.Autoupdate.Source {
 	case "npm":

@@ -37,7 +37,6 @@ const HumanReadableSchemaString = `{
     "required": [
         "autoupdate",
         "description",
-        "filename",
         "keywords",
         "name",
         "repository"
@@ -54,7 +53,6 @@ const NonHumanReadableSchemaString = `{
     },
     "required": [
         "description",
-        "filename",
         "keywords",
         "name",
         "version"
@@ -158,8 +156,15 @@ const humanReadableProperties = `
         },
         "filename": {
             "description": "This will be the name of the default file for the library.",
-            "type": "string",
-            "minLength": 1
+            "anyOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "type": "null"
+                }
+            ]
         },
         "homepage": {
             "description": "A link to the homepage of the package, if one is defined in the cdnjs package JSON file. Normally, this is either the package repository or the package website.",

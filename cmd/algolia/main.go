@@ -137,6 +137,9 @@ func getSRI(p *packages.Package) (string, error) {
 
 	util.Check(json.Unmarshal(data, &j))
 
+	if p.Filename == nil {
+		return "", errors.New("SRI could not get converted to a string (nil filename)")
+	}
 	if str, ok := j[*p.Filename].(string); ok {
 		return str, nil
 	}
@@ -152,6 +155,16 @@ func indexPackage(p packages.Package, index *algoliasearch.Index) error {
 	var license string
 	if p.License != nil {
 		license = *p.License
+	}
+
+	var filename string
+	if p.Filename != nil {
+		filename = *p.Filename
+	}
+
+	var homepage string
+	if p.Homepage != nil {
+		homepage = *p.Homepage
 	}
 
 	repository := p.Repository
@@ -171,16 +184,16 @@ func indexPackage(p packages.Package, index *algoliasearch.Index) error {
 
 	searchEntry := SearchEntry{
 		Name:             *p.Name,
-		Filename:         *p.Filename,
+		Filename:         filename,
 		Description:      *p.Description,
 		Keywords:         p.Keywords,
 		AlternativeNames: getAlternativeNames(*p.Name),
-		FileType:         strings.ReplaceAll(filepath.Ext(*p.Filename), ".", ""),
+		FileType:         strings.ReplaceAll(filepath.Ext(filename), ".", ""),
 		Github:           github,
 		ObjectID:         *p.Name,
 		Version:          *p.Version,
 		License:          license,
-		Homepage:         *p.Homepage,
+		Homepage:         homepage,
 		Repository:       repository,
 		Author:           author,
 		OriginalName:     *p.Name,

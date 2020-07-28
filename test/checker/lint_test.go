@@ -76,7 +76,6 @@ func TestCheckerLint(t *testing.T) {
 			expected: []string{
 				ciError(file, "(root): autoupdate is required") +
 					ciError(file, "(root): description is required") +
-					ciError(file, "(root): filename is required") +
 					ciError(file, "(root): keywords is required") +
 					ciError(file, "(root): name is required") +
 					ciError(file, "(root): repository is required"),
@@ -121,6 +120,44 @@ func TestCheckerLint(t *testing.T) {
 		    }
 		}`,
 			expected: []string{ciError(file, "(root): Additional property version is not allowed")},
+		},
+
+		{
+			name: "warn if missing filename",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "https://github.com/` + popularRepo + `.git"
+		    },
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "git",
+		        "target": "https://github.com/` + popularRepo + `.git",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: []string{ciWarn(file, "filename is missing")},
 		},
 
 		{
