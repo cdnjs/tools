@@ -107,6 +107,18 @@ func parseAuthor(authors []Author) string {
 	return strings.Join(authorStrings, ",")
 }
 
+// ReadNonHumanPackageJSON parses a JSON file into a Package.
+// It will validate the non-human-readable schema, returning an
+// InvalidSchemaError if the schema is invalid.
+func ReadNonHumanPackageJSON(ctx context.Context, file string) (*Package, error) {
+	bytes, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read %s", file)
+	}
+
+	return ReadNonHumanPackageJSONBytes(ctx, file, bytes)
+}
+
 // ReadNonHumanPackageJSONBytes parses a JSON file as bytes into a Package.
 // It will validate the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.

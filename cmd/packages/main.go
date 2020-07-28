@@ -52,7 +52,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package)
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
-		p, err := packages.ReadHumanPackageJSON(ctx, f)
+		p, err := packages.ReadNonHumanPackageJSON(ctx, f)
 		if err != nil {
 			util.Printf(ctx, "error while processing package: %s\n", err)
 			results <- nil
