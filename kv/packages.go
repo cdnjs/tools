@@ -37,14 +37,10 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		return err
 	}
 
-	// push bytes to package.json file too
+	req := &writeRequest{
+		key:   *p.Name,
+		value: v,
+	}
 
-	// req := &writeRequest{
-	// 	key:   *p.Name,
-	// 	value: v,
-	// }
-
-	fmt.Printf("%s\n", v)
-	return nil
-	// return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID)
+	return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID)
 }

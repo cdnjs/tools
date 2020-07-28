@@ -141,10 +141,6 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					// WARNING:
-					//
-					// THIS WILL CURRENTLY FAIL BECAUSE PACKAGE.JSON IS NOT IN CORRECT FORMAT
-					// NEED TO FIRST REWRITE ALL EXISTING PACKAGE.JSON FILES FIRST USING kv.InsertMetadataFromDisk()
 					destpckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						pckg.Version = latestVersion
@@ -155,7 +151,7 @@ func main() {
 						// TODO:
 						// Later need to change ReadPackageJSON to read the kv.Package from KV.
 						// If the kv.Package does not exist, we will create one.
-						//		TODO: parse error from KV and ensure it is an `key not exist` error
+						//		(TODO: parse error from KV and ensure it is an `key not exist` error)
 						// Otherwise we will update the existing one's latest version.
 						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
 						if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
