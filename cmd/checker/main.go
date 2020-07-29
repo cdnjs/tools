@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -23,9 +24,14 @@ var (
 
 	// initialize checker debug logger
 	logger = util.GetCheckerLogger()
+
+	// regex for path in cdnjs/packages/
+	pckgPathRegex = regexp.MustCompile("^packages/([a-z0-9])/([a-zA-Z0-9._-]+).json$")
 )
 
 func main() {
+	var noPathValidation bool
+	flag.BoolVar(&noPathValidation, "no-path-validation", false, "If set, all package paths are accepted.")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -36,7 +42,7 @@ func main() {
 	case "lint":
 		{
 			for _, path := range flag.Args()[1:] {
-				lintPackage(path)
+				lintPackage(path, noPathValidation)
 			}
 
 			if errCount > 0 {
@@ -45,7 +51,7 @@ func main() {
 		}
 	case "show-files":
 		{
-			showFiles(flag.Arg(1))
+			showFiles(flag.Arg(1), noPathValidation)
 
 			if errCount > 0 {
 				os.Exit(1)
@@ -64,12 +70,12 @@ type version interface {
 	Clean(string)                   // Clean a download dir.
 }
 
-func showFiles(pckgPath string) {
+func showFiles(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	// parse *Package from JSON
-	pckg := parseHumanPackage(ctx, pckgPath)
+	pckg := parseHumanPackage(ctx, pckgPath, noPathValidation)
 	if pckg == nil {
 		return
 	}
@@ -153,9 +159,24 @@ func showFiles(pckgPath string) {
 
 // Try to parse a *Package, outputting ci errors/warnings.
 // If there is an issue, *Package will be nil.
-func parseHumanPackage(ctx context.Context, pckgPath string) *packages.Package {
-	// TODO: pckgPath needs to be validated against a regex to ensure the package is in the correct directory
-	// and has the correct file extension.
+func parseHumanPackage(ctx context.Context, pckgPath string, noPathValidation bool) *packages.Package {
+	if !noPathValidation {
+		// check package path matches regex
+		matches := pckgPathRegex.FindStringSubmatch(pckgPath)
+		if matches == nil {
+			err(ctx, fmt.Sprintf("package path `%s` does not match %s", pckgPath, pckgPathRegex.String()))
+			return nil
+		}
+
+		// check the package is going into the correct folder
+		// (ex. My-Package -> packages/m/My-Package.json)
+		actualDir, pckgName := matches[1], matches[2]
+		expectedDir := strings.ToLower(string(pckgName[0]))
+		if actualDir != expectedDir {
+			err(ctx, fmt.Sprintf("package `%s` must go into `%s` dir, not `%s` dir", pckgName, expectedDir, actualDir))
+			return nil
+		}
+	}
 
 	// parse package JSON
 	pckg, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)
@@ -266,14 +287,14 @@ func checkFilename(ctx context.Context, pckg *packages.Package) {
 	}
 }
 
-func lintPackage(pckgPath string) {
+func lintPackage(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
 	// parse *Package from JSON
-	pckg := parseHumanPackage(ctx, pckgPath)
+	pckg := parseHumanPackage(ctx, pckgPath, noPathValidation)
 	if pckg == nil {
 		return
 	}

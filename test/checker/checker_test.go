@@ -38,8 +38,13 @@ func createFakeBotPath() string {
 }
 
 // start a local proxy server and run the checker binary
-func runChecker(proxy string, args ...string) string {
+func runChecker(proxy string, validatePath bool, args ...string) string {
 	fakeBotPath := createFakeBotPath()
+
+	// used to avoid validating the package's path
+	if !validatePath {
+		args = append([]string{"-no-path-validation"}, args...)
+	}
 
 	cmd := exec.Command("../../bin/checker", args...)
 	cmd.Env = append(os.Environ(),
