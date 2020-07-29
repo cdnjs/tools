@@ -52,7 +52,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package)
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
-		p, err := packages.ReadNonHumanPackageJSON(ctx, f)
+		p, err := packages.ReadNonHumanJSONFile(ctx, f)
 		if err != nil {
 			util.Printf(ctx, "error while processing non-human-readable package: %s\n", err)
 			results <- nil
@@ -163,7 +163,7 @@ func validateHuman(pckgPath string, missingAuto, missingRepo bool) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgPath, logger)...)
 	var errs []string
 
-	_, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
+	_, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)
 	if readerr != nil {
 		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors

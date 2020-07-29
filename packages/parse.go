@@ -43,7 +43,7 @@ func GetHumanPackageJSONFiles(ctx context.Context) []string {
 // It will validate the human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
 func ReadHumanJSON(ctx context.Context, name string) (*Package, error) {
-	return readHumanJSONFile(ctx, path.Join(util.GetHumanPackagesPath(), strings.ToLower(string(name[0])), name+".json"))
+	return ReadHumanJSONFile(ctx, path.Join(util.GetHumanPackagesPath(), strings.ToLower(string(name[0])), name+".json"))
 }
 
 // ReadNonHumanJSON reads this package's non-human readable JSON.
@@ -54,13 +54,13 @@ func ReadHumanJSON(ctx context.Context, name string) (*Package, error) {
 //
 // UPDATE TO READ FROM KV.
 func ReadNonHumanJSON(ctx context.Context, name string) (*Package, error) {
-	return readNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), name, "package.json"))
+	return ReadNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), name, "package.json"))
 }
 
 // readHumanJSONFile parses a JSON file into a Package.
 // It will validate the human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
-func readHumanJSONFile(ctx context.Context, file string) (*Package, error) {
+func ReadHumanJSONFile(ctx context.Context, file string) (*Package, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
@@ -120,7 +120,7 @@ func parseAuthor(authors []Author) string {
 // readNonHumanJSONFile parses a JSON file into a Package.
 // It will validate the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
-func readNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
+func ReadNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
