@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -23,6 +24,9 @@ var (
 
 	// initialize checker debug logger
 	logger = util.GetCheckerLogger()
+
+	// regex for path in cdnjs/packages/
+	pckgPathRegex = regexp.MustCompile("^/packages/([a-z0-9])/([a-zA-Z0-9._-]+).json$")
 )
 
 func main() {
@@ -154,8 +158,21 @@ func showFiles(pckgPath string) {
 // Try to parse a *Package, outputting ci errors/warnings.
 // If there is an issue, *Package will be nil.
 func parseHumanPackage(ctx context.Context, pckgPath string) *packages.Package {
-	// TODO: pckgPath needs to be validated against a regex to ensure the package is in the correct directory
-	// and has the correct file extension.
+	// check package path matches regex
+	matches := pckgPathRegex.FindStringSubmatch(pckgPath)
+	if matches == nil {
+		err(ctx, fmt.Sprintf("package path `%s` does not match %s", pckgPath, pckgPathRegex.String()))
+		return nil
+	}
+
+	// check the package is going into the correct folder
+	// (ex. My-Package -> packages/m/My-Package.json)
+	actualDir, pckgName := matches[1], matches[2]
+	expectedDir := strings.ToLower(string(pckgName[0]))
+	if actualDir != expectedDir {
+		err(ctx, fmt.Sprintf("package `%s` must go into `%s` dir, not `%s` dir", pckgName, expectedDir, actualDir))
+		return nil
+	}
 
 	// parse package JSON
 	pckg, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)
