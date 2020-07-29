@@ -1,9 +1,7 @@
 package packages
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"os"
 	"path"
 	"sort"
@@ -66,17 +64,6 @@ type Package struct {
 	Author *string `json:"author,omitempty"`
 	// TODO: Remove this when we remove package.min.js generation
 	Assets []Asset `json:"assets,omitempty"`
-}
-
-// Marshal marshals the package into JSON, not escaping HTML characters.
-func (p *Package) Marshal() ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(p); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
 }
 
 // LibraryPath returns the location of the package in the cdnjs repo.
