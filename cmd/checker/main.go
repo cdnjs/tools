@@ -156,10 +156,10 @@ func showFiles(pckgPath string) {
 func parseHumanPackage(ctx context.Context, pckgPath string) *packages.Package {
 	// parse into pckgname here with regex
 
-	name := pckgPath
+	// name := pckgPath
 
 	// parse package JSON
-	pckg, readerr := packages.ReadHumanJSON(ctx, name)
+	pckg, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)
 	if readerr != nil {
 		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors

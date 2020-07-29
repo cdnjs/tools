@@ -16,7 +16,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadHumanJSON(ctx, pckgname)
+		pckg, readerr := packages.ReadNonHumanJSON(ctx, pckgname)
 		util.Check(readerr)
 
 		for _, version := range pckg.Versions() {
