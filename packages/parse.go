@@ -57,7 +57,7 @@ func ReadNonHumanJSON(ctx context.Context, name string) (*Package, error) {
 	return ReadNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), name, "package.json"))
 }
 
-// readHumanJSONFile parses a JSON file into a Package.
+// ReadHumanJSONFile parses a JSON file into a Package.
 // It will validate the human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
 func ReadHumanJSONFile(ctx context.Context, file string) (*Package, error) {
@@ -117,7 +117,7 @@ func parseAuthor(authors []Author) string {
 	return strings.Join(authorStrings, ",")
 }
 
-// readNonHumanJSONFile parses a JSON file into a Package.
+// ReadNonHumanJSONFile parses a JSON file into a Package.
 // It will validate the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
 func ReadNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
