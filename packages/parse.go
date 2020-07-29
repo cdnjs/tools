@@ -1,7 +1,6 @@
 package packages
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -31,18 +30,9 @@ func (i InvalidSchemaError) Error() string {
 	return strings.Join(errors, ",")
 }
 
-// Marshal marshals the package into JSON, not escaping HTML characters.
-func (p *Package) Marshal() ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(p); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
-}
-
 // GetHumanPackageJSONFiles gets the paths of the human-readable JSON files from within cdnjs/packages.
+//
+// TODO: update this to remove legacy ListFilesGlob, as well as just return package names.
 func GetHumanPackageJSONFiles(ctx context.Context) []string {
 	list, err := util.ListFilesGlob(ctx, util.GetHumanPackagesPath(), "*/*.json")
 	util.Check(err)
@@ -52,25 +42,19 @@ func GetHumanPackageJSONFiles(ctx context.Context) []string {
 // ReadHumanJSON reads this package's human-readable JSON from within cdnjs/packages.
 // It will validate the human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
-func (p *Package) ReadHumanJSON(ctx context.Context) (*Package, error) {
-	return readHumanJSONFile(ctx, path.Join(util.GetHumanPackagesPath(), strings.ToLower(string((*p.Name)[0])), *p.Name+".json"))
+func ReadHumanJSON(ctx context.Context, name string) (*Package, error) {
+	return readHumanJSONFile(ctx, path.Join(util.GetHumanPackagesPath(), strings.ToLower(string(name[0])), name+".json"))
 }
 
 // ReadNonHumanJSON reads this package's non-human readable JSON.
 // It will validate the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
-// TODO
+//
+// TODO:
 //
 // UPDATE TO READ FROM KV.
-func (p *Package) ReadNonHumanJSON(ctx context.Context) (*Package, error) {
-	return readNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), *p.Name, "package.json"))
-}
-
-// ReadNonHumanJSONBytes unmarshals bytes into a *Package,
-// validating against the non-human-readable schema, returning an
-// InvalidSchemaError if the schema is invalid.
-func (p *Package) ReadNonHumanJSONBytes(ctx context.Context, bytes []byte) (*Package, error) {
-	return readNonHumanJSONBytes(ctx, *p.Name, bytes)
+func ReadNonHumanJSON(ctx context.Context, name string) (*Package, error) {
+	return readNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), name, "package.json"))
 }
 
 // readHumanJSONFile parses a JSON file into a Package.
@@ -142,13 +126,13 @@ func readNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
 	}
 
-	return readNonHumanJSONBytes(ctx, file, bytes)
+	return ReadNonHumanJSONBytes(ctx, file, bytes)
 }
 
-// readNonHumanJSONBytes parses a JSON file as bytes into a Package.
-// It will validate the non-human-readable schema, returning an
+// ReadNonHumanJSONBytes unmarshals bytes into a *Package,
+// validating against the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
-func readNonHumanJSONBytes(ctx context.Context, name string, bytes []byte) (*Package, error) {
+func ReadNonHumanJSONBytes(ctx context.Context, name string, bytes []byte) (*Package, error) {
 	// validate the non-human readable JSON schema
 	res, err := NonHumanReadableSchema.Validate(gojsonschema.NewBytesLoader(bytes))
 	if err != nil {
