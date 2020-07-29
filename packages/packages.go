@@ -79,7 +79,7 @@ func (p *Package) Marshal() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// Path returns the location of the package in the cdnjs repo.
+// LibraryPath returns the location of the package in the cdnjs repo.
 func (p *Package) LibraryPath() string {
 	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
 }
