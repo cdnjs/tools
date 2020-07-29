@@ -154,9 +154,8 @@ func showFiles(pckgPath string) {
 // Try to parse a *Package, outputting ci errors/warnings.
 // If there is an issue, *Package will be nil.
 func parseHumanPackage(ctx context.Context, pckgPath string) *packages.Package {
-	// parse into pckgname here with regex
-
-	// name := pckgPath
+	// TODO: pckgPath needs to be validated against a regex to ensure the package is in the correct directory
+	// and has the correct file extension.
 
 	// parse package JSON
 	pckg, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)

@@ -32,7 +32,7 @@ func (i InvalidSchemaError) Error() string {
 
 // GetHumanPackageJSONFiles gets the paths of the human-readable JSON files from within cdnjs/packages.
 //
-// TODO: update this to remove legacy ListFilesGlob, as well as just return package names.
+// TODO: update this to remove legacy ListFilesGlob
 func GetHumanPackageJSONFiles(ctx context.Context) []string {
 	list, err := util.ListFilesGlob(ctx, util.GetHumanPackagesPath(), "*/*.json")
 	util.Check(err)
