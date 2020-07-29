@@ -1,7 +1,7 @@
 # Checker
 
 Tools for our CI.
-Pass `-any-path` to allow all package file paths to be accepted. Otherwise, the path will be validated against a regex.
+Pass `-no-path-validation` to allow all package file paths to be accepted. Otherwise, the path will be validated against a regex.
 
 ## `lint`
 
