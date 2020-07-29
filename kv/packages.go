@@ -21,7 +21,7 @@ func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 	return packages.ReadNonHumanPackageJSONBytes(ctx, key, bytes)
 }
 
-// Gets the request to update a package metadata entry in KV with a new version.
+// UpdateKVPackage gets the request to update a package metadata entry in KV with a new version.
 // Must have the `version` field by now.
 func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 	// marshal package into JSON
