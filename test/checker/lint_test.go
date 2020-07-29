@@ -15,6 +15,7 @@ type LintTestCase struct {
 	name         string
 	input        string
 	expected     []string
+	file         *string
 	validatePath bool
 }
 
@@ -67,7 +68,46 @@ func TestCheckerLint(t *testing.T) {
 		file          = "/tmp/input-lint.json"
 	)
 
+	var (
+		invalidPath             = "this/is/an/invalid/path.json"
+		invalidPathDir          = "packages/M/My-Package.json"
+		invalidPathExt          = "packages/m/My-Package.txt"
+		validPathButNonexistent = "packages/m/My-Package.json"
+	)
+
 	cases := []LintTestCase{
+		{
+			name:         "error when invalid path",
+			input:        ``,
+			validatePath: true,
+			file:         &invalidPath,
+			expected:     []string{ciError(invalidPath, "package path `"+invalidPath+"` does not match "+pckgPathRegex+"")},
+		},
+
+		{
+			name:         "error when invalid path dir",
+			input:        ``,
+			validatePath: true,
+			file:         &invalidPathDir,
+			expected:     []string{ciError(invalidPathDir, "package path `"+invalidPathDir+"` does not match "+pckgPathRegex+"")},
+		},
+
+		{
+			name:         "error when invalid path file extension",
+			input:        ``,
+			validatePath: true,
+			file:         &invalidPathExt,
+			expected:     []string{ciError(invalidPathExt, "package path `"+invalidPathExt+"` does not match "+pckgPathRegex+"")},
+		},
+
+		{
+			name:         "error when invalid path file extension",
+			input:        ``,
+			validatePath: true,
+			file:         &validPathButNonexistent,
+			expected:     []string{ciError(validPathButNonexistent, "failed to read "+validPathButNonexistent+": open "+validPathButNonexistent+": no such file or directory")},
+		},
+
 		{
 			name:     "error when invalid JSON",
 			input:    `{ "package":, }`,
@@ -383,14 +423,18 @@ func TestCheckerLint(t *testing.T) {
 
 		// since all tests share the same input, this needs to run sequentially
 		t.Run(tc.name, func(t *testing.T) {
+			pkgFile := file
+			if tc.file != nil {
+				pkgFile = *tc.file
+			} else {
+				err := ioutil.WriteFile(pkgFile, []byte(tc.input), 0644)
+				assert.Nil(t, err)
+			}
 
-			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
-			assert.Nil(t, err)
-
-			out := runChecker(httpTestProxy, tc.validatePath, "lint", file)
+			out := runChecker(httpTestProxy, tc.validatePath, "lint", pkgFile)
 			assert.Contains(t, tc.expected, out)
 
-			os.Remove(file)
+			os.Remove(pkgFile)
 		})
 	}
 

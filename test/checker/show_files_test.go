@@ -33,6 +33,7 @@ type ShowFilesTestCase struct {
 	input        string
 	expected     string
 	validatePath bool
+	file         *string
 }
 
 func addTarFile(tw *tar.Writer, path string, content string) error {
@@ -468,13 +469,18 @@ most recent version: 2.0.0
 
 		// since all tests share the same input, this needs to run sequentially
 		t.Run(tc.name, func(t *testing.T) {
-			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
-			assert.Nil(t, err)
+			pkgFile := file
+			if tc.file != nil {
+				pkgFile = *tc.file
+			} else {
+				err := ioutil.WriteFile(pkgFile, []byte(tc.input), 0644)
+				assert.Nil(t, err)
+			}
 
-			out := runChecker(httpTestProxy, tc.validatePath, "show-files", file)
+			out := runChecker(httpTestProxy, tc.validatePath, "show-files", pkgFile)
 			assert.Equal(t, tc.expected, "\n"+out)
 
-			os.Remove(file)
+			os.Remove(pkgFile)
 		})
 	}
 
