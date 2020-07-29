@@ -90,7 +90,7 @@ func main() {
 		default:
 		}
 
-		pckg, err := packages.ReadHumanPackageJSON(ctx, path.Join(packagesPath, f))
+		pckg, err := packages.ReadHumanJSONFile(ctx, path.Join(packagesPath, f))
 		if err != nil {
 			if invalidHumanErr, ok := err.(packages.InvalidSchemaError); ok {
 				for _, resErr := range invalidHumanErr.Result.Errors() {
@@ -141,7 +141,7 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					destpckg, err := packages.ReadNonHumanPackageJSON(ctx, path.Join(pckg.LibraryPath(), "package.json"))
+					destpckg, err := packages.ReadNonHumanJSON(ctx, *pckg.Name)
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						pckg.Version = latestVersion
 
@@ -205,7 +205,7 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJS
 	util.Check(err)
 
 	// enforce schema when writing non-human package JSON
-	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *pckg.Name, bytes)
+	_, err = packages.ReadNonHumanJSONBytes(ctx, *pckg.Name, bytes)
 	util.Check(err)
 
 	// open and write to package.json file

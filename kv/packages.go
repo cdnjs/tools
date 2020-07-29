@@ -18,7 +18,7 @@ func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 	}
 
 	// enforce schema when reading non-human package JSON
-	return packages.ReadNonHumanPackageJSONBytes(ctx, key, bytes)
+	return packages.ReadNonHumanJSONBytes(ctx, key, bytes)
 }
 
 // UpdateKVPackage gets the request to update a package metadata entry in KV with a new version.
@@ -32,7 +32,7 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 
 	fmt.Printf("Enforcing schema for: %s\n", v)
 	// enforce schema when writing non-human package JSON
-	_, err = packages.ReadNonHumanPackageJSONBytes(ctx, *p.Name, v)
+	_, err = packages.ReadNonHumanJSONBytes(ctx, *p.Name, v)
 	if err != nil {
 		return err
 	}

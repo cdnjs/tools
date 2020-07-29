@@ -68,21 +68,11 @@ func showFiles(pckgPath string) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
-	// parse package JSON
-	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
-	if readerr != nil {
-		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
-			// output all schema errors
-			for _, resErr := range invalidHumanErr.Result.Errors() {
-				err(ctx, resErr.String())
-			}
-		} else {
-			err(ctx, readerr.Error())
-		}
+	// parse *Package from JSON
+	pckg := parseHumanPackage(ctx, pckgPath)
+	if pckg == nil {
 		return
 	}
-
-	checkFilename(ctx, pckg)
 
 	// autoupdate exists, download latest versions based on source
 	src := *pckg.Autoupdate.Source
@@ -159,6 +149,30 @@ func showFiles(pckgPath string) {
 
 	// print aggregate info for the few last src versions
 	printLastVersions(ctx, pckg, downloadDir, versions[1:])
+}
+
+// Try to parse a *Package, outputting ci errors/warnings.
+// If there is an issue, *Package will be nil.
+func parseHumanPackage(ctx context.Context, pckgPath string) *packages.Package {
+	// TODO: pckgPath needs to be validated against a regex to ensure the package is in the correct directory
+	// and has the correct file extension.
+
+	// parse package JSON
+	pckg, readerr := packages.ReadHumanJSONFile(ctx, pckgPath)
+	if readerr != nil {
+		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
+			// output all schema errors
+			for _, resErr := range invalidHumanErr.Result.Errors() {
+				err(ctx, resErr.String())
+			}
+		} else {
+			err(ctx, readerr.Error())
+		}
+		return nil
+	}
+
+	checkFilename(ctx, pckg)
+	return pckg
 }
 
 // Prints the files of a package version, outputting debug
@@ -258,20 +272,11 @@ func lintPackage(pckgPath string) {
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
-	pckg, readerr := packages.ReadHumanPackageJSON(ctx, pckgPath)
-	if readerr != nil {
-		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
-			// output all schema errors
-			for _, resErr := range invalidHumanErr.Result.Errors() {
-				err(ctx, resErr.String())
-			}
-		} else {
-			err(ctx, readerr.Error())
-		}
+	// parse *Package from JSON
+	pckg := parseHumanPackage(ctx, pckgPath)
+	if pckg == nil {
 		return
 	}
-
-	checkFilename(ctx, pckg)
 
 	switch *pckg.Autoupdate.Source {
 	case "npm":
