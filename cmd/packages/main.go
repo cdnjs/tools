@@ -54,13 +54,7 @@ func generatePackageWorker(jobs <-chan string, results chan<- *packages.Package)
 
 		p, err := packages.ReadNonHumanPackageJSON(ctx, f)
 		if err != nil {
-			util.Printf(ctx, "error while processing package: %s\n", err)
-			results <- nil
-			return
-		}
-
-		if p.Version == nil || *p.Version == "" {
-			util.Printf(ctx, "version is invalid\n")
+			util.Printf(ctx, "error while processing non-human-readable package: %s\n", err)
 			results <- nil
 			return
 		}
