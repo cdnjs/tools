@@ -96,12 +96,11 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 			continue
 		}
 
-		util.Check(os.MkdirAll(pckgpath, os.ModePerm))
-
 		tarballDir := npm.DownloadTar(ctx, version.Tarball)
 		filesToCopy := pckg.NpmFilesFrom(tarballDir)
 
 		if len(filesToCopy) > 0 {
+			util.Check(os.MkdirAll(pckgpath, os.ModePerm))
 			for _, fileMoveOp := range filesToCopy {
 				absFrom := path.Join(tarballDir, fileMoveOp.From)
 				absDest := path.Join(pckgpath, fileMoveOp.To)
