@@ -12,9 +12,10 @@ import (
 )
 
 type LintTestCase struct {
-	name     string
-	input    string
-	expected []string
+	name         string
+	input        string
+	expected     []string
+	validatePath bool
 }
 
 const (
@@ -60,8 +61,11 @@ func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestCheckerLint(t *testing.T) {
-	const httpTestProxy = "localhost:8667"
-	const file = "/tmp/input-lint.json"
+	const (
+		pckgPathRegex = "^packages/([a-z0-9])/([a-zA-Z0-9._-]+).json$"
+		httpTestProxy = "localhost:8667"
+		file          = "/tmp/input-lint.json"
+	)
 
 	cases := []LintTestCase{
 		{
@@ -383,7 +387,7 @@ func TestCheckerLint(t *testing.T) {
 			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker(httpTestProxy, "lint", file)
+			out := runChecker(httpTestProxy, tc.validatePath, "lint", file)
 			assert.Contains(t, tc.expected, out)
 
 			os.Remove(file)

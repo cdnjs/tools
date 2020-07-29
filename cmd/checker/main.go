@@ -30,8 +30,8 @@ var (
 )
 
 func main() {
-	var anyPath bool
-	flag.BoolVar(&anyPath, "any-path", false, "If set, all package paths are accepted.")
+	var noPathValidation bool
+	flag.BoolVar(&noPathValidation, "no-path-validation", false, "If set, all package paths are accepted.")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -42,7 +42,7 @@ func main() {
 	case "lint":
 		{
 			for _, path := range flag.Args()[1:] {
-				lintPackage(path, anyPath)
+				lintPackage(path, noPathValidation)
 			}
 
 			if errCount > 0 {
@@ -51,7 +51,7 @@ func main() {
 		}
 	case "show-files":
 		{
-			showFiles(flag.Arg(1), anyPath)
+			showFiles(flag.Arg(1), noPathValidation)
 
 			if errCount > 0 {
 				os.Exit(1)
@@ -70,12 +70,12 @@ type version interface {
 	Clean(string)                   // Clean a download dir.
 }
 
-func showFiles(pckgPath string, anyPath bool) {
+func showFiles(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	// parse *Package from JSON
-	pckg := parseHumanPackage(ctx, pckgPath, anyPath)
+	pckg := parseHumanPackage(ctx, pckgPath, noPathValidation)
 	if pckg == nil {
 		return
 	}
@@ -159,8 +159,8 @@ func showFiles(pckgPath string, anyPath bool) {
 
 // Try to parse a *Package, outputting ci errors/warnings.
 // If there is an issue, *Package will be nil.
-func parseHumanPackage(ctx context.Context, pckgPath string, anyPath bool) *packages.Package {
-	if !anyPath {
+func parseHumanPackage(ctx context.Context, pckgPath string, noPathValidation bool) *packages.Package {
+	if !noPathValidation {
 		// check package path matches regex
 		matches := pckgPathRegex.FindStringSubmatch(pckgPath)
 		if matches == nil {
@@ -287,14 +287,14 @@ func checkFilename(ctx context.Context, pckg *packages.Package) {
 	}
 }
 
-func lintPackage(pckgPath string, anyPath bool) {
+func lintPackage(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
 	// parse *Package from JSON
-	pckg := parseHumanPackage(ctx, pckgPath, anyPath)
+	pckg := parseHumanPackage(ctx, pckgPath, noPathValidation)
 	if pckg == nil {
 		return
 	}

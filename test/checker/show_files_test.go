@@ -29,9 +29,10 @@ const (
 )
 
 type ShowFilesTestCase struct {
-	name     string
-	input    string
-	expected string
+	name         string
+	input        string
+	expected     string
+	validatePath bool
 }
 
 func addTarFile(tw *tar.Writer, path string, content string) error {
@@ -470,7 +471,7 @@ most recent version: 2.0.0
 			err := ioutil.WriteFile(file, []byte(tc.input), 0644)
 			assert.Nil(t, err)
 
-			out := runChecker(httpTestProxy, "show-files", file)
+			out := runChecker(httpTestProxy, tc.validatePath, "show-files", file)
 			assert.Equal(t, tc.expected, "\n"+out)
 
 			os.Remove(file)
