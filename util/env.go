@@ -6,11 +6,6 @@ import (
 	"path"
 )
 
-const (
-	// SRIPath is the path to the directory where calculated SRIs are stored.
-	SRIPath = "../SRIs"
-)
-
 // GetEnv gets an environment variable, panicking if it is nonexistent.
 func GetEnv(name string) string {
 	if v, ok := os.LookupEnv(name); ok {
@@ -44,6 +39,11 @@ func GetCDNJSPath() string {
 // GetHumanPackagesPath gets the path to the cdnjs/packages repo.
 func GetHumanPackagesPath() string {
 	return path.Join(GetBotBasePath(), "packages", "packages")
+}
+
+// GetSRIsPath gets the path to the cdnjs/SRIs repo.
+func GetSRIsPath() string {
+	return path.Join(GetBotBasePath(), "SRIs")
 }
 
 // GetCDNJSLibrariesPath gets the path to the cdnjs libraries.
