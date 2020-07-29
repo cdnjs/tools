@@ -125,7 +125,7 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 }
 
 func getSRI(p *packages.Package) (string, error) {
-	jsonFile := path.Join(util.SRIPath, *p.Name, *p.Version+".json")
+	jsonFile := path.Join(util.GetSRIsPath(), *p.Name, *p.Version+".json")
 
 	var j map[string]interface{}
 

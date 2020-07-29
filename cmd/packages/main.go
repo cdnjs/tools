@@ -192,13 +192,13 @@ func validateHuman(pckgPath string, missingAuto, missingRepo bool) {
 }
 
 func hasSRI(p *packages.Package, version string) bool {
-	sriPath := path.Join(util.SRIPath, *p.Name, version+".json")
+	sriPath := path.Join(util.GetSRIsPath(), *p.Name, version+".json")
 	_, statErr := os.Stat(sriPath)
 	return !os.IsNotExist(statErr)
 }
 
 func writeSRIJSON(p *packages.Package, version string, content []byte) {
-	sriDir := path.Join(util.SRIPath, *p.Name)
+	sriDir := path.Join(util.GetSRIsPath(), *p.Name)
 	if _, err := os.Stat(sriDir); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(sriDir, 0777))
 	}
