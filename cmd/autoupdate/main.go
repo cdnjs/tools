@@ -197,24 +197,19 @@ func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 		panic(fmt.Sprintf("KV version `%s` contains no assets", pckg.LatestVersionKVKey()))
 	}
 
-	var filename string
 	if pckg.Filename != nil {
 		// check if assets contains filename
-		filename = *pckg.Filename
+		filename := *pckg.Filename
 		for _, asset := range assets {
 			if asset == filename {
 				return // filename included in latest version, so return
 			}
 		}
-	} else {
-		// filename does not exist, so we will try to find
-		// the closest asset to the package's name
-		filename = *pckg.Name
-	}
 
-	// set filename to be the most similar string in []assets
-	mostSimilar := getMostSimilarFilename(filename, assets)
-	pckg.Filename = &mostSimilar
+		// set filename to be the most similar string in []assets
+		mostSimilar := getMostSimilarFilename(filename, assets)
+		pckg.Filename = &mostSimilar
+	}
 }
 
 // Gets the most similar filename to a target filename.
