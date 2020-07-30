@@ -27,32 +27,57 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 	}
 }
 
-// OutputAllMeta is a helper tool to output all metadata associated with a package.
-func OutputAllMeta(logger *log.Logger, pckgname string) {
-	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
+// OutputAllFiles outputs all files stored in KV for a particular package.
+func OutputAllFiles(logger *log.Logger, pckgName string) {
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+
+	// output all file names for each version in KV
+	if versions, err := GetVersions(pckgName); err != nil {
+		util.Infof(ctx, "Failed to get versions: %s\n", err)
+	} else {
+		for i, v := range versions {
+			if files, err := GetFiles(path.Join(pckgName, v)); err != nil {
+				util.Infof(ctx, "(%d/%d) Failed to get version: %s\n", i+1, len(versions), err)
+			} else {
+				var output string
+				if len(files) > 25 {
+					output = fmt.Sprintf("(%d files)", len(files))
+				} else {
+					output = fmt.Sprintf("%v", files)
+				}
+				util.Infof(ctx, "(%d/%d) Found %s: %s\n", i+1, len(versions), v, output)
+			}
+		}
+	}
+
+}
+
+// OutputAllMeta outputs all metadata associated with a package.
+func OutputAllMeta(logger *log.Logger, pckgName string) {
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 
 	// output package metadata
-	if pckg, err := GetPackage(ctx, pckgname); err != nil {
+	if pckg, err := GetPackage(ctx, pckgName); err != nil {
 		util.Infof(ctx, "Failed to get package meta: %s\n", err)
 	} else {
 		util.Infof(ctx, "Parsed package: %s\n", pckg)
 	}
 
 	// output versions metadata
-	if versions, err := GetVersions(pckgname); err != nil {
+	if versions, err := GetVersions(pckgName); err != nil {
 		util.Infof(ctx, "Failed to get versions: %s\n", err)
 	} else {
 		for i, v := range versions {
-			if version, err := GetVersion(ctx, v); err != nil {
+			if assets, err := GetVersion(ctx, v); err != nil {
 				util.Infof(ctx, "(%d/%d) Failed to get version: %s\n", i+1, len(versions), err)
 			} else {
 				var output string
-				if len(version) > 25 {
-					output = fmt.Sprintf("(%d assets)", len(version))
+				if len(assets) > 25 {
+					output = fmt.Sprintf("(%d assets)", len(assets))
 				} else {
-					output = fmt.Sprintf("%v", version)
+					output = fmt.Sprintf("%v", assets)
 				}
-				util.Infof(ctx, "(%d/%d) Parsed %s: %s\n", i+1, len(versions), v, output)
+				util.Infof(ctx, "(%d/%d) Parsed %s: %s\n", i+1, len(assets), v, output)
 			}
 		}
 	}
