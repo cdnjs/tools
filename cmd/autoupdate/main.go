@@ -186,8 +186,9 @@ func main() {
 	}
 }
 
-// update the package's filename if the latest
+// Update the package's filename if the latest
 // version does not contain the filename
+// Note that if the filename is nil it will stay nil.
 func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 	// can do this safely since the latest version will be pushed to KV by now
 	assets, err := kv.GetVersion(ctx, pckg.LatestVersionKVKey())
