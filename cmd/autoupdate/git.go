@@ -82,7 +82,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	} else {
 		if len(existingVersionSet) > 0 {
 			// all existing versions are not on git anymore
-			util.Debugf(ctx, "all existing versions not on git: %s", *pckg.Name)
+			util.Debugf(ctx, "all existing versions not on git: %s\n", *pckg.Name)
 		}
 		// Import all the versions since we have none locally.
 		// Limit the number of version to an arbitrary number to avoid publishing

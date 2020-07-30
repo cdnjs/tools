@@ -48,7 +48,7 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	} else {
 		if len(existingVersionSet) > 0 {
 			// all existing versions are not on npm anymore
-			util.Debugf(ctx, "all existing versions not on npm: %s", pckg.Name)
+			util.Debugf(ctx, "all existing versions not on npm: %s\n", *pckg.Name)
 		}
 		// Import all the versions since we have no current npm versions locally.
 		// Limit the number of version to an arbitrary number to avoid publishing
