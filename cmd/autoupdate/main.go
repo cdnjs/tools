@@ -131,9 +131,7 @@ func main() {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
 				packages.GitPush(ctx, cdnjsPath)
-				if !util.IsKVDisabled() {
-					writeNewVersionsToKV(ctx, newVersionsToCommit)
-				}
+				writeNewVersionsToKV(ctx, newVersionsToCommit)
 			}
 			if len(allVersions) > 0 {
 				latestVersion := getLatestStableVersion(allVersions)

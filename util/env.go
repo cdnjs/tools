@@ -64,8 +64,3 @@ func GetProtocol() string {
 	}
 	return "https"
 }
-
-// IsKVDisabled determines if writes to KV are disabled.
-func IsKVDisabled() bool {
-	return EnvExists("DISABLE_KV")
-}
