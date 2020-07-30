@@ -28,6 +28,12 @@ var (
 	}
 )
 
+// GetFiles gets the list of KV file keys for a particular package.
+// The `key` must be the package/version (ex. `a-happy-tyler/1.0.0`)
+func GetFiles(key string) ([]string, error) {
+	return ListByPrefix(key+"/", filesNamespaceID)
+}
+
 // Gets the requests to update a number of files in KV.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
@@ -67,15 +73,13 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 			LastModified: lastModifiedStr,
 		}
 
-		// TODO: Stop pushing uncompressed for all files when Worker is fixed.
-		kvs = append(kvs, &writeRequest{
-			key:   baseFileKey,
-			value: bytes,
-			meta:  meta,
-		})
-
 		if _, ok := doNotCompress[ext]; ok {
 			// will only insert uncompressed to KV
+			kvs = append(kvs, &writeRequest{
+				key:   baseFileKey,
+				value: bytes,
+				meta:  meta,
+			})
 			continue
 		}
 

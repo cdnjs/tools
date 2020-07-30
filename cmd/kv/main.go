@@ -31,6 +31,15 @@ func main() {
 
 			kv.InsertFromDisk(logger, pckgs)
 		}
+	case "files":
+		{
+			pckg := flag.Arg(1)
+			if pckg == "" {
+				panic("no package specified")
+			}
+
+			kv.OutputAllFiles(logger, pckg)
+		}
 	case "meta":
 		{
 			pckg := flag.Arg(1)
