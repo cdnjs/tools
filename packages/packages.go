@@ -88,6 +88,11 @@ func (p *Package) Marshal() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+// LatestVersionKVKey gets the key needed to get the latest KV version metadata.
+func (p *Package) LatestVersionKVKey() string {
+	return path.Join(*p.Name, *p.Version)
+}
+
 // LibraryPath returns the location of the package in the cdnjs repo.
 func (p *Package) LibraryPath() string {
 	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
