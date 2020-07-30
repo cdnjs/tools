@@ -49,7 +49,6 @@ func OutputAllFiles(logger *log.Logger, pckgName string) {
 			}
 		}
 	}
-
 }
 
 // OutputAllMeta outputs all metadata associated with a package.

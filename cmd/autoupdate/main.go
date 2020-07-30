@@ -4,12 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"path"
 	"syscall"
 	"time"
 
+	"github.com/agnivade/levenshtein"
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/kv"
@@ -170,17 +172,59 @@ func main() {
 					}
 
 					pckg.Version = latestVersion
+					updateFilenameIfMissing(ctx, pckg)
 
 					commitPackageVersion(ctx, pckg, f)
 					packages.GitPush(ctx, cdnjsPath)
 
 					if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
-						sentry.NotifyError(fmt.Errorf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
+						panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
 					}
 				}
 			}
 		}
 	}
+}
+
+// Update the package's filename if the latest
+// version does not contain the filename
+// Note that if the filename is nil it will stay nil.
+func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
+	// can do this safely since the latest version will be pushed to KV by now
+	assets, err := kv.GetVersion(ctx, pckg.LatestVersionKVKey())
+	util.Check(err)
+
+	if len(assets) == 0 {
+		panic(fmt.Sprintf("KV version `%s` contains no assets", pckg.LatestVersionKVKey()))
+	}
+
+	if pckg.Filename != nil {
+		// check if assets contains filename
+		filename := *pckg.Filename
+		for _, asset := range assets {
+			if asset == filename {
+				return // filename included in latest version, so return
+			}
+		}
+
+		// set filename to be the most similar string in []assets
+		mostSimilar := getMostSimilarFilename(filename, assets)
+		pckg.Filename = &mostSimilar
+	}
+}
+
+// Gets the most similar filename to a target filename.
+// The []string of alternatives must have at least one element.
+func getMostSimilarFilename(target string, filenames []string) string {
+	var mostSimilar string
+	var minDist int = math.MaxInt32
+	for _, f := range filenames {
+		if dist := levenshtein.ComputeDistance(target, f); dist < minDist {
+			mostSimilar = f
+			minDist = dist
+		}
+	}
+	return mostSimilar
 }
 
 // Gets the latest stable version by time stamp. A  "stable" version is
@@ -261,7 +305,7 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
 		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
-			sentry.NotifyError(fmt.Errorf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
+			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
 	}
 }

@@ -5,6 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.53.0 // indirect
 	cloud.google.com/go/storage v1.5.0
+	github.com/agnivade/levenshtein v1.1.0
 	github.com/algolia/algoliasearch-client-go/v3 v3.4.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cloudflare/cloudflare-go v0.12.1
