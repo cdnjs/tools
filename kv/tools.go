@@ -36,7 +36,7 @@ func OutputAllFiles(logger *log.Logger, pckgName string) {
 		util.Infof(ctx, "Failed to get versions: %s\n", err)
 	} else {
 		for i, v := range versions {
-			if files, err := GetFiles(path.Join(pckgName, v)); err != nil {
+			if files, err := GetFiles(v); err != nil {
 				util.Infof(ctx, "(%d/%d) Failed to get version: %s\n", i+1, len(versions), err)
 			} else {
 				var output string
@@ -77,7 +77,7 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 				} else {
 					output = fmt.Sprintf("%v", assets)
 				}
-				util.Infof(ctx, "(%d/%d) Parsed %s: %s\n", i+1, len(assets), v, output)
+				util.Infof(ctx, "(%d/%d) Parsed %s: %s\n", i+1, len(versions), v, output)
 			}
 		}
 	}
