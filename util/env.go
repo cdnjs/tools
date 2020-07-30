@@ -46,6 +46,11 @@ func GetSRIsPath() string {
 	return path.Join(GetBotBasePath(), "SRIs")
 }
 
+// GetLogsPath gets the path to the cdnjs/logs repo.
+func GetLogsPath() string {
+	return path.Join(GetBotBasePath(), "logs", "logs")
+}
+
 // GetCDNJSLibrariesPath gets the path to the cdnjs libraries.
 func GetCDNJSLibrariesPath() string {
 	return path.Join(GetCDNJSPath(), "ajax", "libs")
