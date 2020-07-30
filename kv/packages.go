@@ -8,11 +8,12 @@ import (
 )
 
 // GetPackage gets the package metadata from KV.
-//
-// TODO:
-// - currently unused, will eventually replace reading `package.json` files from disk
+// It will validate against the non-human-readable schema, returning
+// a packages.InvalidSchemaError if the schema is invalid, a KeyNotFoundError
+// if the KV key is not found, and an AuthError if there is an authentication error.
 func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 	bytes, err := Read(key, packagesNamespaceID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,6 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
 	}
 
-	fmt.Printf("Enforcing schema for: %s\n", v)
 	// enforce schema when writing non-human package JSON
 	_, err = packages.ReadNonHumanJSONBytes(ctx, *p.Name, v)
 	if err != nil {

@@ -131,32 +131,51 @@ func main() {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
 				packages.GitPush(ctx, cdnjsPath)
-				if !util.IsKVDisabled() {
-					writeNewVersionsToKV(ctx, newVersionsToCommit)
-				}
+				writeNewVersionsToKV(ctx, newVersionsToCommit)
 			}
 			if len(allVersions) > 0 {
 				latestVersion := getLatestStableVersion(allVersions)
+
 				if latestVersion == nil {
 					latestVersion = getLatestVersion(allVersions)
 				}
+
 				if latestVersion != nil {
-					destpckg, err := packages.ReadNonHumanJSON(ctx, *pckg.Name)
-					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
-						pckg.Version = latestVersion
-
-						commitPackageVersion(ctx, pckg, f)
-						packages.GitPush(ctx, cdnjsPath)
-
-						// TODO:
-						// Later need to change ReadPackageJSON to read the kv.Package from KV.
-						// If the kv.Package does not exist, we will create one.
-						//		(TODO: parse error from KV and ensure it is an `key not exist` error)
-						// Otherwise we will update the existing one's latest version.
-						// This kv.Package will then be passed to the kv.UpdateKVPackage function directly.
-						if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
-							util.Debugf(ctx, "failed to update KV package metadata: %s\n", err)
+					destpckg, err := kv.GetPackage(ctx, *pckg.Name)
+					if err != nil {
+						// check for errors
+						// Note: currently panicking on unhandled errors, including AuthError
+						switch e := err.(type) {
+						case kv.KeyNotFoundError:
+							{
+								// key not found (new package)
+								util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
+							}
+						case packages.InvalidSchemaError:
+							{
+								// invalid schema found
+								// this should not occur, so log in sentry
+								// and rewrite the key so it follows the JSON schema
+								sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
+							}
+						default:
+							{
+								// unhandled error occurred
+								panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
+							}
 						}
+					} else if destpckg.Version != nil && *destpckg.Version == *latestVersion {
+						// latest version is already in KV, no need to update
+						continue
+					}
+
+					pckg.Version = latestVersion
+
+					commitPackageVersion(ctx, pckg, f)
+					packages.GitPush(ctx, cdnjsPath)
+
+					if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
+						sentry.NotifyError(fmt.Errorf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
 					}
 				}
 			}
@@ -242,7 +261,7 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
 		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
-			sentry.NotifyError(fmt.Errorf("kv write %s: %s", path.Join(pkg, version), err.Error()))
+			sentry.NotifyError(fmt.Errorf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
 	}
 }

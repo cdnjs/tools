@@ -101,7 +101,7 @@ func TestCheckerLint(t *testing.T) {
 		},
 
 		{
-			name:         "error when invalid path file extension",
+			name:         "valid path but nonexistent file",
 			input:        ``,
 			validatePath: true,
 			file:         &validPathButNonexistent,

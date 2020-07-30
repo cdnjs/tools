@@ -57,7 +57,10 @@ func HasHTTPProxy() bool {
 	return EnvExists("HTTP_PROXY")
 }
 
-// IsKVDisabled determines if writes to KV are disabled.
-func IsKVDisabled() bool {
-	return EnvExists("DISABLE_KV")
+// GetProtocol gets the protocol, either http or https.
+func GetProtocol() string {
+	if HasHTTPProxy() {
+		return "http"
+	}
+	return "https"
 }

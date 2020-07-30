@@ -1,6 +1,8 @@
 package packages
 
 import (
+	"strings"
+
 	"github.com/cdnjs/tools/util"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -15,6 +17,21 @@ var (
 	// This depends on HumanReadableSchema so that the unit tests can be shared.
 	NonHumanReadableSchema = initNonHumanReadableSchema()
 )
+
+// InvalidSchemaError represents a schema error
+// for a human-readable package.
+type InvalidSchemaError struct {
+	Result *gojsonschema.Result
+}
+
+// Error is used to satisfy the error interface.
+func (i InvalidSchemaError) Error() string {
+	var errors []string
+	for _, resErr := range i.Result.Errors() {
+		errors = append(errors, resErr.String())
+	}
+	return strings.Join(errors, ",")
+}
 
 func initHumanReadableSchema() *gojsonschema.Schema {
 	s, err := gojsonschema.NewSchema(gojsonschema.NewStringLoader(HumanReadableSchemaString))

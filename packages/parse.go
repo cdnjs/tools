@@ -15,21 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// InvalidSchemaError represents a schema error
-// for a human-readable package.
-type InvalidSchemaError struct {
-	Result *gojsonschema.Result
-}
-
-// Error is used to satisfy the error interface.
-func (i InvalidSchemaError) Error() string {
-	var errors []string
-	for _, resErr := range i.Result.Errors() {
-		errors = append(errors, resErr.String())
-	}
-	return strings.Join(errors, ",")
-}
-
 // GetHumanPackageJSONFiles gets the paths of the human-readable JSON files from within cdnjs/packages.
 //
 // TODO: update this to remove legacy ListFilesGlob
@@ -44,17 +29,6 @@ func GetHumanPackageJSONFiles(ctx context.Context) []string {
 // InvalidSchemaError if the schema is invalid.
 func ReadHumanJSON(ctx context.Context, name string) (*Package, error) {
 	return ReadHumanJSONFile(ctx, path.Join(util.GetHumanPackagesPath(), strings.ToLower(string(name[0])), name+".json"))
-}
-
-// ReadNonHumanJSON reads this package's non-human readable JSON.
-// It will validate the non-human-readable schema, returning an
-// InvalidSchemaError if the schema is invalid.
-//
-// TODO:
-//
-// UPDATE TO READ FROM KV.
-func ReadNonHumanJSON(ctx context.Context, name string) (*Package, error) {
-	return ReadNonHumanJSONFile(ctx, path.Join(util.GetCDNJSLibrariesPath(), name, "package.json"))
 }
 
 // ReadHumanJSONFile parses a JSON file into a Package.
@@ -100,26 +74,12 @@ func readHumanJSONBytes(ctx context.Context, file string, bytes []byte) (*Packag
 	return &p, nil
 }
 
-// If `authors` exists, we need to parse `author` field
-// for legacy compatibility with API.
-func parseAuthor(authors []Author) string {
-	var authorStrings []string
-	for _, author := range authors {
-		authorString := *author.Name
-		if author.Email != nil {
-			authorString += fmt.Sprintf(" <%s>", *author.Email)
-		}
-		if author.URL != nil {
-			authorString += fmt.Sprintf(" (%s)", *author.URL)
-		}
-		authorStrings = append(authorStrings, authorString)
-	}
-	return strings.Join(authorStrings, ",")
-}
-
 // ReadNonHumanJSONFile parses a JSON file into a Package.
 // It will validate the non-human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
+//
+// TODO: THIS IS LEGACY FOR PACKAGE.MIN.JS GENERATION.
+// REMOVE WHEN PACKAGE.MIN.JS IS GONE.
 func ReadNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -168,4 +128,21 @@ func ReadNonHumanJSONBytes(ctx context.Context, name string, bytes []byte) (*Pac
 
 	p.ctx = ctx
 	return &p, nil
+}
+
+// If `authors` exists, we need to parse `author` field
+// for legacy compatibility with API.
+func parseAuthor(authors []Author) string {
+	var authorStrings []string
+	for _, author := range authors {
+		authorString := *author.Name
+		if author.Email != nil {
+			authorString += fmt.Sprintf(" <%s>", *author.Email)
+		}
+		if author.URL != nil {
+			authorString += fmt.Sprintf(" (%s)", *author.URL)
+		}
+		authorStrings = append(authorStrings, authorString)
+	}
+	return strings.Join(authorStrings, ",")
 }

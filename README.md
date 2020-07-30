@@ -15,7 +15,6 @@ Repository that contains various tools for maintaining cdnjs.
 - `DEBUG`: pass true to run in debug mode
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
-- `DISABLE_KV` set to disable writes to workers KV
 - `WORKERS_KV_FILES_NAMESPACE_ID` workers kv namespace ID for files
 - `WORKERS_KV_VERSIONS_NAMESPACE_ID` workers kv namespace ID containing metadata for versions
 - `WORKERS_KV_PACKAGES_NAMESPACE_ID` workers kv namespace ID containing metadata for packages
@@ -35,6 +34,7 @@ In `tools/` run `npm install`.
 All the tools uses `BOT_BASE_PATH` to define a "cdnjs home".
 
 We are going to create the home at `/tmp/cdnjs` and do the following in the directory:
+
 - `git clone https://github.com/cdnjs/packages.git`
 - `git clone https://github.com/cdnjs/glob.git`
 - `mkdir -p /tmp/cdnjs/cdnjs/ajax/libs` (fake the cdnjs/cdnjs repo)

@@ -5,10 +5,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 	cloudflare "github.com/cloudflare/cloudflare-go"
+)
+
+const (
+	// workaround for now since cloudflare's API does not currently
+	// return a cloudflare.Response object for api.ReadWorkersKV
+	keyNotFound = "key not found"
+	authError   = "Authentication error"
 )
 
 var (
@@ -19,6 +27,27 @@ var (
 	apiToken            = util.GetEnv("WORKERS_KV_API_TOKEN")
 	api                 = getAPI()
 )
+
+// KeyNotFoundError represents a KV key not found.
+type KeyNotFoundError struct {
+	key string
+	err string
+}
+
+// Error is used to satisfy the error interface.
+func (k KeyNotFoundError) Error() string {
+	return fmt.Sprintf("%s (%s): %s", keyNotFound, k.key, k.err)
+}
+
+// AuthError represents an authentication error.
+type AuthError struct {
+	err string
+}
+
+// Error is used to satisfy the error interface.
+func (a AuthError) Error() string {
+	return fmt.Sprintf("%s: %s", authError, a.err)
+}
 
 // Represents a KV write request, consisting of
 // a string key, a []byte value, and file metadata.
@@ -55,7 +84,22 @@ func checkSuccess(r cloudflare.Response, err error) error {
 
 // Read reads an entry from Workers KV.
 func Read(key, namespaceID string) ([]byte, error) {
-	return api.ReadWorkersKV(context.Background(), namespaceID, key)
+	bytes, err := api.ReadWorkersKV(context.Background(), namespaceID, key)
+	if err != nil {
+		errString := err.Error()
+
+		// check for key not found
+		if strings.Contains(errString, keyNotFound) {
+			return nil, KeyNotFoundError{key, errString}
+		}
+
+		// check for authentication error
+		if strings.Contains(errString, authError) {
+			return nil, AuthError{errString}
+		}
+	}
+
+	return bytes, err
 }
 
 // ListByPrefix returns all KVs that start with a prefix.
