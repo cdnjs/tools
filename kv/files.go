@@ -67,15 +67,13 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 			LastModified: lastModifiedStr,
 		}
 
-		// TODO: Stop pushing uncompressed for all files when Worker is fixed.
-		kvs = append(kvs, &writeRequest{
-			key:   baseFileKey,
-			value: bytes,
-			meta:  meta,
-		})
-
 		if _, ok := doNotCompress[ext]; ok {
 			// will only insert uncompressed to KV
+			kvs = append(kvs, &writeRequest{
+				key:   baseFileKey,
+				value: bytes,
+				meta:  meta,
+			})
 			continue
 		}
 
