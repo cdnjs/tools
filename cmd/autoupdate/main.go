@@ -191,11 +191,12 @@ func main() {
 // Note that if the filename is nil it will stay nil.
 func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 	// can do this safely since the latest version will be pushed to KV by now
-	assets, err := kv.GetVersion(ctx, pckg.LatestVersionKVKey())
+	key := pckg.LatestVersionKVKey()
+	assets, err := kv.GetVersion(ctx, key)
 	util.Check(err)
 
 	if len(assets) == 0 {
-		panic(fmt.Sprintf("KV version `%s` contains no assets", pckg.LatestVersionKVKey()))
+		panic(fmt.Sprintf("KV version `%s` contains no assets", key))
 	}
 
 	if pckg.Filename != nil {
@@ -210,6 +211,9 @@ func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 		// set filename to be the most similar string in []assets
 		mostSimilar := getMostSimilarFilename(filename, assets)
 		pckg.Filename = &mostSimilar
+		util.Debugf(ctx, "Updated `%s` filename `%s` -> `%s`\n", key, filename, mostSimilar)
+	} else {
+		util.Debugf(ctx, "Filename in `%s` missing, so will stay missing.\n", key)
 	}
 }
 
