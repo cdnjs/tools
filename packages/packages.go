@@ -68,6 +68,15 @@ type Package struct {
 	Assets []Asset `json:"assets,omitempty"`
 }
 
+// String represents the package as its marshalled JSON form.
+func (p *Package) String() string {
+	bytes, err := p.Marshal()
+	if err != nil {
+		return err.Error()
+	}
+	return string(bytes)
+}
+
 // Marshal marshals the package into JSON, not escaping HTML characters.
 func (p *Package) Marshal() ([]byte, error) {
 	buffer := &bytes.Buffer{}

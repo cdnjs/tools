@@ -5,7 +5,6 @@ import (
 	"log"
 	"path"
 
-	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -16,7 +15,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string) {
 
 	for _, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := packages.ReadNonHumanJSON(ctx, pckgname)
+		pckg, readerr := GetPackage(ctx, pckgname)
 		util.Check(readerr)
 
 		for _, version := range pckg.Versions() {

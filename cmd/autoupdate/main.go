@@ -141,7 +141,18 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 				if latestVersion != nil {
-					destpckg, err := packages.ReadNonHumanJSON(ctx, *pckg.Name)
+					destpckg, err := kv.GetPackage(ctx, *pckg.Name)
+					switch err.(type) {
+					case kv.KeyNotFoundError:
+						fmt.Println("key error")
+						os.Exit(1)
+					case kv.AuthError:
+						fmt.Println("auth error")
+						os.Exit(1)
+					case packages.InvalidSchemaError:
+						fmt.Println("invalid schema error")
+						os.Exit(1)
+					}
 					if err != nil || destpckg.Version == nil || *destpckg.Version != *latestVersion {
 						pckg.Version = latestVersion
 
