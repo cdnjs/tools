@@ -320,8 +320,8 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		}
 
 		// Git add/commit new version to cdnjs/logs
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("%s", kvVersionMetadata))
-		logsCommitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
+		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 
 		metrics.ReportNewVersion(ctx)
@@ -337,7 +337,7 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 
 		// Git add/commit new version to cdnjs/cdnjs
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
-		commitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
+		commitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
 	}
 }
@@ -354,7 +354,7 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
-	packages.GitAdd(ctx, logsPath, pckg.Log("%s", kvPackageMetadata))
-	logsCommitMsg := fmt.Sprintf("Set %s package metadata (v%s)", *pckg.Name, *pckg.Version)
+	packages.GitAdd(ctx, logsPath, pckg.Log("update metadata: %s: %s", *pckg.Version, kvPackageMetadata))
+	logsCommitMsg := fmt.Sprintf("Set %s package metadata (%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, logsPath, logsCommitMsg)
 }
