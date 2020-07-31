@@ -76,6 +76,7 @@ func main() {
 	if !noPull {
 		util.UpdateGitRepo(defaultCtx, cdnjsPath)
 		util.UpdateGitRepo(defaultCtx, packagesPath)
+		util.UpdateGitRepo(defaultCtx, logsPath)
 	}
 
 	// create channel to handle signals
