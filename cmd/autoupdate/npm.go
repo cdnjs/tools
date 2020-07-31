@@ -48,24 +48,22 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	} else {
 		if len(existingVersionSet) > 0 {
 			// all existing versions are not on npm anymore
-			// so we will ignore this package
-			util.Debugf(ctx, "ignoring misconfigured npm package: %s", pckg.Name)
-		} else {
-			// Import all the versions since we have none locally.
-			// Limit the number of version to an abrirary number to avoid publishing
-			// too many outdated versions.
-			sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
-
-			if len(npmVersions) > util.ImportAllMaxVersions {
-				npmVersions = npmVersions[len(npmVersions)-util.ImportAllMaxVersions:]
-			}
-
-			// Reverse the array to have the older versions first
-			// It matters when we will commit the updates
-			sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
-
-			newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
+			util.Debugf(ctx, "all existing versions not on npm: %s\n", *pckg.Name)
 		}
+		// Import all the versions since we have no current npm versions locally.
+		// Limit the number of version to an arbitrary number to avoid publishing
+		// too many outdated versions.
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
+
+		if len(npmVersions) > util.ImportAllMaxVersions {
+			npmVersions = npmVersions[len(npmVersions)-util.ImportAllMaxVersions:]
+		}
+
+		// Reverse the array to have the older versions first
+		// It matters when we will commit the updates
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
+
+		newVersionsToCommit = doUpdateNpm(ctx, pckg, npmVersions)
 	}
 
 	// add all new versions to list of all versions

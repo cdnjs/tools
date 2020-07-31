@@ -82,24 +82,22 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	} else {
 		if len(existingVersionSet) > 0 {
 			// all existing versions are not on git anymore
-			// so we will ignore this package
-			util.Debugf(ctx, "ignoring misconfigured git package: %s", pckg.Name)
-		} else {
-			// Import all the versions since we have none locally.
-			// Limit the number of version to an abrirary number to avoid publishing
-			// too many outdated versions.
-			sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
-
-			if len(gitVersions) > util.ImportAllMaxVersions {
-				gitVersions = gitVersions[len(gitVersions)-util.ImportAllMaxVersions:]
-			}
-
-			// Reverse the array to have the older versions first
-			// It matters when we will commit the updates
-			sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
-
-			newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
+			util.Debugf(ctx, "all existing versions not on git: %s\n", *pckg.Name)
 		}
+		// Import all the versions since we have none locally.
+		// Limit the number of version to an arbitrary number to avoid publishing
+		// too many outdated versions.
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
+
+		if len(gitVersions) > util.ImportAllMaxVersions {
+			gitVersions = gitVersions[len(gitVersions)-util.ImportAllMaxVersions:]
+		}
+
+		// Reverse the array to have the older versions first
+		// It matters when we will commit the updates
+		sort.Sort(sort.Reverse(git.ByTimeStamp(gitVersions)))
+
+		newVersionsToCommit = doUpdateGit(ctx, pckg, packageGitcache, gitVersions)
 	}
 
 	// add all new versions to list of all versions
