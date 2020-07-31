@@ -29,6 +29,7 @@ var (
 	basePath     = util.GetBotBasePath()
 	packagesPath = util.GetHumanPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
+	logsPath     = util.GetLogsPath()
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
@@ -132,8 +133,9 @@ func main() {
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
-				packages.GitPush(ctx, cdnjsPath)
 				writeNewVersionsToKV(ctx, newVersionsToCommit)
+				packages.GitPush(ctx, cdnjsPath)
+				packages.GitPush(ctx, logsPath)
 			}
 			if len(allVersions) > 0 {
 				latestVersion := getLatestStableVersion(allVersions)
@@ -176,6 +178,7 @@ func main() {
 
 					commitPackageVersion(ctx, pckg, f)
 					packages.GitPush(ctx, cdnjsPath)
+					packages.GitPush(ctx, logsPath)
 
 					if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 						panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
@@ -266,7 +269,7 @@ func getLatestVersion(versions []version) *string {
 }
 
 // Copy the package.json to the cdnjs repo and update its version.
-func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJSONPath string) {
+func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJSONPath string) []byte {
 	// marshal into JSON
 	bytes, err := pckg.Marshal()
 	util.Check(err)
@@ -276,12 +279,15 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJS
 	util.Check(err)
 
 	// open and write to package.json file
+
 	dest := path.Join(pckg.LibraryPath(), "package.json")
 	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	util.Check(err)
 
 	_, err = file.Write(bytes)
 	util.Check(err)
+
+	return bytes
 }
 
 // Optimizes/minifies files on disk for a particular package version.
@@ -308,9 +314,17 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
+		kvVersionMetadata, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath)
+		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
+
+		// Git add/commit new version to cdnjs/logs
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("%s", kvVersionMetadata))
+		logsCommitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
+		packages.GitCommit(ctx, logsPath, logsCommitMsg)
+
+		metrics.ReportNewVersion(ctx)
 	}
 }
 
@@ -321,13 +335,10 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		// Optimize/minifiy assets (compressing br/gz will occur later)
 		optimizeAndMinify(ctx, newVersionToCommit)
 
-		// Add to git the new version directory
+		// Git add/commit new version to cdnjs/cdnjs
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
-
 		commitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
-
-		metrics.ReportNewVersion(ctx)
 	}
 }
 
@@ -335,11 +346,15 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	util.Debugf(ctx, "adding latest version to package.json %s", *pckg.Version)
 
 	// Update package.json file
-	updateVersionInCdnjs(ctx, pckg, packageJSONPath)
+	kvPackageMetadata := updateVersionInCdnjs(ctx, pckg, packageJSONPath)
 
-	// Add to git the updated package.json
+	// Git add/commit the updated package.json to cdnjs/cdnjs
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
-
 	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
+
+	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
+	packages.GitAdd(ctx, logsPath, pckg.Log("%s", kvPackageMetadata))
+	logsCommitMsg := fmt.Sprintf("Set %s package metadata (v%s)", *pckg.Name, *pckg.Version)
+	packages.GitCommit(ctx, logsPath, logsCommitMsg)
 }

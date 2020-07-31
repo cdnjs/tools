@@ -190,28 +190,28 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 	return nil
 }
 
-// InsertNewVersionToKV inserts a new version to KV.
+// InsertNewVersionToKV inserts a new version to KV and returns the uploaded version files as JSON.
 // The `fullPathToVersion` string will be useful if the version is downloaded to
 // a temporary directory, not necessarily always in `$BOT_BASE_PATH/cdnjs/ajax/libs/`.
 //
 // Note that this function will also compress the files, generating brotli/gzip entries
-// to KV where necessary, as well as minifying js, compressing png/jpeg/css, etc.
+// to KV where necessary.
 //
 // Note this function will NOT update package metadata. This will happen later to avoid
 // KV race conditions updating the package's entry for latest version.
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) error {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) ([]byte, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// write files to KV
 	fromVersionPaths, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// write version metadata to KV
