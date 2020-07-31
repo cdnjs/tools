@@ -51,8 +51,11 @@ func (a AuthError) Error() string {
 
 // Represents a KV write request, consisting of
 // a string key, a []byte value, and file metadata.
+// The name field is used to identify this write request
+// with a human-readable friendly name.
 type writeRequest struct {
 	key   string
+	name  string
 	value []byte
 	meta  *FileMetadata
 }
@@ -128,11 +131,12 @@ func encodeToBase64(bytes []byte) string {
 	return base64.StdEncoding.EncodeToString(bytes)
 }
 
-// Encodes key-value pairs to base64 and writes them to KV
-// in multiple bulk requests.
-func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string) error {
+// Encodes key-value pairs to base64 and writes them to KV in multiple bulk requests.
+// Returns the list of human-readable names of successful writes.
+func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string) ([]string, error) {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
+	var successfulWrites []string
 	var totalSize, totalKeys int64
 
 	for _, kv := range kvs {
@@ -154,7 +158,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			// Marshal metadata into JSON bytes.
 			bytes, err := json.Marshal(kv.meta)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			metasize := int64(len(bytes))
 			if metasize > util.MaxMetadataSize {
@@ -174,6 +178,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			totalKeys = 0
 		}
 		bulkWrite = append(bulkWrite, writePair)
+		successfulWrites = append(successfulWrites, kv.name)
 		totalSize += size
 		totalKeys++
 	}
@@ -183,11 +188,11 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 		util.Debugf(ctx, "writing bulk %d/%d (keys=%d)...\n", i+1, len(bulkWrites), len(b))
 		r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
 		if err = checkSuccess(r, err); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return successfulWrites, nil
 }
 
 // InsertNewVersionToKV inserts a new version to KV and returns the uploaded version files as JSON.
@@ -202,16 +207,16 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) ([]byte, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) ([]byte, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// write files to KV
-	fromVersionPaths, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	_, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// write version metadata to KV
