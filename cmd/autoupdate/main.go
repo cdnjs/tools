@@ -352,7 +352,7 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
-	logsCommitMsg := fmt.Sprintf("Set %s package metadata (v%s)", *pckg.Name, *pckg.Version)
 	packages.GitAdd(ctx, logsPath, pckg.Log("%s", nonHumanBytes))
+	logsCommitMsg := fmt.Sprintf("Set %s package metadata (v%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, logsPath, logsCommitMsg)
 }
