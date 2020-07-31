@@ -43,7 +43,8 @@ func updateVersionRequest(pkg, version string, fromVersionPaths []string) *write
 
 // Updates KV with new version's metadata.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
-func updateKVVersion(ctx context.Context, pkg, version string, fromVersionPaths []string) ([]byte, error) {
+func updateKVVersion(ctx context.Context, pkg, version string, fromVersionPaths []string) ([]byte, []string, error) {
 	req := updateVersionRequest(pkg, version, fromVersionPaths)
-	return req.value, encodeAndWriteKVBulk(ctx, []*writeRequest{req}, versionsNamespaceID)
+	names, err := encodeAndWriteKVBulk(ctx, []*writeRequest{req}, versionsNamespaceID)
+	return req.value, names, err
 }

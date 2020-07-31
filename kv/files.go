@@ -103,13 +103,14 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 
 // Updates KV with new version's files.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
+// The function will return the list of all files pushed to KV.
 func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]string, error) {
 	// create bulk of requests
 	reqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
-		return fromVersionPaths, err
+		return nil, err
 	}
 
 	// write bulk to KV
-	return fromVersionPaths, encodeAndWriteKVBulk(ctx, reqs, filesNamespaceID)
+	return encodeAndWriteKVBulk(ctx, reqs, filesNamespaceID)
 }
