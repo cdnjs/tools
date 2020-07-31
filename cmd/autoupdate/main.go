@@ -133,9 +133,9 @@ func main() {
 		if !noUpdate {
 			if len(newVersionsToCommit) > 0 {
 				commitNewVersions(ctx, newVersionsToCommit)
+				writeNewVersionsToKV(ctx, newVersionsToCommit)
 				packages.GitPush(ctx, cdnjsPath)
 				packages.GitPush(ctx, logsPath)
-				writeNewVersionsToKV(ctx, newVersionsToCommit)
 			}
 			if len(allVersions) > 0 {
 				latestVersion := getLatestStableVersion(allVersions)
@@ -314,9 +314,17 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		if err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath); err != nil {
+		kvVersionMetadata, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath)
+		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
+
+		// Git add/commit new version to cdnjs/logs
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("%s", kvVersionMetadata))
+		logsCommitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
+		packages.GitCommit(ctx, logsPath, logsCommitMsg)
+
+		metrics.ReportNewVersion(ctx)
 	}
 }
 
@@ -331,12 +339,6 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
 		commitMsg := fmt.Sprintf("Add %s v%s", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, cdnjsPath, commitMsg)
-
-		// Git add/commit new version to cdnjs/logs
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log(commitMsg))
-		packages.GitCommit(ctx, logsPath, commitMsg)
-
-		metrics.ReportNewVersion(ctx)
 	}
 }
 
@@ -344,7 +346,7 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	util.Debugf(ctx, "adding latest version to package.json %s", *pckg.Version)
 
 	// Update package.json file
-	nonHumanBytes := updateVersionInCdnjs(ctx, pckg, packageJSONPath)
+	kvPackageMetadata := updateVersionInCdnjs(ctx, pckg, packageJSONPath)
 
 	// Git add/commit the updated package.json to cdnjs/cdnjs
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
@@ -352,7 +354,7 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
-	packages.GitAdd(ctx, logsPath, pckg.Log("%s", nonHumanBytes))
+	packages.GitAdd(ctx, logsPath, pckg.Log("%s", kvPackageMetadata))
 	logsCommitMsg := fmt.Sprintf("Set %s package metadata (v%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, logsPath, logsCommitMsg)
 }
