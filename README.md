@@ -1,6 +1,37 @@
-# tools
+<h1 align="center">
+    <a href="https://cdnjs.com"><img src="https://raw.githubusercontent.com/cdnjs/brand/master/logo/standard/dark-512.png" width="175px" alt="< cdnjs >"></a>
+</h1>
 
-Repository that contains various tools for maintaining cdnjs.
+<h3 align="center">The #1 free and open source CDN built to make life easier for developers.</h3>
+
+---
+
+<p align="center">
+ <a href="https://github.com/cdnjs/tools/blob/master/LICENSE">
+  <img src="https://img.shields.io/badge/License-MIT-brightgreen.svg?style=flat-square" alt="MIT License">
+ </a>
+ <a href="https://cdnjs.discourse.group/">
+  <img src="https://img.shields.io/discourse/https/cdnjs.discourse.group/status.svg?label=Community%20Discourse&style=flat-square" alt="Community">
+ </a>
+</p>
+
+<p align="center">
+ <a href="https://github.com/cdnjs/packages/blob/master/README.md#donate-and-support-us">
+  <img src="https://img.shields.io/badge/GitHub-Sponsors-EA4AAA.svg?style=flat-square" alt="GitHub Sponsors">
+ </a>
+ <a href="https://opencollective.com/cdnjs">
+  <img src="https://img.shields.io/badge/Open%20Collective-Support%20Us-3385FF.svg?style=flat-square" alt="Open Collective">
+ </a>
+ <a href="https://www.patreon.com/cdnjs">
+  <img src="https://img.shields.io/badge/Patreon-Become%20a%20Patron-E95420.svg?style=flat-square" alt="Patreon">
+ </a>
+</p>
+
+---
+
+## Introduction
+
+This repository contains various tools that we use to help with the process of maintaining cdnjs.
 
 ## Tools
 
@@ -42,3 +73,7 @@ We are going to create the home at `/tmp/cdnjs` and do the following in the dire
 In glob run `npm install`.
 
 Finally pass the `BOT_BASE_PATH` to the tool, for example: `BOT_BASE_PATH=/tmp/cdnjs bin/autoupdate -no-update`.
+
+## License
+
+Each library hosted on cdnjs is released under its own license. This cdnjs repository is published under [MIT license](LICENSE).
