@@ -77,6 +77,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 			// will only insert uncompressed to KV
 			kvs = append(kvs, &writeRequest{
 				key:   baseFileKey,
+				name:  fromVersionPath,
 				value: bytes,
 				meta:  meta,
 			})
@@ -86,6 +87,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 		// brotli
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey + ".br",
+			name:  fromVersionPath + ".br",
 			value: compress.Brotli11CLI(ctx, fullPath),
 			meta:  meta,
 		})
@@ -93,6 +95,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 		// gzip
 		kvs = append(kvs, &writeRequest{
 			key:   baseFileKey + ".gz",
+			name:  fromVersionPath + ".gz",
 			value: compress.Gzip9Native(bytes),
 			meta:  meta,
 		})
