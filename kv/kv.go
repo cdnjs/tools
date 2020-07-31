@@ -214,11 +214,12 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 	}
 
 	// write files to KV
-	_, err = updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	successfulNames, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// write version metadata to KV
-	return updateKVVersion(ctx, pkg, version, fromVersionPaths)
+	versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
+	return versionBytes, successfulNames, err
 }
