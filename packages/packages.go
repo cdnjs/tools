@@ -97,7 +97,7 @@ func (p *Package) Marshal() ([]byte, error) {
 // For `My-Package` on July 31, 2020, log file path will be:
 // `<cdnjs logs path>/m/My-Package/2020/07-31.log`
 func (p *Package) Log(format string, a ...interface{}) string {
-	t := time.Now()
+	t := time.Now().UTC()
 	logFileDir := path.Join(util.GetLogsPath(), strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
 	logFile := t.Format("01-02.log")
 	logFilePath := path.Join(logFileDir, logFile)
@@ -113,7 +113,7 @@ func (p *Package) Log(format string, a ...interface{}) string {
 	defer f.Close()
 
 	// append to log file
-	logger := log.New(f, fmt.Sprintf("%s: ", *p.Name), log.LstdFlags|log.LUTC)
+	logger := log.New(f, fmt.Sprintf("%s %s: ", t.Format("2006-01-02 15:04:05"), *p.Name), 0)
 	logger.Printf(format, a...)
 
 	return logFilePath
