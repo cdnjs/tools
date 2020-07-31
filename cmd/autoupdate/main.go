@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"math"
@@ -320,9 +321,12 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
 
+		kvCompressedFilesJSON, err := json.Marshal(kvCompressedFiles)
+		util.Check(err)
+
 		// Git add/commit new version to cdnjs/logs
 		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv: %s: %s", newVersionToCommit.newVersion, kvCompressedFiles))
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
 		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 
