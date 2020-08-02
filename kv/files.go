@@ -21,9 +21,8 @@ var (
 		".gz": true,
 	}
 	// these file extensions will be uploaded to KV
-	// but not compessed
+	// but not compressed
 	doNotCompress = map[string]bool{
-		".woff":  true,
 		".woff2": true,
 	}
 )
