@@ -13,13 +13,14 @@ import (
 func InsertFromDisk(logger *log.Logger, pckgs []string) {
 	basePath := util.GetCDNJSLibrariesPath()
 
-	for _, pckgname := range pckgs {
+	for i, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := GetPackage(ctx, pckgname)
 		util.Check(readerr)
 
-		for _, version := range pckg.Versions() {
-			util.Infof(ctx, "Inserting %s (%s)\n", *pckg.Name, version)
+		versions := pckg.Versions()
+		for j, version := range versions {
+			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 			dir := path.Join(basePath, *pckg.Name, version)
 			_, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir)
 			util.Check(err)
