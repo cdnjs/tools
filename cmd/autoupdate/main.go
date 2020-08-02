@@ -149,50 +149,50 @@ func main() {
 					latestVersion = getLatestVersion(allVersions)
 				}
 
-				if latestVersion != nil {
-					pckg.Version = latestVersion
-					updateFilenameIfMissing(ctx, pckg)
+				// latestVersion must be non-nil by now
+				// since we determined len(allVersions) > 0
+				pckg.Version = latestVersion
+				updateFilenameIfMissing(ctx, pckg)
 
-					destpckg, err := kv.GetPackage(ctx, *pckg.Name)
-					if err != nil {
-						// check for errors
-						// Note: currently panicking on unhandled errors, including AuthError
-						switch e := err.(type) {
-						case kv.KeyNotFoundError:
-							{
-								// key not found (new package)
-								util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
-							}
-						case packages.InvalidSchemaError:
-							{
-								// invalid schema found
-								// this should not occur, so log in sentry
-								// and rewrite the key so it follows the JSON schema
-								sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
-							}
-						default:
-							{
-								// unhandled error occurred
-								panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
-							}
+				destpckg, err := kv.GetPackage(ctx, *pckg.Name)
+				if err != nil {
+					// check for errors
+					// Note: currently panicking on unhandled errors, including AuthError
+					switch e := err.(type) {
+					case kv.KeyNotFoundError:
+						{
+							// key not found (new package)
+							util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
 						}
-					} else if destpckg.Version != nil && *destpckg.Version == *latestVersion {
-						// latest version is already in KV, but we still
-						// need to check if the `filename` changed or not
-						if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
-							continue
+					case packages.InvalidSchemaError:
+						{
+							// invalid schema found
+							// this should not occur, so log in sentry
+							// and rewrite the key so it follows the JSON schema
+							sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
+						}
+					default:
+						{
+							// unhandled error occurred
+							panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
 						}
 					}
-
-					// Either `version`, `filename` or both changed,
-					// so git push the new metadata.
-					commitPackageVersion(ctx, pckg, f)
-					packages.GitPush(ctx, cdnjsPath)
-					packages.GitPush(ctx, logsPath)
-
-					if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
-						panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
+				} else if destpckg.Version != nil && *destpckg.Version == *latestVersion {
+					// latest version is already in KV, but we still
+					// need to check if the `filename` changed or not
+					if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
+						continue
 					}
+				}
+
+				// Either `version`, `filename` or both changed,
+				// so git push the new metadata.
+				commitPackageVersion(ctx, pckg, f)
+				packages.GitPush(ctx, cdnjsPath)
+				packages.GitPush(ctx, logsPath)
+
+				if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
+					panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
 				}
 			}
 		}
