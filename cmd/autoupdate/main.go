@@ -203,10 +203,14 @@ func main() {
 // version does not contain the filename
 // Note that if the filename is nil it will stay nil.
 func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
-	// can do this safely since the latest version will be pushed to KV by now
 	key := pckg.LatestVersionKVKey()
 	assets, err := kv.GetVersion(ctx, key)
-	util.Check(err)
+	if err != nil {
+		// TODO: Change to panic, since once all packages are uploaded to KV
+		// all package metadata will be in KV, so this error should never occur.
+		util.Debugf(ctx, "KV metadata not found for latest version `%s`", key)
+		return
+	}
 
 	if len(assets) == 0 {
 		panic(fmt.Sprintf("KV version `%s` contains no assets", key))
