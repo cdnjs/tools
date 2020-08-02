@@ -368,7 +368,7 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 
 	// Git add/commit the updated package.json to cdnjs/cdnjs
 	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
-	commitMsg := fmt.Sprintf("Set %s package.json (v%s)", *pckg.Name, *pckg.Version)
+	commitMsg := fmt.Sprintf("Set %s package.json (%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, cdnjsPath, commitMsg)
 
 	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
