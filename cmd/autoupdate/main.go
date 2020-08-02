@@ -177,7 +177,7 @@ func main() {
 							panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
 						}
 					}
-				} else if destpckg.Version != nil && *destpckg.Version == *latestVersion {
+				} else if destpckg.Version != nil && *destpckg.Version == *pckg.Version {
 					// latest version is already in KV, but we still
 					// need to check if the `filename` changed or not
 					if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
