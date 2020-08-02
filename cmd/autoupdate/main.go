@@ -141,7 +141,7 @@ func main() {
 				packages.GitPush(ctx, logsPath)
 			}
 
-			// Push new package metadata to git if there is a change.
+			// If there are no versions, do not write package metadata.
 			if len(allVersions) > 0 {
 				latestVersion := getLatestStableVersion(allVersions)
 
