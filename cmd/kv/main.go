@@ -15,6 +15,8 @@ var (
 )
 
 func main() {
+	var metaOnly bool
+	flag.BoolVar(&metaOnly, "meta-only", false, "If set, only version metadata is uploaded to KV (no files).")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -29,7 +31,7 @@ func main() {
 				panic("no packages specified")
 			}
 
-			kv.InsertFromDisk(logger, pckgs)
+			kv.InsertFromDisk(logger, pckgs, metaOnly)
 		}
 	case "files":
 		{

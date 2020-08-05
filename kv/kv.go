@@ -207,19 +207,22 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string) ([]byte, []string, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]byte, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// write files to KV
-	successfulNames, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// write version metadata to KV
 	versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
+	if err != nil {
+		return nil, nil, err
+	}
+	if metaOnly {
+		return versionBytes, nil, nil
+	}
+
+	// write files to KV
+	successfulNames, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	return versionBytes, successfulNames, err
 }
