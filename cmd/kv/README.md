@@ -5,6 +5,7 @@ Tools to test our Workers KV namespace.
 ## `upload`
 
 Inserts packages from disk to KV. Package files and version metadata will be pushed to KV.
+If the flag `-meta-only` is set, only version metadata will be pushed to KV.
 
 ```
 make kv && ./bin/kv upload jquery mathjax fontawesome
