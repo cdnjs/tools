@@ -202,8 +202,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 // Note that this function will also compress the files, generating brotli/gzip entries
 // to KV where necessary.
 //
-// Note this function will NOT update package metadata. This will happen later to avoid
-// KV race conditions updating the package's entry for latest version.
+// Note this function will NOT update package metadata.
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
