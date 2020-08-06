@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cdnjs/tools/kv"
+	"github.com/cdnjs/tools/sentry"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -14,7 +15,12 @@ var (
 	logger = util.GetStandardLogger()
 )
 
+func init() {
+	sentry.Init()
+}
+
 func main() {
+	defer sentry.PanicHandler()
 	var metaOnly bool
 	flag.BoolVar(&metaOnly, "meta-only", false, "If set, only version metadata is uploaded to KV (no files).")
 	flag.Parse()
