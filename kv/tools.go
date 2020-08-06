@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 
+	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
 
@@ -16,7 +17,10 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 	for i, pckgname := range pckgs {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := GetPackage(ctx, pckgname)
-		util.Check(readerr)
+		if readerr != nil {
+			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgname, readerr))
+			continue
+		}
 
 		versions := pckg.Versions()
 		for j, version := range versions {
