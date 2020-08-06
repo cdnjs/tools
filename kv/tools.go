@@ -18,6 +18,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := GetPackage(ctx, pckgname)
 		if readerr != nil {
+			util.Infof(ctx, "p(%d/%d) FAILED TO GET PACKAGE %s: %s\n", i+1, len(pckgs), pckgname, readerr)
 			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgname, readerr))
 			continue
 		}
