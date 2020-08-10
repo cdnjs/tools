@@ -74,15 +74,15 @@ func main() {
 		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t)\n", noUpdate, noPull)
 	}
 
+	// create channel to handle signals
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM)
+
 	if !noPull {
 		util.UpdateGitRepo(defaultCtx, cdnjsPath)
 		util.UpdateGitRepo(defaultCtx, packagesPath)
 		util.UpdateGitRepo(defaultCtx, logsPath)
 	}
-
-	// create channel to handle signals
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM)
 
 	for _, f := range packages.GetHumanPackageJSONFiles(defaultCtx) {
 		// create context with file path prefix, standard debug logger
