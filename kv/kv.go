@@ -110,21 +110,29 @@ func Read(key, namespaceID string) ([]byte, error) {
 // Note this function is used for testing only. For practical uses,
 // use the Cursor option to avoid being limited to 1000 KVs at a time.
 func ListByPrefix(prefix, namespaceID string) ([]string, error) {
-	o := cloudflare.ListWorkersKVsOptions{
-		Prefix: &prefix,
-	}
+	var cursor *string
+	var results []string
+	for {
+		o := cloudflare.ListWorkersKVsOptions{
+			Prefix: &prefix,
+			Cursor: cursor,
+		}
 
-	resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
+		if err != nil {
+			return nil, err
+		}
 
-	results := make([]string, len(resp.Result))
-	for i := 0; i < len(resp.Result); i++ {
-		results[i] = resp.Result[i].Name
-	}
+		for _, r := range resp.Result {
+			results = append(results, r.Name)
+		}
 
-	return results, nil
+		if resp.Cursor == "" {
+			return results, nil
+		}
+
+		cursor = &resp.Cursor
+	}
 }
 
 // Encodes a byte array to a base64 string.
