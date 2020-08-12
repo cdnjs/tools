@@ -48,6 +48,10 @@ func main() {
 
 			kv.InsertAggregateMetadataFromScratch(logger, pckgs)
 		}
+	case "packages":
+		{
+			kv.OutputAllPackages()
+		}
 	case "files":
 		{
 			pckg := flag.Arg(1)
@@ -73,7 +77,7 @@ func main() {
 				panic("no package specified")
 			}
 
-			kv.OutputAggregate(logger, pckg)
+			kv.OutputAggregate(pckg)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))

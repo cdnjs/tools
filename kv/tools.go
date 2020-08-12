@@ -75,6 +75,17 @@ func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 	}
 }
 
+// OutputAllPackages outputs all files stored in KV for a particular package.
+func OutputAllPackages() {
+	res, err := ListByPrefix("", packagesNamespaceID)
+	util.Check(err)
+
+	bytes, err := json.Marshal(res)
+	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
+}
+
 // OutputAllFiles outputs all files stored in KV for a particular package.
 func OutputAllFiles(logger *log.Logger, pckgName string) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
@@ -131,7 +142,7 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 }
 
 // OutputAggregate outputs the aggregated metadata associated with a package.
-func OutputAggregate(logger *log.Logger, pckgName string) {
+func OutputAggregate(pckgName string) {
 	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
 	util.Check(err)
 
