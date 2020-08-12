@@ -6,6 +6,7 @@ import (
 	"log"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/cdnjs/tools/compress"
 
@@ -41,38 +42,62 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 // InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
 // into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
 func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
-	for i, pckgName := range pckgs {
-		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
-		pckg, err := GetPackage(ctx, pckgName)
-		if err != nil {
-			util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
-			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
-			continue
-		}
+	var wg sync.WaitGroup
+	done := make(chan bool)
 
-		util.Infof(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
-		versions, err := GetVersions(pckgName)
-		util.Check(err)
+	log.Println("Starting...")
+	for index, name := range pckgs {
+		wg.Add(1)
+		go func(i int, pckgName string) {
+			defer wg.Done()
+			defer func() { done <- true }()
 
-		var assets []packages.Asset
-		for j, version := range versions {
-			util.Infof(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
-			files, err := GetVersion(ctx, version)
+			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+			pckg, err := GetPackage(ctx, pckgName)
+			if err != nil {
+				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
+				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
+				return
+			}
+
+			//util.Infof(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
+			versions, err := GetVersions(pckgName)
 			util.Check(err)
-			assets = append(assets, packages.Asset{
-				Version: strings.TrimPrefix(version, pckgName+"/"),
-				Files:   files,
-			})
-		}
 
-		pckg.Assets = assets
-		successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
-		util.Check(err)
+			var assets []packages.Asset
+			for _, version := range versions {
+				// util.Infof(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+				files, err := GetVersion(ctx, version)
+				util.Check(err)
+				assets = append(assets, packages.Asset{
+					Version: strings.TrimPrefix(version, pckgName+"/"),
+					Files:   files,
+				})
+			}
 
-		if len(successfulWrites) == 0 {
-			panic(fmt.Sprintf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
-		}
+			pckg.Assets = assets
+			successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
+			util.Check(err)
+
+			if len(successfulWrites) == 0 {
+				util.Infof(ctx, "p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name)
+				sentry.NotifyError(fmt.Errorf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
+			}
+		}(index, name)
 	}
+
+	// show some progress
+	go func() {
+		i := 0
+		for {
+			<-done
+			i++
+			log.Printf("Completed (%d/%d)\n", i, len(pckgs))
+		}
+	}()
+
+	wg.Wait()
+	log.Println("Done.")
 }
 
 // OutputAllPackages outputs all files stored in KV for a particular package.
