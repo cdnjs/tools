@@ -27,7 +27,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		for j, version := range versions {
 			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 			dir := path.Join(basePath, *pckg.Name, version)
-			_, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
+			_, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
 			util.Check(err)
 		}
 	}

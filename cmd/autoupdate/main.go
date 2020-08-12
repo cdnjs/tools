@@ -139,22 +139,32 @@ func main() {
 
 		if !noUpdate {
 			// Push new versions to git.
-			updateVersions(ctx, newVersionsToCommit)
+			newAssets := updateVersions(ctx, newVersionsToCommit)
 
 			// Update package metadata.
 			updatePackage(ctx, pckg, allVersions, f)
+
+			_ = newAssets
+			// TODO: Uncomment this when all aggregated metadata entries are in KV.
+			//
+			// Update aggregated package metadata for cdnjs API.
+			// updateAggregatedMetadata(ctx, pckg, newAssets)
 		}
 	}
 }
 
 // Push new versions to git and KV.
-func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) []packages.Asset {
+	var assets []packages.Asset
+
 	if len(newVersionsToCommit) > 0 {
 		commitNewVersions(ctx, newVersionsToCommit)
-		writeNewVersionsToKV(ctx, newVersionsToCommit)
+		assets = writeNewVersionsToKV(ctx, newVersionsToCommit)
 		packages.GitPush(ctx, cdnjsPath)
 		packages.GitPush(ctx, logsPath)
 	}
+
+	return assets
 }
 
 // Update package metadata in git and KV.
@@ -210,6 +220,23 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
 	}
+}
+
+// Update aggregated package metadata for cdnjs API.
+func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) {
+	kvWrites, err := kv.UpdateAggregatedMetadata(ctx, pckg, newAssets)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to update aggregated metadata: %s", err))
+	}
+
+	kvWritesJSON, err := json.Marshal(kvWrites)
+	util.Check(err)
+
+	// Will either be ["<package name>"] or [] if the KV write fails
+	packages.GitAdd(ctx, logsPath, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, kvWritesJSON))
+	logsCommitMsg := fmt.Sprintf("Set %s aggregated metadata (%s)", *pckg.Name, *pckg.Version)
+	packages.GitCommit(ctx, logsPath, logsCommitMsg)
+	packages.GitPush(ctx, logsPath)
 }
 
 // Update the package's filename if the latest
@@ -336,12 +363,14 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 }
 
 // write all versions to KV
-func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) []packages.Asset {
+	var assets []packages.Asset
+
 	for _, newVersionToCommit := range newVersionsToCommit {
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		kvVersionMetadata, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false)
+		kvVersionFiles, kvVersionMetadata, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false)
 		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
@@ -356,7 +385,14 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 
 		metrics.ReportNewVersion(ctx)
+
+		assets = append(assets, packages.Asset{
+			Version: newVersionToCommit.newVersion,
+			Files:   kvVersionFiles,
+		})
 	}
+
+	return assets
 }
 
 func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {

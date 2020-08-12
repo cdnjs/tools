@@ -50,3 +50,17 @@ func Gzip9Native(uncompressed []byte) []byte {
 
 	return b.Bytes()
 }
+
+// UnGzip uncompresses a gzip file as bytes.
+func UnGzip(compressed []byte) []byte {
+	b := bytes.NewBuffer(compressed)
+
+	r, err := gzip.NewReader(b)
+	util.Check(err)
+
+	var res bytes.Buffer
+	_, err = res.ReadFrom(r)
+	util.Check(err)
+
+	return res.Bytes()
+}
