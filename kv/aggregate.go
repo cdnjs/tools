@@ -28,7 +28,7 @@ func UpdateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 			}
 		}
 	} else {
-		util.Debugf(ctx, "Aggregated metadata for `%s` found. Inserting aggregated metadata...\n", *pckg.Name)
+		util.Debugf(ctx, "Aggregated metadata for `%s` found. Updating aggregated metadata...\n", *pckg.Name)
 		pckg.Assets = append(aggPckg.Assets, newAssets...)
 	}
 

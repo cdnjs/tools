@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"path"
@@ -134,5 +135,11 @@ func OutputAggregate(logger *log.Logger, pckgName string) {
 	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
 	util.Check(err)
 
-	fmt.Printf("%s\n", compress.UnGzip(bytes))
+	uncompressed := compress.UnGzip(bytes)
+
+	// check if it can unmarshal into a package successfully
+	var p packages.Package
+	util.Check(json.Unmarshal(uncompressed, &p))
+
+	fmt.Printf("%s\n", uncompressed)
 }

@@ -64,8 +64,7 @@ func (n newVersionToCommit) GetTimeStamp() time.Time {
 func main() {
 	defer sentry.PanicHandler()
 
-	var noUpdate bool
-	var noPull bool
+	var noUpdate, noPull bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
 	flag.Parse()
@@ -144,8 +143,11 @@ func main() {
 			// Update package metadata.
 			updatePackage(ctx, pckg, allVersions, f)
 
-			// Update aggregated package metadata for cdnjs API.
-			updateAggregatedMetadata(ctx, pckg, newAssets)
+			// For now, only update aggregate metadata for test package.
+			if *pckg.Name == "a-happy-tyler" {
+				// Update aggregated package metadata for cdnjs API.
+				updateAggregatedMetadata(ctx, pckg, newAssets)
+			}
 		}
 	}
 }
