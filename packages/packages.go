@@ -68,7 +68,8 @@ type Package struct {
 
 	// legacy
 	Author *string `json:"author,omitempty"`
-	// TODO: Remove this when we remove package.min.js generation
+
+	// for aggregated metadata entries
 	Assets []Asset `json:"assets,omitempty"`
 }
 

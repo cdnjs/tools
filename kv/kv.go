@@ -20,12 +20,13 @@ const (
 )
 
 var (
-	filesNamespaceID    = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
-	versionsNamespaceID = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
-	packagesNamespaceID = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
-	accountID           = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
-	apiToken            = util.GetEnv("WORKERS_KV_API_TOKEN")
-	api                 = getAPI()
+	filesNamespaceID              = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
+	versionsNamespaceID           = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
+	packagesNamespaceID           = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
+	aggregatedMetadataNamespaceID = util.GetEnv("WORKERS_KV_AGGREGATED_METADATA_NAMESPACE_ID")
+	accountID                     = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
+	apiToken                      = util.GetEnv("WORKERS_KV_API_TOKEN")
+	api                           = getAPI()
 )
 
 // KeyNotFoundError represents a KV key not found.
