@@ -11,6 +11,14 @@ If the flag `-meta-only` is set, only version metadata will be pushed to KV.
 make kv && ./bin/kv upload jquery mathjax fontawesome
 ```
 
+## `upload-aggregate`
+
+Inserts aggregate metadata to KV from scratch by scraping KV entries for package-level and version-specific metadata.
+
+```
+make kv && ./bin/kv upload-aggregate jquery mathjax fontawesome
+```
+
 ## `files`
 
 Gets the file names stored in KV for a package.

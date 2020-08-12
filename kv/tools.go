@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"strings"
 
+	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
@@ -18,7 +20,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := GetPackage(ctx, pckgname)
 		if readerr != nil {
-			util.Infof(ctx, "p(%d/%d) FAILED TO GET PACKAGE %s: %s\n", i+1, len(pckgs), pckgname, readerr)
+			util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgname, readerr)
 			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgname, readerr))
 			continue
 		}
@@ -29,6 +31,43 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 			dir := path.Join(basePath, *pckg.Name, version)
 			_, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
 			util.Check(err)
+		}
+	}
+}
+
+// InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
+// into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
+func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
+	for i, pckgName := range pckgs {
+		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+		pckg, err := GetPackage(ctx, pckgName)
+		if err != nil {
+			util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
+			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
+			continue
+		}
+
+		util.Infof(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
+		versions, err := GetVersions(pckgName)
+		util.Check(err)
+
+		var assets []packages.Asset
+		for j, version := range versions {
+			util.Infof(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+			files, err := GetVersion(ctx, version)
+			util.Check(err)
+			assets = append(assets, packages.Asset{
+				Version: strings.TrimPrefix(version, pckgName+"/"),
+				Files:   files,
+			})
+		}
+
+		pckg.Assets = assets
+		successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
+		util.Check(err)
+
+		if len(successfulWrites) == 0 {
+			panic(fmt.Sprintf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
 		}
 	}
 }
