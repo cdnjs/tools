@@ -144,11 +144,8 @@ func main() {
 			// Update package metadata.
 			updatePackage(ctx, pckg, allVersions, f)
 
-			_ = newAssets
-			// TODO: Uncomment this when all aggregated metadata entries are in KV.
-			//
 			// Update aggregated package metadata for cdnjs API.
-			// updateAggregatedMetadata(ctx, pckg, newAssets)
+			updateAggregatedMetadata(ctx, pckg, newAssets)
 		}
 	}
 }
@@ -246,10 +243,8 @@ func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 	key := pckg.LatestVersionKVKey()
 	assets, err := kv.GetVersion(ctx, key)
 	if err != nil {
-		// TODO: Change to panic, since once all packages are uploaded to KV
-		// all package metadata will be in KV, so this error should never occur.
-		util.Debugf(ctx, "KV metadata not found for latest version `%s`", key)
-		return
+		// All package metadata will be in KV, so this error should never occur.
+		panic(fmt.Sprintf("KV metadata not found for latest version `%s`", key))
 	}
 
 	if len(assets) == 0 {
