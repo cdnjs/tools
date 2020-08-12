@@ -14,6 +14,7 @@ make kv && ./bin/kv upload jquery mathjax fontawesome
 ## `upload-aggregate`
 
 Inserts aggregate metadata to KV from scratch by scraping KV entries for package-level and version-specific metadata.
+Note that currently if there are more than 1000 versions for a package, it will only process the first 1000.
 
 ```
 make kv && ./bin/kv upload-aggregate jquery mathjax fontawesome
@@ -35,4 +36,12 @@ Note that currently if there are more than 1000 versions for a package, it will 
 
 ```
 make kv && ./bin/kv meta jquery
+```
+
+## `aggregate`
+
+Gets the aggregated metadata associated with a package in KV.
+
+```
+make kv && ./bin/kv aggregate jquery
 ```

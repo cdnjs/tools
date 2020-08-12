@@ -6,6 +6,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cdnjs/tools/compress"
+
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
@@ -125,4 +127,12 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 			}
 		}
 	}
+}
+
+// OutputAggregate outputs the aggregated metadata associated with a package.
+func OutputAggregate(logger *log.Logger, pckgName string) {
+	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
+	util.Check(err)
+
+	fmt.Printf("%s\n", compress.UnGzip(bytes))
 }
