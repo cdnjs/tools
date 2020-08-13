@@ -143,11 +143,8 @@ func main() {
 			// Update package metadata.
 			updatePackage(ctx, pckg, allVersions, f)
 
-			// For now, only update aggregate metadata for test package.
-			if *pckg.Name == "a-happy-tyler" {
-				// Update aggregated package metadata for cdnjs API.
-				updateAggregatedMetadata(ctx, pckg, newAssets)
-			}
+			// Update aggregated package metadata for cdnjs API.
+			updateAggregatedMetadata(ctx, pckg, newAssets)
 		}
 	}
 }
@@ -225,7 +222,10 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) {
 	kvWrites, err := kv.UpdateAggregatedMetadata(ctx, pckg, newAssets)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to update aggregated metadata: %s", err))
+		panic(fmt.Sprintf("(%s) failed to update aggregated metadata: %s", *pckg.Name, err))
+	}
+	if len(kvWrites) == 0 {
+		panic(fmt.Sprintf("(%s) failed to update aggregated metadata (no KV writes!)", *pckg.Name))
 	}
 
 	kvWritesJSON, err := json.Marshal(kvWrites)
