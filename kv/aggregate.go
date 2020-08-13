@@ -12,8 +12,10 @@ import (
 )
 
 // UpdateAggregatedMetadata updates a package's KV entry for aggregated metadata.
-func UpdateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) ([]string, error) {
+// Returns the keys written to KV, whether the existing entry was found, and if there were any errors.
+func UpdateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) ([]string, bool, error) {
 	aggPckg, err := getAggregatedMetadata(*pckg.Name)
+	var found bool
 	if err != nil {
 		switch err.(type) {
 		case KeyNotFoundError:
@@ -24,15 +26,17 @@ func UpdateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 			}
 		default:
 			{
-				return nil, err
+				return nil, false, err
 			}
 		}
 	} else {
 		util.Debugf(ctx, "Aggregated metadata for `%s` found. Updating aggregated metadata...\n", *pckg.Name)
 		pckg.Assets = append(aggPckg.Assets, newAssets...)
+		found = true
 	}
 
-	return writeAggregatedMetadata(ctx, pckg)
+	successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
+	return successfulWrites, found, err
 }
 
 // Reads an aggregated metadata entry in KV, ungzipping it and

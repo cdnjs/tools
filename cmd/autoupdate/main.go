@@ -218,9 +218,14 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 	}
 }
 
+type aggregatedMetadataLog struct {
+	Found bool     `json:"found"`
+	Keys  []string `json:"kv_writes"`
+}
+
 // Update aggregated package metadata for cdnjs API.
 func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) {
-	kvWrites, err := kv.UpdateAggregatedMetadata(ctx, pckg, newAssets)
+	kvWrites, found, err := kv.UpdateAggregatedMetadata(ctx, pckg, newAssets)
 	if err != nil {
 		panic(fmt.Sprintf("(%s) failed to update aggregated metadata: %s", *pckg.Name, err))
 	}
@@ -228,11 +233,14 @@ func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 		panic(fmt.Sprintf("(%s) failed to update aggregated metadata (no KV writes!)", *pckg.Name))
 	}
 
-	kvWritesJSON, err := json.Marshal(kvWrites)
+	logsJSON, err := json.Marshal(aggregatedMetadataLog{
+		Found: found,
+		Keys:  kvWrites,
+	})
 	util.Check(err)
 
 	// Will either be ["<package name>"] or [] if the KV write fails
-	packages.GitAdd(ctx, logsPath, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, kvWritesJSON))
+	packages.GitAdd(ctx, logsPath, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, logsJSON))
 	logsCommitMsg := fmt.Sprintf("Set %s aggregated metadata (%s)", *pckg.Name, *pckg.Version)
 	packages.GitCommit(ctx, logsPath, logsCommitMsg)
 	packages.GitPush(ctx, logsPath)
