@@ -48,6 +48,10 @@ func main() {
 
 			kv.InsertAggregateMetadataFromScratch(logger, pckgs)
 		}
+	case "aggregate-packages":
+		{
+			kv.OutputAllAggregatePackages()
+		}
 	case "packages":
 		{
 			kv.OutputAllPackages()

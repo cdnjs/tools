@@ -23,6 +23,14 @@ make kv && ./bin/kv upload-aggregate jquery mathjax fontawesome
 
 Lists all packages in KV.
 
+## `aggregate-packages`
+
+Lists all packages with aggregated metadata in KV. To check each package in KV has an entry for aggregated metadata:
+
+```
+unset DEBUG && make kv && diff <(./bin/kv aggregated-packages) <(./bin/kv packages)
+```
+
 ## `files`
 
 Gets the file names stored in KV for a package.
