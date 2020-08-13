@@ -61,6 +61,7 @@ func writeAggregatedMetadata(ctx context.Context, p *packages.Package) ([]string
 
 	// gzip the bytes
 	req := &writeRequest{
+		name:  *p.Name,
 		key:   *p.Name,
 		value: compress.Gzip9Native(v),
 	}
