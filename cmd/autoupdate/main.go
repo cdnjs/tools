@@ -64,8 +64,7 @@ func (n newVersionToCommit) GetTimeStamp() time.Time {
 func main() {
 	defer sentry.PanicHandler()
 
-	var noUpdate bool
-	var noPull bool
+	var noUpdate, noPull bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
 	flag.Parse()
@@ -132,71 +131,111 @@ func main() {
 			}
 		}
 
+		// If there are no versions, do not write any metadata.
+		if len(allVersions) <= 0 {
+			continue
+		}
+
 		if !noUpdate {
-			// Push new versions to git if there is at least 1 version.
-			if len(newVersionsToCommit) > 0 {
-				commitNewVersions(ctx, newVersionsToCommit)
-				writeNewVersionsToKV(ctx, newVersionsToCommit)
-				packages.GitPush(ctx, cdnjsPath)
-				packages.GitPush(ctx, logsPath)
-			}
+			// Push new versions to git.
+			newAssets := updateVersions(ctx, newVersionsToCommit)
 
-			// If there are no versions, do not write package metadata.
-			if len(allVersions) > 0 {
-				latestVersion := getLatestStableVersion(allVersions)
+			// Update package metadata.
+			updatePackage(ctx, pckg, allVersions, f)
 
-				if latestVersion == nil {
-					latestVersion = getLatestVersion(allVersions)
-				}
-
-				// latestVersion must be non-nil by now
-				// since we determined len(allVersions) > 0
-				pckg.Version = latestVersion
-				updateFilenameIfMissing(ctx, pckg)
-
-				destpckg, err := kv.GetPackage(ctx, *pckg.Name)
-				if err != nil {
-					// check for errors
-					// Note: currently panicking on unhandled errors, including AuthError
-					switch e := err.(type) {
-					case kv.KeyNotFoundError:
-						{
-							// key not found (new package)
-							util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
-						}
-					case packages.InvalidSchemaError:
-						{
-							// invalid schema found
-							// this should not occur, so log in sentry
-							// and rewrite the key so it follows the JSON schema
-							sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
-						}
-					default:
-						{
-							// unhandled error occurred
-							panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
-						}
-					}
-				} else if destpckg.Version != nil && *destpckg.Version == *pckg.Version {
-					// latest version is already in KV, but we still
-					// need to check if the `filename` changed or not
-					if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
-						continue
-					}
-				}
-
-				// Either `version`, `filename` or both changed,
-				// so git push the new metadata.
-				commitPackageVersion(ctx, pckg, f)
-				packages.GitPush(ctx, cdnjsPath)
-				packages.GitPush(ctx, logsPath)
-
-				if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
-					panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
-				}
+			// For now, only update aggregate metadata for test package.
+			if *pckg.Name == "a-happy-tyler" {
+				// Update aggregated package metadata for cdnjs API.
+				updateAggregatedMetadata(ctx, pckg, newAssets)
 			}
 		}
 	}
+}
+
+// Push new versions to git and KV.
+func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) []packages.Asset {
+	var assets []packages.Asset
+
+	if len(newVersionsToCommit) > 0 {
+		commitNewVersions(ctx, newVersionsToCommit)
+		assets = writeNewVersionsToKV(ctx, newVersionsToCommit)
+		packages.GitPush(ctx, cdnjsPath)
+		packages.GitPush(ctx, logsPath)
+	}
+
+	return assets
+}
+
+// Update package metadata in git and KV.
+func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []version, packageJSONPath string) {
+	latestVersion := getLatestStableVersion(allVersions)
+
+	if latestVersion == nil {
+		latestVersion = getLatestVersion(allVersions)
+	}
+
+	// latestVersion must be non-nil by now
+	// since we determined len(allVersions) > 0
+	pckg.Version = latestVersion
+	updateFilenameIfMissing(ctx, pckg)
+
+	destpckg, err := kv.GetPackage(ctx, *pckg.Name)
+	if err != nil {
+		// check for errors
+		// Note: currently panicking on unhandled errors, including AuthError
+		switch e := err.(type) {
+		case kv.KeyNotFoundError:
+			{
+				// key not found (new package)
+				util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
+			}
+		case packages.InvalidSchemaError:
+			{
+				// invalid schema found
+				// this should not occur, so log in sentry
+				// and rewrite the key so it follows the JSON schema
+				sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
+			}
+		default:
+			{
+				// unhandled error occurred
+				panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
+			}
+		}
+	} else if destpckg.Version != nil && *destpckg.Version == *pckg.Version {
+		// latest version is already in KV, but we still
+		// need to check if the `filename` changed or not
+		if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
+			return
+		}
+	}
+
+	// Either `version`, `filename` or both changed,
+	// so git push the new metadata.
+	commitPackageVersion(ctx, pckg, packageJSONPath)
+	packages.GitPush(ctx, cdnjsPath)
+	packages.GitPush(ctx, logsPath)
+
+	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
+		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
+	}
+}
+
+// Update aggregated package metadata for cdnjs API.
+func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAssets []packages.Asset) {
+	kvWrites, err := kv.UpdateAggregatedMetadata(ctx, pckg, newAssets)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to update aggregated metadata: %s", err))
+	}
+
+	kvWritesJSON, err := json.Marshal(kvWrites)
+	util.Check(err)
+
+	// Will either be ["<package name>"] or [] if the KV write fails
+	packages.GitAdd(ctx, logsPath, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, kvWritesJSON))
+	logsCommitMsg := fmt.Sprintf("Set %s aggregated metadata (%s)", *pckg.Name, *pckg.Version)
+	packages.GitCommit(ctx, logsPath, logsCommitMsg)
+	packages.GitPush(ctx, logsPath)
 }
 
 // Update the package's filename if the latest
@@ -206,10 +245,8 @@ func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
 	key := pckg.LatestVersionKVKey()
 	assets, err := kv.GetVersion(ctx, key)
 	if err != nil {
-		// TODO: Change to panic, since once all packages are uploaded to KV
-		// all package metadata will be in KV, so this error should never occur.
-		util.Debugf(ctx, "KV metadata not found for latest version `%s`", key)
-		return
+		// All package metadata will be in KV, so this error should never occur.
+		panic(fmt.Sprintf("KV metadata not found for latest version `%s`", key))
 	}
 
 	if len(assets) == 0 {
@@ -323,12 +360,14 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 }
 
 // write all versions to KV
-func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
+func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionToCommit) []packages.Asset {
+	var assets []packages.Asset
+
 	for _, newVersionToCommit := range newVersionsToCommit {
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		kvVersionMetadata, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false)
+		kvVersionFiles, kvVersionMetadata, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false)
 		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
@@ -343,7 +382,14 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 
 		metrics.ReportNewVersion(ctx)
+
+		assets = append(assets, packages.Asset{
+			Version: newVersionToCommit.newVersion,
+			Files:   kvVersionFiles,
+		})
 	}
+
+	return assets
 }
 
 func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {

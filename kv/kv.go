@@ -20,12 +20,13 @@ const (
 )
 
 var (
-	filesNamespaceID    = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
-	versionsNamespaceID = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
-	packagesNamespaceID = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
-	accountID           = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
-	apiToken            = util.GetEnv("WORKERS_KV_API_TOKEN")
-	api                 = getAPI()
+	filesNamespaceID              = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
+	versionsNamespaceID           = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
+	packagesNamespaceID           = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
+	aggregatedMetadataNamespaceID = util.GetEnv("WORKERS_KV_AGGREGATED_METADATA_NAMESPACE_ID")
+	accountID                     = util.GetEnv("WORKERS_KV_ACCOUNT_ID")
+	apiToken                      = util.GetEnv("WORKERS_KV_API_TOKEN")
+	api                           = getAPI()
 )
 
 // KeyNotFoundError represents a KV key not found.
@@ -109,21 +110,29 @@ func Read(key, namespaceID string) ([]byte, error) {
 // Note this function is used for testing only. For practical uses,
 // use the Cursor option to avoid being limited to 1000 KVs at a time.
 func ListByPrefix(prefix, namespaceID string) ([]string, error) {
-	o := cloudflare.ListWorkersKVsOptions{
-		Prefix: &prefix,
-	}
+	var cursor *string
+	var results []string
+	for {
+		o := cloudflare.ListWorkersKVsOptions{
+			Prefix: &prefix,
+			Cursor: cursor,
+		}
 
-	resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
+		if err != nil {
+			return nil, err
+		}
 
-	results := make([]string, len(resp.Result))
-	for i := 0; i < len(resp.Result); i++ {
-		results[i] = resp.Result[i].Name
-	}
+		for _, r := range resp.Result {
+			results = append(results, r.Name)
+		}
 
-	return results, nil
+		if resp.Cursor == "" {
+			return results, nil
+		}
+
+		cursor = &resp.Cursor
+	}
 }
 
 // Encodes a byte array to a base64 string.
@@ -142,6 +151,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 	for _, kv := range kvs {
 		if unencodedSize := int64(len(kv.value)); unencodedSize > util.MaxFileSize {
 			util.Debugf(ctx, "ignoring oversized file: %s (%d)\n", kv.key, unencodedSize)
+			sentry.NotifyError(fmt.Errorf("ignoring oversized file: %s (%d)", kv.key, unencodedSize))
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
@@ -206,22 +216,22 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]byte, []string, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]string, []byte, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// write version metadata to KV
-	versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
+	fromVersionPaths, versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if metaOnly {
-		return versionBytes, nil, nil
+		return fromVersionPaths, versionBytes, nil, nil
 	}
 
 	// write files to KV
-	successfulNames, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
-	return versionBytes, successfulNames, err
+	filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	return fromVersionPaths, versionBytes, filesPushedToKV, err
 }

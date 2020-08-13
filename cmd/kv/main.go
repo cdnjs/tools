@@ -39,6 +39,23 @@ func main() {
 
 			kv.InsertFromDisk(logger, pckgs, metaOnly)
 		}
+	case "upload-aggregate":
+		{
+			pckgs := flag.Args()[1:]
+			if len(pckgs) == 0 {
+				panic("no packages specified")
+			}
+
+			kv.InsertAggregateMetadataFromScratch(logger, pckgs)
+		}
+	case "aggregate-packages":
+		{
+			kv.OutputAllAggregatePackages()
+		}
+	case "packages":
+		{
+			kv.OutputAllPackages()
+		}
 	case "files":
 		{
 			pckg := flag.Arg(1)
@@ -56,6 +73,15 @@ func main() {
 			}
 
 			kv.OutputAllMeta(logger, pckg)
+		}
+	case "aggregate":
+		{
+			pckg := flag.Arg(1)
+			if pckg == "" {
+				panic("no package specified")
+			}
+
+			kv.OutputAggregate(pckg)
 		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))

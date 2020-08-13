@@ -1,10 +1,16 @@
 package kv
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"path"
+	"strings"
+	"sync"
 
+	"github.com/cdnjs/tools/compress"
+
+	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
@@ -18,7 +24,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
 		pckg, readerr := GetPackage(ctx, pckgname)
 		if readerr != nil {
-			util.Infof(ctx, "p(%d/%d) FAILED TO GET PACKAGE %s: %s\n", i+1, len(pckgs), pckgname, readerr)
+			util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgname, readerr)
 			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgname, readerr))
 			continue
 		}
@@ -27,10 +33,93 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		for j, version := range versions {
 			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 			dir := path.Join(basePath, *pckg.Name, version)
-			_, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
+			_, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
 			util.Check(err)
 		}
 	}
+}
+
+// InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
+// into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
+func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
+	var wg sync.WaitGroup
+	done := make(chan bool)
+
+	log.Println("Starting...")
+	for index, name := range pckgs {
+		wg.Add(1)
+		go func(i int, pckgName string) {
+			defer wg.Done()
+			defer func() { done <- true }()
+
+			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+			pckg, err := GetPackage(ctx, pckgName)
+			if err != nil {
+				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
+				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
+				return
+			}
+
+			//util.Infof(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
+			versions, err := GetVersions(pckgName)
+			util.Check(err)
+
+			var assets []packages.Asset
+			for _, version := range versions {
+				// util.Infof(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+				files, err := GetVersion(ctx, version)
+				util.Check(err)
+				assets = append(assets, packages.Asset{
+					Version: strings.TrimPrefix(version, pckgName+"/"),
+					Files:   files,
+				})
+			}
+
+			pckg.Assets = assets
+			successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
+			util.Check(err)
+
+			if len(successfulWrites) == 0 {
+				util.Infof(ctx, "p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name)
+				sentry.NotifyError(fmt.Errorf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
+			}
+		}(index, name)
+	}
+
+	// show some progress
+	go func() {
+		i := 0
+		for {
+			<-done
+			i++
+			log.Printf("Completed (%d/%d)\n", i, len(pckgs))
+		}
+	}()
+
+	wg.Wait()
+	log.Println("Done.")
+}
+
+// OutputAllAggregatePackages outputs all the names of all aggregated package metadata entries in KV.
+func OutputAllAggregatePackages() {
+	res, err := ListByPrefix("", aggregatedMetadataNamespaceID)
+	util.Check(err)
+
+	bytes, err := json.Marshal(res)
+	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
+}
+
+// OutputAllPackages outputs the names of all packages in KV.
+func OutputAllPackages() {
+	res, err := ListByPrefix("", packagesNamespaceID)
+	util.Check(err)
+
+	bytes, err := json.Marshal(res)
+	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
 }
 
 // OutputAllFiles outputs all files stored in KV for a particular package.
@@ -86,4 +175,18 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 			}
 		}
 	}
+}
+
+// OutputAggregate outputs the aggregated metadata associated with a package.
+func OutputAggregate(pckgName string) {
+	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
+	util.Check(err)
+
+	uncompressed := compress.UnGzip(bytes)
+
+	// check if it can unmarshal into a package successfully
+	var p packages.Package
+	util.Check(json.Unmarshal(uncompressed, &p))
+
+	fmt.Printf("%s\n", uncompressed)
 }
