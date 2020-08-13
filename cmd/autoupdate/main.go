@@ -138,33 +138,39 @@ func main() {
 
 		if !noUpdate {
 			// Push new versions to git.
-			newAssets := updateVersions(ctx, newVersionsToCommit)
+			newAssets, versionsChanged := updateVersions(ctx, newVersionsToCommit)
 
 			// Update package metadata.
-			updatePackage(ctx, pckg, allVersions, f)
+			pkgChanged := updatePackage(ctx, pckg, allVersions, f)
 
-			// Update aggregated package metadata for cdnjs API.
-			updateAggregatedMetadata(ctx, pckg, newAssets)
+			if versionsChanged || pkgChanged {
+				// Update aggregated package metadata for cdnjs API.
+				updateAggregatedMetadata(ctx, pckg, newAssets)
+			}
 		}
 	}
 }
 
 // Push new versions to git and KV.
-func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) []packages.Asset {
+// Returns if anything was pushed to KV.
+func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) ([]packages.Asset, bool) {
 	var assets []packages.Asset
+	var changed bool
 
 	if len(newVersionsToCommit) > 0 {
 		commitNewVersions(ctx, newVersionsToCommit)
 		assets = writeNewVersionsToKV(ctx, newVersionsToCommit)
 		packages.GitPush(ctx, cdnjsPath)
 		packages.GitPush(ctx, logsPath)
+		changed = true
 	}
 
-	return assets
+	return assets, changed
 }
 
 // Update package metadata in git and KV.
-func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []version, packageJSONPath string) {
+// Returns if the package was changed.
+func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []version, packageJSONPath string) bool {
 	latestVersion := getLatestStableVersion(allVersions)
 
 	if latestVersion == nil {
@@ -203,7 +209,7 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 		// latest version is already in KV, but we still
 		// need to check if the `filename` changed or not
 		if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
-			return
+			return false
 		}
 	}
 
@@ -216,6 +222,8 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
 	}
+
+	return true
 }
 
 type aggregatedMetadataLog struct {
