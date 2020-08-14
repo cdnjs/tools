@@ -74,5 +74,5 @@ make kv && ./bin/kv purge a-happy-tyler
 To purge cache of a specific version:
 
 ```
-./bin/kv purge a-happy-tyler/versions/1.0.0
+./bin/kv purge a-happy-tyler/1.0.0
 ```
