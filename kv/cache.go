@@ -3,7 +3,6 @@ package kv
 import (
 	"fmt"
 
-	"github.com/cdnjs/tools/util"
 	"github.com/cloudflare/cloudflare-go"
 )
 
@@ -12,7 +11,11 @@ func PurgeTags(tags []string) error {
 	resp, err := api.PurgeCache(zoneID, cloudflare.PurgeCacheRequest{
 		Tags: tags,
 	})
-	util.Check(err)
-	fmt.Println(resp)
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return fmt.Errorf(fmt.Sprintf("purge tags fail: %v", resp))
+	}
 	return nil
 }
