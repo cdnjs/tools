@@ -39,7 +39,7 @@ func GetFiles(key string) ([]string, error) {
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
 func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []*writeRequest, error) {
 	baseVersionPath := path.Join(pkg, version)
-	var fileKVs, sriKVs []*writeRequest
+	var sriKVs, fileKVs []*writeRequest
 
 	for _, fromVersionPath := range fromVersionPaths {
 		ext := path.Ext(fromVersionPath)
@@ -109,13 +109,13 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 		})
 	}
 
-	return fileKVs, sriKVs, nil
+	return sriKVs, fileKVs, nil
 }
 
 // Updates KV with new version's files.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
 // The function will return the list of all files pushed to KV and the list of SRIs pushed to KV.
-func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]string, []string, error) {
+func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly bool) ([]string, []string, error) {
 	// create bulk of requests
 	fileReqs, sriReqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
 	if err != nil {
@@ -126,6 +126,9 @@ func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, 
 	successfulSRIWrites, err := encodeAndWriteKVBulk(ctx, sriReqs, srisNamespaceID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if srisOnly {
+		return successfulSRIWrites, nil, nil
 	}
 
 	successfulFileWrites, err := encodeAndWriteKVBulk(ctx, fileReqs, filesNamespaceID)

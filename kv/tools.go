@@ -17,7 +17,7 @@ import (
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
+func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
 	for i, pckgname := range pckgs {
@@ -33,7 +33,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		for j, version := range versions {
 			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 			dir := path.Join(basePath, *pckg.Name, version)
-			_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
+			_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly)
 			util.Check(err)
 		}
 	}
