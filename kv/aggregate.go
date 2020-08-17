@@ -42,7 +42,7 @@ func UpdateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 // Reads an aggregated metadata entry in KV, ungzipping it and
 // unmarshalling it into a *packages.Package.
 func getAggregatedMetadata(key string) (*packages.Package, error) {
-	gzipBytes, err := Read(key, aggregatedMetadataNamespaceID)
+	gzipBytes, err := read(key, aggregatedMetadataNamespaceID)
 
 	if err != nil {
 		return nil, err

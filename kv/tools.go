@@ -102,7 +102,7 @@ func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 
 // OutputAllAggregatePackages outputs all the names of all aggregated package metadata entries in KV.
 func OutputAllAggregatePackages() {
-	res, err := ListByPrefix("", aggregatedMetadataNamespaceID)
+	res, err := listByPrefixNamesOnly("", aggregatedMetadataNamespaceID)
 	util.Check(err)
 
 	bytes, err := json.Marshal(res)
@@ -113,7 +113,7 @@ func OutputAllAggregatePackages() {
 
 // OutputAllPackages outputs the names of all packages in KV.
 func OutputAllPackages() {
-	res, err := ListByPrefix("", packagesNamespaceID)
+	res, err := listByPrefixNamesOnly("", packagesNamespaceID)
 	util.Check(err)
 
 	bytes, err := json.Marshal(res)
@@ -179,7 +179,7 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 
 // OutputAggregate outputs the aggregated metadata associated with a package.
 func OutputAggregate(pckgName string) {
-	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
+	bytes, err := read(pckgName, aggregatedMetadataNamespaceID)
 	util.Check(err)
 
 	uncompressed := compress.UnGzip(bytes)
@@ -189,4 +189,15 @@ func OutputAggregate(pckgName string) {
 	util.Check(json.Unmarshal(uncompressed, &p))
 
 	fmt.Printf("%s\n", uncompressed)
+}
+
+// OutputSRIs lists the SRIs namespace by prefix.
+func OutputSRIs(prefix string) {
+	res, err := listByPrefix(prefix, srisNamespaceID)
+	util.Check(err)
+
+	bytes, err := json.Marshal(res)
+	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
 }

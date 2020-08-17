@@ -31,7 +31,7 @@ var (
 // GetFiles gets the list of KV file keys for a particular package.
 // The `key` must be the package/version (ex. `a-happy-tyler/1.0.0`)
 func GetFiles(key string) ([]string, error) {
-	return ListByPrefix(key+"/", filesNamespaceID)
+	return listByPrefixNamesOnly(key+"/", filesNamespaceID)
 }
 
 // Gets the requests to update a number of files in KV, as well as the files' SRIs.

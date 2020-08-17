@@ -54,3 +54,19 @@ Gets the aggregated metadata associated with a package in KV.
 ```
 make kv && ./bin/kv aggregate jquery
 ```
+
+## `sris`
+
+Lists all SRIs for files starting with a prefix.
+
+```
+make kv && ./bin/kv sris a-happy-tyler
+```
+
+```
+make kv && ./bin/kv sris a-happy-tyler/1.0.0
+```
+
+```
+make kv && ./bin/kv sris a-happy-tyler/1.0.0/happy.js
+```

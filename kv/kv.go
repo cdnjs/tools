@@ -88,8 +88,8 @@ func checkSuccess(r cloudflare.Response, err error) error {
 	return nil
 }
 
-// Read reads an entry from Workers KV.
-func Read(key, namespaceID string) ([]byte, error) {
+// read reads an entry from Workers KV.
+func read(key, namespaceID string) ([]byte, error) {
 	bytes, err := api.ReadWorkersKV(context.Background(), namespaceID, key)
 	if err != nil {
 		errString := err.Error()
@@ -108,12 +108,10 @@ func Read(key, namespaceID string) ([]byte, error) {
 	return bytes, err
 }
 
-// ListByPrefix returns all KVs that start with a prefix.
-// Note this function is used for testing only. For practical uses,
-// use the Cursor option to avoid being limited to 1000 KVs at a time.
-func ListByPrefix(prefix, namespaceID string) ([]string, error) {
+// Returns all KVs that start with a prefix.
+func listByPrefix(prefix, namespaceID string) ([]cloudflare.StorageKey, error) {
 	var cursor *string
-	var results []string
+	var results []cloudflare.StorageKey
 	for {
 		o := cloudflare.ListWorkersKVsOptions{
 			Prefix: &prefix,
@@ -125,9 +123,7 @@ func ListByPrefix(prefix, namespaceID string) ([]string, error) {
 			return nil, err
 		}
 
-		for _, r := range resp.Result {
-			results = append(results, r.Name)
-		}
+		results = append(results, resp.Result...)
 
 		if resp.Cursor == "" {
 			return results, nil
@@ -136,6 +132,22 @@ func ListByPrefix(prefix, namespaceID string) ([]string, error) {
 		cursor = &resp.Cursor
 	}
 }
+
+// Lists by prefix and then returns only the names of the results.
+func listByPrefixNamesOnly(prefix, namespaceID string) ([]string, error) {
+	results, err := listByPrefix(prefix, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, r := range results {
+		names = append(names, r.Name)
+	}
+
+	return names, nil
+}
+
+// func ListByPrefix
 
 // Encodes a byte array to a base64 string.
 func encodeToBase64(bytes []byte) string {

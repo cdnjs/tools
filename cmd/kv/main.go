@@ -83,6 +83,15 @@ func main() {
 
 			kv.OutputAggregate(pckg)
 		}
+	case "sris":
+		{
+			prefix := flag.Arg(1)
+			if prefix == "" {
+				panic("no prefix specified") // avoid listing all SRIs
+			}
+
+			kv.OutputSRIs(prefix)
+		}
 	default:
 		panic(fmt.Sprintf("unknown subcommand: `%s`", subcommand))
 	}
