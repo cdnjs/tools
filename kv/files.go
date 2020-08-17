@@ -37,7 +37,7 @@ func GetFiles(key string) ([]string, error) {
 // Gets the requests to update a number of files in KV, as well as the files' SRIs.
 // In order to do this, it will create a brotli and gzip version for each uncompressed file
 // that is not banned (ex. `.woff2`, `.br`, `.gz`).
-func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string) ([]*writeRequest, []*writeRequest, error) {
+func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly bool) ([]*writeRequest, []*writeRequest, error) {
 	baseVersionPath := path.Join(pkg, version)
 	var sriKVs, fileKVs []*writeRequest
 
@@ -69,6 +69,10 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 				SRI: sri.CalculateSRI(bytes),
 			},
 		})
+
+		if srisOnly {
+			continue
+		}
 
 		// set metadata
 		lastModifiedTime := info.ModTime()
@@ -117,7 +121,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 // The function will return the list of all files pushed to KV and the list of SRIs pushed to KV.
 func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly bool) ([]string, []string, error) {
 	// create bulk of requests
-	fileReqs, sriReqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	fileReqs, sriReqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly)
 	if err != nil {
 		return nil, nil, err
 	}
