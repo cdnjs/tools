@@ -20,6 +20,7 @@ const (
 )
 
 var (
+	srisNamespaceID               = util.GetEnv("WORKERS_KV_SRIS_NAMESPACE_ID")
 	filesNamespaceID              = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
 	versionsNamespaceID           = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
 	packagesNamespaceID           = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
@@ -64,8 +65,9 @@ type writeRequest struct {
 // FileMetadata represents metadata for a
 // particular KV.
 type FileMetadata struct {
-	ETag         string `json:"etag"`
-	LastModified string `json:"last_modified"`
+	ETag         string `json:"etag,omitempty"`
+	LastModified string `json:"last_modified,omitempty"`
+	SRI          string `json:"sri,omitempty"`
 }
 
 // Gets a new *cloudflare.API.
@@ -216,22 +218,22 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]string, []byte, []string, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]string, []byte, []string, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// write version metadata to KV
 	fromVersionPaths, versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	if metaOnly {
-		return fromVersionPaths, versionBytes, nil, nil
+		return fromVersionPaths, versionBytes, nil, nil, nil
 	}
 
 	// write files to KV
-	filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
-	return fromVersionPaths, versionBytes, filesPushedToKV, err
+	srisPushedToKV, filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
+	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, err
 }
