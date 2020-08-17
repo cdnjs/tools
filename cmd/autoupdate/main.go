@@ -396,8 +396,8 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 
 		// Git add/commit new version to cdnjs/logs
 		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version SRIs kv: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv files: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv SRIs: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
 		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 
