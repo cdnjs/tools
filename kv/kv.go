@@ -139,6 +139,7 @@ func listByPrefixNamesOnly(prefix, namespaceID string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var names []string
 	for _, r := range results {
 		names = append(names, r.Name)

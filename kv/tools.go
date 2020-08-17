@@ -196,7 +196,12 @@ func OutputSRIs(prefix string) {
 	res, err := listByPrefix(prefix, srisNamespaceID)
 	util.Check(err)
 
-	bytes, err := json.Marshal(res)
+	sris := make(map[string]string)
+	for _, r := range res {
+		sris[r.Name] = r.Metadata.(map[string]interface{})["sri"].(string)
+	}
+
+	bytes, err := json.Marshal(sris)
 	util.Check(err)
 
 	fmt.Printf("%s\n", bytes)
