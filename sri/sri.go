@@ -4,23 +4,25 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
-	"io"
-	"os"
+	"io/ioutil"
 
 	"github.com/cdnjs/tools/util"
 )
 
 // CalculateFileSRI generates a Subresource Integrity string for a particular file.
 func CalculateFileSRI(filename string) string {
-	f, err := os.Open(filename)
+	bytes, err := ioutil.ReadFile(filename)
 	util.Check(err)
-	defer f.Close()
 
+	return CalculateSRI(bytes)
+}
+
+// CalculateSRI calculates a Subresource Integrity string from bytes.
+func CalculateSRI(bytes []byte) string {
 	h := sha512.New()
-	_, err = io.Copy(h, f)
+	_, err := h.Write(bytes)
 	util.Check(err)
 
 	sri := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
 	return fmt.Sprintf("sha512-%s", sri)
 }

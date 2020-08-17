@@ -6,6 +6,8 @@ Tools to test our Workers KV namespace.
 
 Inserts packages from disk to KV. Package files and version metadata will be pushed to KV.
 If the flag `-meta-only` is set, only version metadata will be pushed to KV.
+If the flag `-sris-only` is set, only SRIs are pushed to KV.
+These two flags are mutually exclusive.
 
 ```
 make kv && ./bin/kv upload jquery mathjax fontawesome
@@ -53,4 +55,20 @@ Gets the aggregated metadata associated with a package in KV.
 
 ```
 make kv && ./bin/kv aggregate jquery
+```
+
+## `sris`
+
+Lists all SRIs for files starting with a prefix.
+
+```
+make kv && ./bin/kv sris a-happy-tyler
+```
+
+```
+make kv && ./bin/kv sris a-happy-tyler/1.0.0
+```
+
+```
+make kv && ./bin/kv sris a-happy-tyler/1.0.0/happy.js
 ```

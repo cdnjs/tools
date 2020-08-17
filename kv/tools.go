@@ -17,7 +17,7 @@ import (
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
+func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
 	for i, pckgname := range pckgs {
@@ -33,7 +33,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly bool) {
 		for j, version := range versions {
 			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 			dir := path.Join(basePath, *pckg.Name, version)
-			_, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly)
+			_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly)
 			util.Check(err)
 		}
 	}
@@ -102,7 +102,7 @@ func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 
 // OutputAllAggregatePackages outputs all the names of all aggregated package metadata entries in KV.
 func OutputAllAggregatePackages() {
-	res, err := ListByPrefix("", aggregatedMetadataNamespaceID)
+	res, err := listByPrefixNamesOnly("", aggregatedMetadataNamespaceID)
 	util.Check(err)
 
 	bytes, err := json.Marshal(res)
@@ -113,7 +113,7 @@ func OutputAllAggregatePackages() {
 
 // OutputAllPackages outputs the names of all packages in KV.
 func OutputAllPackages() {
-	res, err := ListByPrefix("", packagesNamespaceID)
+	res, err := listByPrefixNamesOnly("", packagesNamespaceID)
 	util.Check(err)
 
 	bytes, err := json.Marshal(res)
@@ -179,7 +179,7 @@ func OutputAllMeta(logger *log.Logger, pckgName string) {
 
 // OutputAggregate outputs the aggregated metadata associated with a package.
 func OutputAggregate(pckgName string) {
-	bytes, err := Read(pckgName, aggregatedMetadataNamespaceID)
+	bytes, err := read(pckgName, aggregatedMetadataNamespaceID)
 	util.Check(err)
 
 	uncompressed := compress.UnGzip(bytes)
@@ -189,4 +189,20 @@ func OutputAggregate(pckgName string) {
 	util.Check(json.Unmarshal(uncompressed, &p))
 
 	fmt.Printf("%s\n", uncompressed)
+}
+
+// OutputSRIs lists the SRIs namespace by prefix.
+func OutputSRIs(prefix string) {
+	res, err := listByPrefix(prefix, srisNamespaceID)
+	util.Check(err)
+
+	sris := make(map[string]string)
+	for _, r := range res {
+		sris[r.Name] = r.Metadata.(map[string]interface{})["sri"].(string)
+	}
+
+	bytes, err := json.Marshal(sris)
+	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
 }

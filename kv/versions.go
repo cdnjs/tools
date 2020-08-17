@@ -11,12 +11,12 @@ import (
 
 // GetVersions gets the list of KV version keys for a particular package.
 func GetVersions(pckgname string) ([]string, error) {
-	return ListByPrefix(pckgname+"/", versionsNamespaceID)
+	return listByPrefixNamesOnly(pckgname+"/", versionsNamespaceID)
 }
 
 // GetVersion gets metadata for a particular version.
 func GetVersion(ctx context.Context, key string) ([]string, error) {
-	bytes, err := Read(key, versionsNamespaceID)
+	bytes, err := read(key, versionsNamespaceID)
 	if err != nil {
 		return nil, err
 	}

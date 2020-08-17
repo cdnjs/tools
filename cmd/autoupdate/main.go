@@ -383,7 +383,7 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		kvVersionFiles, kvVersionMetadata, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false)
+		kvVersionFiles, kvVersionMetadata, kvSRIs, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false, false)
 		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}
@@ -391,9 +391,13 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		kvCompressedFilesJSON, err := json.Marshal(kvCompressedFiles)
 		util.Check(err)
 
+		kvSRIsJSON, err := json.Marshal(kvSRIs)
+		util.Check(err)
+
 		// Git add/commit new version to cdnjs/logs
 		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv files: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
+		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv SRIs: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
 		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		packages.GitCommit(ctx, logsPath, logsCommitMsg)
 

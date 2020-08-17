@@ -12,7 +12,7 @@ import (
 // a packages.InvalidSchemaError if the schema is invalid, a KeyNotFoundError
 // if the KV key is not found, and an AuthError if there is an authentication error.
 func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
-	bytes, err := Read(key, packagesNamespaceID)
+	bytes, err := read(key, packagesNamespaceID)
 
 	if err != nil {
 		return nil, err

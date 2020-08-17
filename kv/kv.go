@@ -20,6 +20,7 @@ const (
 )
 
 var (
+	srisNamespaceID               = util.GetEnv("WORKERS_KV_SRIS_NAMESPACE_ID")
 	filesNamespaceID              = util.GetEnv("WORKERS_KV_FILES_NAMESPACE_ID")
 	versionsNamespaceID           = util.GetEnv("WORKERS_KV_VERSIONS_NAMESPACE_ID")
 	packagesNamespaceID           = util.GetEnv("WORKERS_KV_PACKAGES_NAMESPACE_ID")
@@ -64,8 +65,9 @@ type writeRequest struct {
 // FileMetadata represents metadata for a
 // particular KV.
 type FileMetadata struct {
-	ETag         string `json:"etag"`
-	LastModified string `json:"last_modified"`
+	ETag         string `json:"etag,omitempty"`
+	LastModified string `json:"last_modified,omitempty"`
+	SRI          string `json:"sri,omitempty"`
 }
 
 // Gets a new *cloudflare.API.
@@ -86,8 +88,8 @@ func checkSuccess(r cloudflare.Response, err error) error {
 	return nil
 }
 
-// Read reads an entry from Workers KV.
-func Read(key, namespaceID string) ([]byte, error) {
+// read reads an entry from Workers KV.
+func read(key, namespaceID string) ([]byte, error) {
 	bytes, err := api.ReadWorkersKV(context.Background(), namespaceID, key)
 	if err != nil {
 		errString := err.Error()
@@ -106,12 +108,10 @@ func Read(key, namespaceID string) ([]byte, error) {
 	return bytes, err
 }
 
-// ListByPrefix returns all KVs that start with a prefix.
-// Note this function is used for testing only. For practical uses,
-// use the Cursor option to avoid being limited to 1000 KVs at a time.
-func ListByPrefix(prefix, namespaceID string) ([]string, error) {
+// Returns all KVs that start with a prefix.
+func listByPrefix(prefix, namespaceID string) ([]cloudflare.StorageKey, error) {
 	var cursor *string
-	var results []string
+	var results []cloudflare.StorageKey
 	for {
 		o := cloudflare.ListWorkersKVsOptions{
 			Prefix: &prefix,
@@ -123,9 +123,7 @@ func ListByPrefix(prefix, namespaceID string) ([]string, error) {
 			return nil, err
 		}
 
-		for _, r := range resp.Result {
-			results = append(results, r.Name)
-		}
+		results = append(results, resp.Result...)
 
 		if resp.Cursor == "" {
 			return results, nil
@@ -134,6 +132,23 @@ func ListByPrefix(prefix, namespaceID string) ([]string, error) {
 		cursor = &resp.Cursor
 	}
 }
+
+// Lists by prefix and then returns only the names of the results.
+func listByPrefixNamesOnly(prefix, namespaceID string) ([]string, error) {
+	results, err := listByPrefix(prefix, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+	for _, r := range results {
+		names = append(names, r.Name)
+	}
+
+	return names, nil
+}
+
+// func ListByPrefix
 
 // Encodes a byte array to a base64 string.
 func encodeToBase64(bytes []byte) string {
@@ -216,22 +231,22 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly bool) ([]string, []byte, []string, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly bool) ([]string, []byte, []string, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// write version metadata to KV
 	fromVersionPaths, versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	if metaOnly {
-		return fromVersionPaths, versionBytes, nil, nil
+		return fromVersionPaths, versionBytes, nil, nil, nil
 	}
 
 	// write files to KV
-	filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths)
-	return fromVersionPaths, versionBytes, filesPushedToKV, err
+	srisPushedToKV, filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly)
+	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, err
 }
