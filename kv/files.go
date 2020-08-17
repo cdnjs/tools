@@ -119,7 +119,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 
 // Updates KV with new version's files.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
-// The function will return the list of all files pushed to KV and the list of SRIs pushed to KV.
+// The function will return the list of SRIs pushed to KV and the list of all files pushed to KV.
 func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly bool) ([]string, []string, error) {
 	// create bulk of requests
 	sriReqs, fileReqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly)
