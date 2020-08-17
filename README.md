@@ -47,6 +47,7 @@ This repository contains various tools that we use to help with the process of m
 - `BOT_BASE_PATH`: cdnjs home
 - `SENTRY_DSN` sentry data source name (DSN)
 - `WORKERS_KV_FILES_NAMESPACE_ID` workers kv namespace ID for files
+- `WORKERS_KV_SRIS_NAMESPACE_ID` workers kv namespace ID for file SRIs
 - `WORKERS_KV_VERSIONS_NAMESPACE_ID` workers kv namespace ID containing metadata for versions
 - `WORKERS_KV_PACKAGES_NAMESPACE_ID` workers kv namespace ID containing metadata for packages
 - `WORKERS_KV_AGGREGATED_METADATA_NAMESPACE_ID` workers kv namespace ID containing aggregated metadata for packages
