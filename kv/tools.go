@@ -20,23 +20,51 @@ import (
 func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
-	for i, pckgname := range pckgs {
-		ctx := util.ContextWithEntries(util.GetStandardEntries(pckgname, logger)...)
-		pckg, readerr := GetPackage(ctx, pckgname)
-		if readerr != nil {
-			util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgname, readerr)
-			sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgname, readerr))
-			continue
-		}
+	var wg sync.WaitGroup
+	done := make(chan bool)
 
-		versions := pckg.Versions()
-		for j, version := range versions {
-			util.Infof(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
-			dir := path.Join(basePath, *pckg.Name, version)
-			_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly)
-			util.Check(err)
-		}
+	log.Println("Starting...")
+
+	for index, name := range pckgs {
+		wg.Add(1)
+		go func(i int, pckgName string) {
+			defer wg.Done()
+			defer func() { done <- true }()
+
+			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+			pckg, readerr := GetPackage(ctx, pckgName)
+			if readerr != nil {
+				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, readerr)
+				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, readerr))
+				return
+			}
+
+			versions := pckg.Versions()
+			for j, version := range versions {
+				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+				dir := path.Join(basePath, *pckg.Name, version)
+				_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly)
+				if err != nil {
+					util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
+					sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
+					return
+				}
+			}
+		}(index, name)
 	}
+
+	// show some progress
+	go func() {
+		i := 0
+		for {
+			<-done
+			i++
+			log.Printf("Completed (%d/%d)\n", i, len(pckgs))
+		}
+	}()
+
+	wg.Wait()
+	log.Println("Done.")
 }
 
 // InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
@@ -60,13 +88,13 @@ func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 				return
 			}
 
-			//util.Infof(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
+			util.Debugf(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
 			versions, err := GetVersions(pckgName)
 			util.Check(err)
 
 			var assets []packages.Asset
-			for _, version := range versions {
-				// util.Infof(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+			for j, version := range versions {
+				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 				files, err := GetVersion(ctx, version)
 				util.Check(err)
 				assets = append(assets, packages.Asset{
