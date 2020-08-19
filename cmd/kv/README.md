@@ -37,9 +37,12 @@ unset DEBUG && make kv && diff <(./bin/kv aggregated-packages) <(./bin/kv packag
 ## `file`
 
 Gets a file from KV using its KV key.
+If the flag `-ungzip` is set, the content will be ungzipped.
+If the flag `-unbrotli` is set, the content will be unbrotlied.
+These two flags are mutually exclusive.
 
 ```
-make kv && ./bin/kv file jquery/3.5.1/jquery.min.js.br
+make kv && ./bin/kv -ungzip file jquery/3.5.1/jquery.min.js.gz
 ```
 
 ## `files`

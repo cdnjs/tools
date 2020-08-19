@@ -21,10 +21,12 @@ func init() {
 
 func main() {
 	defer sentry.PanicHandler()
-	var metaOnly, srisOnly, filesOnly bool
+	var metaOnly, srisOnly, filesOnly, ungzip, unbrotli bool
 	flag.BoolVar(&metaOnly, "meta-only", false, "If set, only version metadata is uploaded to KV (no files, no SRIs).")
 	flag.BoolVar(&srisOnly, "sris-only", false, "If set, only file SRIs are uploaded to KV (no files, no metadata).")
 	flag.BoolVar(&filesOnly, "files-only", false, "If set, only files are uploaded to KV (no metadata, no SRIs).")
+	flag.BoolVar(&ungzip, "ungzip", false, "If set, the file content will be decompressed with gzip.")
+	flag.BoolVar(&unbrotli, "unbrotli", false, "If set, the file content will be decompressed with brotli.")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -67,6 +69,19 @@ func main() {
 	case "packages":
 		{
 			kv.OutputAllPackages()
+		}
+	case "file":
+		{
+			if ungzip && unbrotli {
+				panic("can only set one of -ungzip, -unbrotli")
+			}
+
+			file := flag.Arg(1)
+			if file == "" {
+				panic("no file specified")
+			}
+
+			kv.OutputFile(logger, file, ungzip, unbrotli)
 		}
 	case "files":
 		{

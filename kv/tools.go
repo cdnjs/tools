@@ -3,7 +3,9 @@ package kv
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -146,6 +148,31 @@ func OutputAllPackages() {
 
 	bytes, err := json.Marshal(res)
 	util.Check(err)
+
+	fmt.Printf("%s\n", bytes)
+}
+
+// OutputFile outputs a file stored in KV.
+func OutputFile(logger *log.Logger, fileKey string, ungzip, unbrotli bool) {
+	ctx := util.ContextWithEntries(util.GetStandardEntries(fileKey, logger)...)
+
+	util.Infof(ctx, "Fetching file from KV...\n")
+	bytes, err := read(fileKey, filesNamespaceID)
+	util.Check(err)
+
+	if ungzip {
+		util.Infof(ctx, "Decompressing gzip...\n")
+		bytes = compress.UnGzip(bytes)
+	} else if unbrotli {
+		util.Infof(ctx, "Decompressing brotli...\n")
+		file, err := ioutil.TempFile("", "")
+		util.Check(err)
+		defer os.Remove(file.Name())
+
+		_, err = file.Write(bytes)
+		util.Check(err)
+		bytes = compress.UnBrotliCLI(ctx, file.Name())
+	}
 
 	fmt.Printf("%s\n", bytes)
 }
