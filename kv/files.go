@@ -26,6 +26,11 @@ var (
 	doNotCompress = map[string]bool{
 		".woff2": true,
 	}
+	// we calculate SRIs for these file extensions
+	calculateSRI = map[string]bool{
+		".js":  true,
+		".css": true,
+	}
 )
 
 // GetFiles gets the list of KV file keys for a particular package.
@@ -63,13 +68,15 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 			return nil, nil, err
 		}
 
-		sriKVs = append(sriKVs, &writeRequest{
-			key:  baseFileKey,
-			name: fromVersionPath,
-			meta: &FileMetadata{
-				SRI: sri.CalculateSRI(bytes),
-			},
-		})
+		if _, ok := calculateSRI[ext]; ok {
+			sriKVs = append(sriKVs, &writeRequest{
+				key:  baseFileKey,
+				name: fromVersionPath,
+				meta: &FileMetadata{
+					SRI: sri.CalculateSRI(bytes),
+				},
+			})
+		}
 
 		if srisOnly {
 			continue
