@@ -34,6 +34,17 @@ Lists all packages with aggregated metadata in KV. To check each package in KV h
 unset DEBUG && make kv && diff <(./bin/kv aggregated-packages) <(./bin/kv packages)
 ```
 
+## `file`
+
+Gets a file from KV using its KV key.
+If the flag `-ungzip` is set, the content will be ungzipped.
+If the flag `-unbrotli` is set, the content will be unbrotlied.
+These two flags are mutually exclusive.
+
+```
+make kv && ./bin/kv -ungzip file jquery/3.5.1/jquery.min.js.gz
+```
+
 ## `files`
 
 Gets the file names stored in KV for a package.

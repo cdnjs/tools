@@ -36,6 +36,12 @@ func Brotli11CLI(ctx context.Context, filePath string) []byte {
 	return runAlgorithm(ctx, "brotli", "--quality", "11", "--output", "/dev/stdout", "--input", filePath)
 }
 
+// UnBrotliCLI returns a brotli compressed file as bytes
+// at optimal compression (quality 11).
+func UnBrotliCLI(ctx context.Context, filePath string) []byte {
+	return runAlgorithm(ctx, "brotli", "--decompress", "--input", filePath)
+}
+
 // Gzip9Native returns a gzip compressed file as bytes
 // at optimal compression (level 9).
 func Gzip9Native(uncompressed []byte) []byte {
