@@ -17,7 +17,7 @@ import (
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly bool) {
+func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
 	var wg sync.WaitGroup
@@ -43,7 +43,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly bool)
 			for j, version := range versions {
 				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 				dir := path.Join(basePath, *pckg.Name, version)
-				_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly)
+				_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly)
 				if err != nil {
 					util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
 					sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))

@@ -21,9 +21,10 @@ func init() {
 
 func main() {
 	defer sentry.PanicHandler()
-	var metaOnly, srisOnly bool
+	var metaOnly, srisOnly, filesOnly bool
 	flag.BoolVar(&metaOnly, "meta-only", false, "If set, only version metadata is uploaded to KV (no files, no SRIs).")
 	flag.BoolVar(&srisOnly, "sris-only", false, "If set, only file SRIs are uploaded to KV (no files, no metadata).")
+	flag.BoolVar(&filesOnly, "files-only", false, "If set, only files are uploaded to KV (no metadata, no SRIs).")
 	flag.Parse()
 
 	if util.IsDebug() {
@@ -33,8 +34,14 @@ func main() {
 	switch subcommand := flag.Arg(0); subcommand {
 	case "upload":
 		{
-			if metaOnly && srisOnly {
-				panic("cannot set both -meta-only and -sris-only")
+			count := 0
+			for _, b := range []bool{metaOnly, srisOnly, filesOnly} {
+				if b {
+					count++
+				}
+			}
+			if count > 1 {
+				panic("can only set one of -meta-only, -sris-only, -files-only")
 			}
 
 			pckgs := flag.Args()[1:]
@@ -42,7 +49,7 @@ func main() {
 				panic("no packages specified")
 			}
 
-			kv.InsertFromDisk(logger, pckgs, metaOnly, srisOnly)
+			kv.InsertFromDisk(logger, pckgs, metaOnly, srisOnly, filesOnly)
 		}
 	case "upload-aggregate":
 		{
