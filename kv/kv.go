@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/cdnjs/tools/sentry"
@@ -231,22 +232,26 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly bool) ([]string, []byte, []string, []string, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly, filesOnly bool) ([]string, []byte, []string, []string, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	sort.Strings(fromVersionPaths)
 
-	// write version metadata to KV
-	fromVersionPaths, versionBytes, err := updateKVVersion(ctx, pkg, version, fromVersionPaths)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if metaOnly {
-		return fromVersionPaths, versionBytes, nil, nil, nil
+	var versionBytes []byte
+	if !filesOnly && !srisOnly {
+		// write version metadata to KV
+		versionBytes, err = updateKVVersion(ctx, pkg, version, fromVersionPaths)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		if metaOnly {
+			return fromVersionPaths, versionBytes, nil, nil, nil
+		}
 	}
 
 	// write files to KV
-	srisPushedToKV, filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly)
+	srisPushedToKV, filesPushedToKV, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly, filesOnly)
 	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, err
 }

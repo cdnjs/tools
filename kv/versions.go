@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"path"
-	"sort"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -28,14 +27,13 @@ func GetVersion(ctx context.Context, key string) ([]string, error) {
 // Gets the request to update a version entry in KV with a number of file assets.
 // Note: for now, a `version` entry is just a []string of assets, but this could become
 // a struct if more metadata is added.
-func updateVersionRequest(pkg, version string, fromVersionPaths []string) ([]string, *writeRequest) {
+func updateVersionRequest(pkg, version string, fromVersionPaths []string) *writeRequest {
 	key := path.Join(pkg, version)
 
-	sort.Strings(fromVersionPaths)
 	v, err := json.Marshal(fromVersionPaths)
 	util.Check(err)
 
-	return fromVersionPaths, &writeRequest{
+	return &writeRequest{
 		key:   key,
 		value: v,
 	}
@@ -43,8 +41,8 @@ func updateVersionRequest(pkg, version string, fromVersionPaths []string) ([]str
 
 // Updates KV with new version's metadata.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
-func updateKVVersion(ctx context.Context, pkg, version string, fromVersionPaths []string) ([]string, []byte, error) {
-	fromVersionPaths, req := updateVersionRequest(pkg, version, fromVersionPaths)
+func updateKVVersion(ctx context.Context, pkg, version string, fromVersionPaths []string) ([]byte, error) {
+	req := updateVersionRequest(pkg, version, fromVersionPaths)
 	_, err := encodeAndWriteKVBulk(ctx, []*writeRequest{req}, versionsNamespaceID)
-	return fromVersionPaths, req.value, err
+	return req.value, err
 }
