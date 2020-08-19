@@ -34,6 +34,14 @@ Lists all packages with aggregated metadata in KV. To check each package in KV h
 unset DEBUG && make kv && diff <(./bin/kv aggregated-packages) <(./bin/kv packages)
 ```
 
+## `file`
+
+Gets a file from KV using its KV key.
+
+```
+make kv && ./bin/kv file jquery/3.5.1/jquery.min.js.br
+```
+
 ## `files`
 
 Gets the file names stored in KV for a package.
