@@ -17,6 +17,36 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
+// InsertVersionFromDisk is a helper tool to insert a single version from disk.
+func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly bool) {
+	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+
+	pckg, err := GetPackage(ctx, pckgName)
+	util.Check(err)
+
+	versions := pckg.Versions()
+	var found bool
+	for _, version := range versions {
+		if version == pckgVersion {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		panic(fmt.Sprintf("package `%s` version `%s` not found in git", pckgName, pckgVersion))
+	}
+
+	basePath := util.GetCDNJSLibrariesPath()
+	dir := path.Join(basePath, *pckg.Name, pckgVersion)
+	_, _, _, _, err = InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to insert %s (%s): %s", *pckg.Name, pckgVersion, err))
+	}
+
+	util.Infof(ctx, fmt.Sprintf("Uploaded %s (%s).\n", pckgName, pckgVersion))
+}
+
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
 func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly bool) {

@@ -11,7 +11,19 @@ If the flag `-files-only` is set, only files are pushed to KV.
 These three flags are mutually exclusive.
 
 ```
-make kv && ./bin/kv upload jquery mathjax fontawesome
+make kv && ./bin/kv upload jquery mathjax font-awesome
+```
+
+## `upload-version`
+
+Insert a specific package version from disk to KV. Package files and version metadata will be pushed to KV.
+If the flag `-meta-only` is set, only version metadata will be pushed to KV.
+If the flag `-sris-only` is set, only SRIs are pushed to KV.
+If the flag `-files-only` is set, only files are pushed to KV.
+These three flags are mutually exclusive.
+
+```
+make kv && ./bin/kv upload-version jquery 3.5.1
 ```
 
 ## `upload-aggregate`
@@ -19,7 +31,7 @@ make kv && ./bin/kv upload jquery mathjax fontawesome
 Inserts aggregate metadata to KV from scratch by scraping KV entries for package-level and version-specific metadata.
 
 ```
-make kv && ./bin/kv upload-aggregate jquery mathjax fontawesome
+make kv && ./bin/kv upload-aggregate jquery mathjax font-awesome
 ```
 
 ## `packages`
