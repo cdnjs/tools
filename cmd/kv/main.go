@@ -19,6 +19,20 @@ func init() {
 	sentry.Init()
 }
 
+// Returns true if zero or one of the booleans are true.
+func isZeroOrOne(bs []bool) bool {
+	var found bool
+	for _, b := range bs {
+		if b {
+			if found {
+				return false
+			}
+			found = true
+		}
+	}
+	return true
+}
+
 func main() {
 	defer sentry.PanicHandler()
 	var metaOnly, srisOnly, filesOnly, ungzip, unbrotli bool
@@ -33,25 +47,28 @@ func main() {
 		fmt.Println("Running in debug mode")
 	}
 
+	if !isZeroOrOne([]bool{metaOnly, srisOnly, filesOnly}) {
+		panic("can only set one of -meta-only, -sris-only, -files-only")
+	}
+
 	switch subcommand := flag.Arg(0); subcommand {
 	case "upload":
 		{
-			count := 0
-			for _, b := range []bool{metaOnly, srisOnly, filesOnly} {
-				if b {
-					count++
-				}
-			}
-			if count > 1 {
-				panic("can only set one of -meta-only, -sris-only, -files-only")
-			}
-
 			pckgs := flag.Args()[1:]
 			if len(pckgs) == 0 {
 				panic("no packages specified")
 			}
 
 			kv.InsertFromDisk(logger, pckgs, metaOnly, srisOnly, filesOnly)
+		}
+	case "upload-version":
+		{
+			args := flag.Args()[1:]
+			if len(args) != 2 {
+				panic("must specify package and version")
+			}
+
+			kv.InsertVersionFromDisk(logger, args[0], args[1], metaOnly, srisOnly, filesOnly)
 		}
 	case "upload-aggregate":
 		{
