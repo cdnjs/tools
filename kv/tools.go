@@ -23,7 +23,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 	basePath := util.GetCDNJSLibrariesPath()
 
 	var wg sync.WaitGroup
-	done := make(chan bool)
+	done := make(chan string)
 
 	log.Println("Starting...")
 
@@ -31,7 +31,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 		wg.Add(1)
 		go func(i int, pckgName string) {
 			defer wg.Done()
-			defer func() { done <- true }()
+			defer func() { done <- pckgName }()
 
 			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 			pckg, readerr := GetPackage(ctx, pckgName)
@@ -59,9 +59,9 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 	go func() {
 		i := 0
 		for {
-			<-done
+			name := <-done
 			i++
-			log.Printf("Completed (%d/%d)\n", i, len(pckgs))
+			log.Printf("Completed (%d/%d): %s\n", i, len(pckgs), name)
 		}
 	}()
 
