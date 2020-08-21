@@ -16,8 +16,9 @@ import (
 const (
 	// workaround for now since cloudflare's API does not currently
 	// return a cloudflare.Response object for api.ReadWorkersKV
-	keyNotFound = "key not found"
-	authError   = "Authentication error"
+	keyNotFound    = "key not found"
+	authError      = "Authentication error"
+	serviceFailure = "service failure"
 )
 
 var (
@@ -91,19 +92,30 @@ func checkSuccess(r cloudflare.Response, err error) error {
 
 // read reads an entry from Workers KV.
 func read(key, namespaceID string) ([]byte, error) {
-	bytes, err := api.ReadWorkersKV(context.Background(), namespaceID, key)
-	if err != nil {
-		errString := err.Error()
+	var bytes []byte
+	var err error
+	for i := 0; i < util.MaxKVAttempts; i++ {
+		bytes, err = api.ReadWorkersKV(context.Background(), namespaceID, key)
+		if err != nil {
+			errString := err.Error()
 
-		// check for key not found
-		if strings.Contains(errString, keyNotFound) {
-			return nil, KeyNotFoundError{key, errString}
+			// check for service failure and retry
+			if strings.Contains(errString, serviceFailure) {
+				continue
+			}
+
+			// check for key not found
+			if strings.Contains(errString, keyNotFound) {
+				return nil, KeyNotFoundError{key, errString}
+			}
+
+			// check for authentication error
+			if strings.Contains(errString, authError) {
+				return nil, AuthError{errString}
+			}
 		}
 
-		// check for authentication error
-		if strings.Contains(errString, authError) {
-			return nil, AuthError{errString}
-		}
+		break
 	}
 
 	return bytes, err
@@ -148,8 +160,6 @@ func listByPrefixNamesOnly(prefix, namespaceID string) ([]string, error) {
 
 	return names, nil
 }
-
-// func ListByPrefix
 
 // Encodes a byte array to a base64 string.
 func encodeToBase64(bytes []byte) string {
@@ -212,9 +222,22 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 
 	for i, b := range bulkWrites {
 		util.Debugf(ctx, "writing bulk %d/%d (keys=%d)...\n", i+1, len(bulkWrites), len(b))
-		r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
-		if err = checkSuccess(r, err); err != nil {
-			return nil, err
+		for j := 0; j < util.MaxKVAttempts; j++ {
+			r, err := api.WriteWorkersKVBulk(context.Background(), namespaceID, b)
+
+			// check for service failure and retry
+			if err != nil && strings.Contains(err.Error(), serviceFailure) {
+				if j == util.MaxKVAttempts-1 {
+					return nil, err // no more attempts
+				}
+				continue // retry
+			}
+
+			if err = checkSuccess(r, err); err != nil {
+				return nil, err
+			}
+
+			break
 		}
 	}
 
