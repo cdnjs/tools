@@ -234,6 +234,8 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			if err = checkSuccess(r, err); err != nil {
 				return nil, err
 			}
+
+			break
 		}
 	}
 
