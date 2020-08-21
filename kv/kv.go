@@ -114,6 +114,8 @@ func read(key, namespaceID string) ([]byte, error) {
 				return nil, AuthError{errString}
 			}
 		}
+
+		break
 	}
 
 	return bytes, err
