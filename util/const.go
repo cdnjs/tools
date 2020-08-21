@@ -31,4 +31,8 @@ const (
 
 	// MaxBulkKeys is the maximum number of keys that can be pushed to KV in one bulk request.
 	MaxBulkKeys int64 = 1e4
+
+	// MaxKVAttempts is the maximum number of attempts to perform a KV read/write
+	// if the error returned is a 502 service failure.
+	MaxKVAttempts = 3
 )
