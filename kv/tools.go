@@ -120,6 +120,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 			Name:  name,
 		}
 	}
+	close(jobs)
 
 	var totalSRIKeys, totalFileKeys int
 
@@ -130,6 +131,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 		totalSRIKeys += res.TheoreticalSRIKeys
 		totalFileKeys += res.TheoreticalFileKeys
 	}
+	close(done)
 
 	log.Println("Done.")
 
