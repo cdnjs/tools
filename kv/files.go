@@ -136,13 +136,15 @@ func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, 
 	theoreticalSRIsKeys, theoreticalFilesKeys := len(sriReqs), len(fileReqs)
 
 	if noPush {
-		if panicOversized {
-			for _, f := range fileReqs {
-				if size := int64(len(f.value)); size > util.MaxFileSize {
+		for _, f := range fileReqs {
+			if size := int64(len(f.value)); size > util.MaxFileSize {
+				if panicOversized {
 					panic(fmt.Sprintf("file request oversized: %s (%d)", f.key, size))
 				}
+				util.Infof(ctx, fmt.Sprintf("file request oversized: %s (%d)\n", f.key, size))
 			}
 		}
+
 		return nil, nil, theoreticalSRIsKeys, theoreticalFilesKeys, nil
 	}
 
