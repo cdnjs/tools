@@ -383,7 +383,7 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		pkg, version := *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion
 
 		util.Debugf(ctx, "writing version to KV %s", path.Join(pkg, version))
-		kvVersionFiles, kvVersionMetadata, kvSRIs, kvCompressedFiles, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false, false, false)
+		kvVersionFiles, kvVersionMetadata, kvSRIs, kvCompressedFiles, _, _, err := kv.InsertNewVersionToKV(ctx, pkg, version, newVersionToCommit.versionPath, false, false, false, false)
 		if err != nil {
 			panic(fmt.Sprintf("failed to write kv version %s: %s", path.Join(pkg, version), err.Error()))
 		}

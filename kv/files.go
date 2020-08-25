@@ -127,25 +127,26 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 // Updates KV with new version's files.
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
 // The function will return the list of SRIs pushed to KV and the list of all files pushed to KV.
-func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly, filesOnly bool) ([]string, []string, error) {
+func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, fromVersionPaths []string, srisOnly, filesOnly, noPush bool) ([]string, []string, int, int, error) {
 	// create bulk of requests
 	sriReqs, fileReqs, err := getFileWriteRequests(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, 0, err
 	}
+	theoreticalSRIsKeys, theoreticalFilesKeys := len(sriReqs), len(fileReqs)
 
 	var successfulSRIWrites []string
-	if !filesOnly {
+	if !filesOnly && !noPush {
 		// write SRIs bulk to KV
 		successfulSRIWrites, err = encodeAndWriteKVBulk(ctx, sriReqs, srisNamespaceID)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, 0, 0, err
 		}
 		if srisOnly {
-			return successfulSRIWrites, nil, nil
+			return successfulSRIWrites, nil, 0, 0, nil
 		}
 	}
 
 	successfulFileWrites, err := encodeAndWriteKVBulk(ctx, fileReqs, filesNamespaceID)
-	return successfulSRIWrites, successfulFileWrites, err
+	return successfulSRIWrites, successfulFileWrites, theoreticalSRIsKeys, theoreticalFilesKeys, err
 }

@@ -18,7 +18,7 @@ import (
 )
 
 // InsertVersionFromDisk is a helper tool to insert a single version from disk.
-func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly bool) {
+func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly, count, noPush bool) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 
 	pckg, err := GetPackage(ctx, pckgName)
@@ -39,21 +39,30 @@ func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, met
 
 	basePath := util.GetCDNJSLibrariesPath()
 	dir := path.Join(basePath, *pckg.Name, pckgVersion)
-	_, _, _, _, err = InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly)
+	_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly, noPush)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to insert %s (%s): %s", *pckg.Name, pckgVersion, err))
 	}
 
 	util.Infof(ctx, fmt.Sprintf("Uploaded %s (%s).\n", pckgName, pckgVersion))
+	if count {
+		util.Infof(ctx, fmt.Sprintf("\ttheoretical SRI keys=%d\n\ttheoretical file keys=%d.\n", theoreticalSRIKeys, theoreticalFileKeys))
+	}
+}
+
+type uploadResult struct {
+	Name                string
+	TheoreticalSRIKeys  int
+	TheoreticalFileKeys int
 }
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly bool) {
+func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
 	var wg sync.WaitGroup
-	done := make(chan string)
+	done := make(chan uploadResult)
 
 	log.Println("Starting...")
 
@@ -61,7 +70,15 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 		wg.Add(1)
 		go func(i int, pckgName string) {
 			defer wg.Done()
-			defer func() { done <- pckgName }()
+
+			var pckgTotalSRIKeys, pckgTotalFileKeys int
+			defer func() {
+				done <- uploadResult{
+					Name:                pckgName,
+					TheoreticalSRIKeys:  pckgTotalSRIKeys,
+					TheoreticalFileKeys: pckgTotalFileKeys,
+				}
+			}()
 
 			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 			pckg, readerr := GetPackage(ctx, pckgName)
@@ -75,7 +92,10 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 			for j, version := range versions {
 				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 				dir := path.Join(basePath, *pckg.Name, version)
-				_, _, _, _, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly)
+				_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush)
+				pckgTotalSRIKeys += theoreticalSRIKeys
+				pckgTotalFileKeys += theoreticalFileKeys
+
 				if err != nil {
 					util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
 					sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
@@ -85,32 +105,40 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 		}(index, name)
 	}
 
+	var totalSRIKeys, totalFileKeys int
+
 	// show some progress
+	wg.Add(1)
 	go func() {
-		i := 0
-		for {
-			name := <-done
-			i++
-			log.Printf("Completed (%d/%d): %s\n", i, len(pckgs), name)
+		defer wg.Done()
+		for i := 0; i < len(pckgs); i++ {
+			res := <-done
+			log.Printf("Completed (%d/%d): %s (sris_keys=%d, file_keys=%d)\n", i+1, len(pckgs), res.Name, res.TheoreticalSRIKeys, res.TheoreticalFileKeys)
+			totalSRIKeys += res.TheoreticalSRIKeys
+			totalFileKeys += res.TheoreticalFileKeys
 		}
 	}()
 
 	wg.Wait()
 	log.Println("Done.")
+
+	if count {
+		log.Printf("Summary\n\tTotal Theoretical SRI Keys: %d\n\tTotal Theoretical File Keys: %d\n", totalSRIKeys, totalFileKeys)
+	}
 }
 
 // InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
 // into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
 func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 	var wg sync.WaitGroup
-	done := make(chan bool)
+	done := make(chan string)
 
 	log.Println("Starting...")
 	for index, name := range pckgs {
 		wg.Add(1)
 		go func(i int, pckgName string) {
 			defer wg.Done()
-			defer func() { done <- true }()
+			defer func() { done <- pckgName }()
 
 			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 			pckg, err := GetPackage(ctx, pckgName)
@@ -147,12 +175,12 @@ func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
 	}
 
 	// show some progress
+	wg.Add(1)
 	go func() {
-		i := 0
-		for {
-			<-done
-			i++
-			log.Printf("Completed (%d/%d)\n", i, len(pckgs))
+		defer wg.Done()
+		for i := 0; i < len(pckgs); i++ {
+			name := <-done
+			log.Printf("Completed (%d/%d): %s\n", i+1, len(pckgs), name)
 		}
 	}()
 
