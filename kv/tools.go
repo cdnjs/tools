@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -56,6 +57,11 @@ type uploadResult struct {
 	TheoreticalFileKeys int
 }
 
+type uploadWork struct {
+	Index int
+	Name  string
+}
+
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
 func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
@@ -63,46 +69,57 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 
 	var wg sync.WaitGroup
 	done := make(chan uploadResult)
+	jobs := make(chan uploadWork)
 
 	log.Println("Starting...")
 
+	// spawn workers
+	for w := 0; w < runtime.NumCPU()*10; w++ {
+		go func() {
+			for j := range jobs {
+				func() {
+					i, pckgName := j.Index, j.Name
+					var pckgTotalSRIKeys, pckgTotalFileKeys int
+					defer func() {
+						done <- uploadResult{
+							Name:                pckgName,
+							TheoreticalSRIKeys:  pckgTotalSRIKeys,
+							TheoreticalFileKeys: pckgTotalFileKeys,
+						}
+					}()
+
+					ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+					pckg, readerr := GetPackage(ctx, pckgName)
+					if readerr != nil {
+						util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, readerr)
+						sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, readerr))
+						return
+					}
+
+					versions := pckg.Versions()
+					for j, version := range versions {
+						util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+						dir := path.Join(basePath, *pckg.Name, version)
+						_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
+						pckgTotalSRIKeys += theoreticalSRIKeys
+						pckgTotalFileKeys += theoreticalFileKeys
+
+						if err != nil {
+							util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
+							sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
+							return
+						}
+					}
+				}()
+			}
+		}()
+	}
+
 	for index, name := range pckgs {
-		wg.Add(1)
-		go func(i int, pckgName string) {
-			defer wg.Done()
-
-			var pckgTotalSRIKeys, pckgTotalFileKeys int
-			defer func() {
-				done <- uploadResult{
-					Name:                pckgName,
-					TheoreticalSRIKeys:  pckgTotalSRIKeys,
-					TheoreticalFileKeys: pckgTotalFileKeys,
-				}
-			}()
-
-			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
-			pckg, readerr := GetPackage(ctx, pckgName)
-			if readerr != nil {
-				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, readerr)
-				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, readerr))
-				return
-			}
-
-			versions := pckg.Versions()
-			for j, version := range versions {
-				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
-				dir := path.Join(basePath, *pckg.Name, version)
-				_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
-				pckgTotalSRIKeys += theoreticalSRIKeys
-				pckgTotalFileKeys += theoreticalFileKeys
-
-				if err != nil {
-					util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
-					sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
-					return
-				}
-			}
-		}(index, name)
+		jobs <- uploadWork{
+			Index: index,
+			Name:  name,
+		}
 	}
 
 	var totalSRIKeys, totalFileKeys int
