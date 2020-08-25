@@ -135,8 +135,19 @@ func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, 
 	}
 	theoreticalSRIsKeys, theoreticalFilesKeys := len(sriReqs), len(fileReqs)
 
+	if noPush {
+		if panicOversized {
+			for _, f := range fileReqs {
+				if size := int64(len(f.value)); size > util.MaxFileSize {
+					panic(fmt.Sprintf("file request oversized: %s (%d)", f.key, size))
+				}
+			}
+		}
+		return nil, nil, theoreticalSRIsKeys, theoreticalFilesKeys, nil
+	}
+
 	var successfulSRIWrites []string
-	if !filesOnly && !noPush {
+	if !filesOnly {
 		// write SRIs bulk to KV
 		successfulSRIWrites, err = encodeAndWriteKVBulk(ctx, sriReqs, srisNamespaceID, panicOversized)
 		if err != nil {
