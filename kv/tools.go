@@ -67,9 +67,8 @@ type uploadWork struct {
 func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
-	var wg sync.WaitGroup
 	done := make(chan uploadResult)
-	jobs := make(chan uploadWork)
+	jobs := make(chan uploadWork, len(pckgs))
 
 	log.Println("Starting...")
 
@@ -125,18 +124,13 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 	var totalSRIKeys, totalFileKeys int
 
 	// show some progress
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < len(pckgs); i++ {
-			res := <-done
-			log.Printf("Completed (%d/%d): %s (sris_keys=%d, file_keys=%d)\n", i+1, len(pckgs), res.Name, res.TheoreticalSRIKeys, res.TheoreticalFileKeys)
-			totalSRIKeys += res.TheoreticalSRIKeys
-			totalFileKeys += res.TheoreticalFileKeys
-		}
-	}()
+	for i := 0; i < len(pckgs); i++ {
+		res := <-done
+		log.Printf("Completed (%d/%d): %s (sris_keys=%d, file_keys=%d)\n", i+1, len(pckgs), res.Name, res.TheoreticalSRIKeys, res.TheoreticalFileKeys)
+		totalSRIKeys += res.TheoreticalSRIKeys
+		totalFileKeys += res.TheoreticalFileKeys
+	}
 
-	wg.Wait()
 	log.Println("Done.")
 
 	if count {
