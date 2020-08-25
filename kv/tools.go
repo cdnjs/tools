@@ -18,7 +18,7 @@ import (
 )
 
 // InsertVersionFromDisk is a helper tool to insert a single version from disk.
-func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly, count, noPush bool) {
+func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 
 	pckg, err := GetPackage(ctx, pckgName)
@@ -39,7 +39,7 @@ func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, met
 
 	basePath := util.GetCDNJSLibrariesPath()
 	dir := path.Join(basePath, *pckg.Name, pckgVersion)
-	_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly, noPush)
+	_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to insert %s (%s): %s", *pckg.Name, pckgVersion, err))
 	}
@@ -58,7 +58,7 @@ type uploadResult struct {
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush bool) {
+func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
 	basePath := util.GetCDNJSLibrariesPath()
 
 	var wg sync.WaitGroup
@@ -92,7 +92,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 			for j, version := range versions {
 				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 				dir := path.Join(basePath, *pckg.Name, version)
-				_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush)
+				_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
 				pckgTotalSRIKeys += theoreticalSRIKeys
 				pckgTotalFileKeys += theoreticalFileKeys
 

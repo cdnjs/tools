@@ -43,6 +43,6 @@ func updateVersionRequest(pkg, version string, fromVersionPaths []string) *write
 // The []string of `fromVersionPaths` will already contain the optimized/minified files by now.
 func updateKVVersion(ctx context.Context, pkg, version string, fromVersionPaths []string) ([]byte, error) {
 	req := updateVersionRequest(pkg, version, fromVersionPaths)
-	_, err := encodeAndWriteKVBulk(ctx, []*writeRequest{req}, versionsNamespaceID)
+	_, err := encodeAndWriteKVBulk(ctx, []*writeRequest{req}, versionsNamespaceID, true)
 	return req.value, err
 }

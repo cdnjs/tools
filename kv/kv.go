@@ -168,7 +168,7 @@ func encodeToBase64(bytes []byte) string {
 
 // Encodes key-value pairs to base64 and writes them to KV in multiple bulk requests.
 // Returns the list of human-readable names of successful writes.
-func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string) ([]string, error) {
+func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID string, panicOversized bool) ([]string, error) {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
 	var successfulWrites []string
@@ -178,6 +178,9 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 		if unencodedSize := int64(len(kv.value)); unencodedSize > util.MaxFileSize {
 			util.Debugf(ctx, "ignoring oversized file: %s (%d)\n", kv.key, unencodedSize)
 			sentry.NotifyError(fmt.Errorf("ignoring oversized file: %s (%d)", kv.key, unencodedSize))
+			if panicOversized {
+				panic(fmt.Sprintf("oversized file: %s (%d)", kv.key, unencodedSize))
+			}
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
@@ -200,6 +203,9 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 			if metasize > util.MaxMetadataSize {
 				util.Debugf(ctx, "ignoring oversized metadata: %s (%d)\n", kv.key, metasize)
 				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s", kv.key, metasize, bytes))
+				if panicOversized {
+					panic(fmt.Sprintf("oversized metadata: %s (%d)", kv.key, metasize))
+				}
 				continue
 			}
 			util.Debugf(ctx, "writing metadata: %s\n", bytes)
@@ -255,7 +261,7 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly, filesOnly, noPush bool) ([]string, []byte, []string, []string, int, int, error) {
+func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly, filesOnly, noPush, panicOversized bool) ([]string, []byte, []string, []string, int, int, error) {
 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
 	if err != nil {
 		return nil, nil, nil, nil, 0, 0, err
@@ -275,6 +281,6 @@ func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion s
 	}
 
 	// write files to KV
-	srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly, filesOnly, noPush)
+	srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly, filesOnly, noPush, panicOversized)
 	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err
 }

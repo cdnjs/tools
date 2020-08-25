@@ -35,11 +35,12 @@ func isZeroOrOne(bs []bool) bool {
 
 func main() {
 	defer sentry.PanicHandler()
-	var metaOnly, srisOnly, filesOnly, count, noPush, ungzip, unbrotli bool
+	var metaOnly, srisOnly, filesOnly, count, noPush, panicOversized, ungzip, unbrotli bool
 	flag.BoolVar(&metaOnly, "meta-only", false, "If set, only version metadata is uploaded to KV (no files, no SRIs).")
 	flag.BoolVar(&srisOnly, "sris-only", false, "If set, only file SRIs are uploaded to KV (no files, no metadata).")
 	flag.BoolVar(&filesOnly, "files-only", false, "If set, only files are uploaded to KV (no metadata, no SRIs).")
-	flag.BoolVar(&count, "count", false, "If set, the the count of KV keys that should be in KV will be outputted. Will assume all entries can fit into KV (<10MiB).")
+	flag.BoolVar(&count, "count", false, "If set, the the count of theoretical KV keys that should be in KV will be outputted. Will assume all entries can fit into KV (<= 10MiB).")
+	flag.BoolVar(&panicOversized, "panic-oversized", false, "If set, the program will panic if any KV compressed file is oversized (> 10MiB).")
 	flag.BoolVar(&noPush, "no-push", false, "If set, nothing will be written to KV. However, theoretical keys will be counted if the -count flag is set.")
 	flag.BoolVar(&ungzip, "ungzip", false, "If set, the file content will be decompressed with gzip.")
 	flag.BoolVar(&unbrotli, "unbrotli", false, "If set, the file content will be decompressed with brotli.")
@@ -61,7 +62,7 @@ func main() {
 				panic("no packages specified")
 			}
 
-			kv.InsertFromDisk(logger, pckgs, metaOnly, srisOnly, filesOnly, count, noPush)
+			kv.InsertFromDisk(logger, pckgs, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized)
 		}
 	case "upload-version":
 		{
@@ -70,7 +71,7 @@ func main() {
 				panic("must specify package and version")
 			}
 
-			kv.InsertVersionFromDisk(logger, args[0], args[1], metaOnly, srisOnly, filesOnly, count, noPush)
+			kv.InsertVersionFromDisk(logger, args[0], args[1], metaOnly, srisOnly, filesOnly, count, noPush, panicOversized)
 		}
 	case "upload-aggregate":
 		{

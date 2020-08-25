@@ -8,7 +8,9 @@ Inserts packages from disk to KV. Package files and version metadata will be pus
 If the flag `-meta-only` is set, only version metadata will be pushed to KV.
 If the flag `-sris-only` is set, only SRIs are pushed to KV.
 If the flag `-files-only` is set, only files are pushed to KV.
-If the flag `-count` is set, the the count of KV keys that should be in KV will be outputted at the end of the program. This will assume all entries can fit into KV (< 10MiB).
+If the flag `-count` is set, the the count of KV keys that should be in KV will be outputted at the end of the program. This will assume all entries can fit into KV (<= 10MiB).
+If the flag `-no-push` is set, nothing will be written to KV. However, theoretical keys will be counted if the `-count` flag is set.
+If the flag `-panic-oversized` is set, the program will panic if any KV compressed file is oversized (> 10MiB). Note that the program will already panic for oversized entries in other namespaces.
 
 ```
 make kv && ./bin/kv upload jquery mathjax font-awesome
@@ -20,7 +22,8 @@ Insert a specific package version from disk to KV. Package files and version met
 If the flag `-meta-only` is set, only version metadata will be pushed to KV.
 If the flag `-sris-only` is set, only SRIs are pushed to KV.
 If the flag `-files-only` is set, only files are pushed to KV.
-If the flag `-count` is set, the the count of KV keys that should be in KV will be outputted at the end of the program. This will assume all entries can fit into KV (< 10MiB).
+If the flag `-count` is set, the the count of KV keys that should be in KV will be outputted at the end of the program. This will assume all entries can fit into KV (<= 10MiB).
+If the flag `-no-push` is set, nothing will be written to KV. However, theoretical keys will be counted if the `-count` flag is set.
 
 ```
 make kv && ./bin/kv upload-version jquery 3.5.1
