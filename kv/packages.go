@@ -42,6 +42,6 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		value: v,
 	}
 
-	_, err = encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID)
+	_, err = encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID, true)
 	return err
 }

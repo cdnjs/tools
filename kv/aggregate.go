@@ -71,5 +71,5 @@ func writeAggregatedMetadata(ctx context.Context, p *packages.Package) ([]string
 	}
 
 	// write aggregated to KV
-	return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, aggregatedMetadataNamespaceID)
+	return encodeAndWriteKVBulk(ctx, []*writeRequest{req}, aggregatedMetadataNamespaceID, true)
 }
