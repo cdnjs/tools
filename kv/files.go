@@ -156,7 +156,7 @@ func updateKVFiles(ctx context.Context, pkg, version, fullPathToVersion string, 
 			return nil, nil, 0, 0, err
 		}
 		if srisOnly {
-			return successfulSRIWrites, nil, 0, 0, nil
+			return successfulSRIWrites, nil, theoreticalSRIsKeys, theoreticalFilesKeys, nil
 		}
 	}
 
