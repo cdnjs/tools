@@ -51,10 +51,6 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(newNpmVersions)))
 
-		if len(newNpmVersions) > util.ImportAllMaxVersions {
-			newNpmVersions = newNpmVersions[len(newNpmVersions)-util.ImportAllMaxVersions:]
-		}
-
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {
 		if len(existingVersionSet) > 0 {
