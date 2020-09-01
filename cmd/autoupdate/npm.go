@@ -36,16 +36,24 @@ func updateNpm(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		newNpmVersions := make([]npm.Version, 0)
 
+		backfilled := 0
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			v := versionDiff[i]
-			// Backfill missing versions.
-			//
-			// if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+			if !v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+				// Backfill missing versions.
+				if backfilled == util.ImportAllMaxVersions {
+					continue
+				}
+				backfilled++
+			}
 			newNpmVersions = append(newNpmVersions, v)
-			// }
 		}
 
-		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
+		sort.Sort(sort.Reverse(npm.ByTimeStamp(newNpmVersions)))
+
+		if len(newNpmVersions) > util.ImportAllMaxVersions {
+			newNpmVersions = newNpmVersions[len(newNpmVersions)-util.ImportAllMaxVersions:]
+		}
 
 		newVersionsToCommit = doUpdateNpm(ctx, pckg, newNpmVersions)
 	} else {

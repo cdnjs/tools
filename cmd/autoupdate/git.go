@@ -67,13 +67,17 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		newGitVersions := make([]git.Version, 0)
 
+		backfilled := 0
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			v := versionDiff[i]
-			// Backfill missing versions.
-			//
-			//if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+			if !v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+				// Backfill missing versions.
+				if backfilled == util.ImportAllMaxVersions {
+					continue
+				}
+				backfilled++
+			}
 			newGitVersions = append(newGitVersions, v)
-			//}
 		}
 
 		util.Debugf(ctx, "new versions: %s\n", newGitVersions)
