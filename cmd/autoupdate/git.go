@@ -69,9 +69,11 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			v := versionDiff[i]
-			if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
-				newGitVersions = append(newGitVersions, v)
-			}
+			// Backfill missing versions.
+			//
+			//if v.TimeStamp.After(lastExistingVersion.TimeStamp) {
+			newGitVersions = append(newGitVersions, v)
+			//}
 		}
 
 		util.Debugf(ctx, "new versions: %s\n", newGitVersions)
