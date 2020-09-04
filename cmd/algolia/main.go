@@ -43,7 +43,7 @@ func main() {
 
 			for _, p := range j.Packages {
 				fmt.Printf("%s: ", *p.Name)
-				util.Check(algolia.IndexPackage(p, tmpIndex))
+				util.Check(algolia.IndexPackage(&p, tmpIndex))
 				fmt.Printf("Ok\n")
 			}
 			fmt.Printf("Ok\n")

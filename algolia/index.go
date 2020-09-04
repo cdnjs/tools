@@ -113,7 +113,7 @@ func getSRI(p *packages.Package) (string, error) {
 }
 
 // IndexPackage saves a package to the Algolia.
-func IndexPackage(p packages.Package, index *search.Index) error {
+func IndexPackage(p *packages.Package, index *search.Index) error {
 	var author string
 	if p.Author != nil {
 		author = *p.Author
@@ -144,7 +144,7 @@ func IndexPackage(p packages.Package, index *search.Index) error {
 		}
 	}
 
-	sri, srierr := getSRI(&p)
+	sri, srierr := getSRI(p)
 	if srierr != nil {
 		fmt.Printf("%s", srierr)
 	}
