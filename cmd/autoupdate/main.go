@@ -151,7 +151,9 @@ func main() {
 			if versionsChanged || pkgChanged {
 				// Update aggregated package metadata for cdnjs API.
 				updateAggregatedMetadata(ctx, pckg, newAssets)
+			}
 
+			if pkgChanged {
 				// update Algolia in-place
 				util.Check(algolia.IndexPackage(pckg, index))
 			}
