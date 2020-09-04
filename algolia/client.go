@@ -26,6 +26,11 @@ func GetClient() *search.Client {
 	return search.NewClient("2QWLVLXZB6", util.GetEnv("ALGOLIA_WRITE_API_KEY"))
 }
 
+// GetProdIndex gets the Algolia production index.
+func GetProdIndex(client *search.Client) *search.Index {
+	return client.InitIndex(prodIndex)
+}
+
 // GetTmpIndex instantiates and configures a new temporary Algolia Search index.
 func GetTmpIndex(client *search.Client) *search.Index {
 	index := client.InitIndex(tmpIndex)

@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cdnjs/tools/algolia"
+
 	"github.com/agnivade/levenshtein"
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
@@ -72,6 +74,9 @@ func main() {
 	if util.IsDebug() {
 		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t)\n", noUpdate, noPull)
 	}
+
+	// get algolia search index to update it in-place
+	index := algolia.GetProdIndex(algolia.GetClient())
 
 	// create channel to handle signals
 	c := make(chan os.Signal, 1)
@@ -146,6 +151,11 @@ func main() {
 			if versionsChanged || pkgChanged {
 				// Update aggregated package metadata for cdnjs API.
 				updateAggregatedMetadata(ctx, pckg, newAssets)
+			}
+
+			if pkgChanged {
+				// update Algolia in-place
+				util.Check(algolia.IndexPackage(pckg, index))
 			}
 		}
 	}
