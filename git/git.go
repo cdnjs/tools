@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cdnjs/tools/util"
+	gitv5 "github.com/go-git/go-git/v5"
 )
 
 // Version represents a version of a git repo.
@@ -115,23 +116,22 @@ func ListPackageVersions(ctx context.Context, basePath string) []string {
 }
 
 // Add adds to the next commit.
-func Add(ctx context.Context, gitpath, relpath string) {
-	args := []string{"add", relpath}
+func Add(ctx context.Context, w *gitv5.Worktree, relpath string) {
+	util.Debugf(ctx, "go-git: git add %s\n", relpath)
 
-	cmd := exec.Command("git", args...)
-	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
-	util.CheckCmd(cmd.CombinedOutput())
+	_, err := w.Add(relpath)
+	util.Check(err)
 }
 
 // Commit makes a new commit.
-func Commit(ctx context.Context, gitpath, msg string) {
-	args := []string{"commit", "-m", msg}
+func Commit(ctx context.Context, r *gitv5.Repository, w *gitv5.Worktree, msg string) {
+	util.Debugf(ctx, "go-git: git commit -m \"%s\"\n", msg)
 
-	cmd := exec.Command("git", args...)
-	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
-	util.CheckCmd(cmd.CombinedOutput())
+	commit, err := w.Commit(msg, &gitv5.CommitOptions{})
+	util.Check(err)
+
+	_, err = r.CommitObject(commit)
+	util.Check(err)
 }
 
 // Fetch fetches objs/refs to the repository.
@@ -145,13 +145,10 @@ func Fetch(ctx context.Context, gitpath string) ([]byte, error) {
 }
 
 // Push pushes to a git repository.
-func Push(ctx context.Context, gitpath string) {
-	args := []string{"push"}
+func Push(ctx context.Context, r *gitv5.Repository) {
+	util.Debugf(ctx, "go-git: git push")
 
-	cmd := exec.Command("git", args...)
-	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
-	util.CheckCmd(cmd.CombinedOutput())
+	util.Check(r.Push(&gitv5.PushOptions{}))
 }
 
 // Clone clones a git repository.
@@ -262,4 +259,13 @@ func isPathIgnored(ctx context.Context, gitpath string, path string) bool {
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 
 	return cmd.Run() == nil
+}
+
+// Repo gets a git repository and worktree from a path, panicking on error.
+func Repo(repoPath string) (*gitv5.Repository, *gitv5.Worktree) {
+	r, err := gitv5.PlainOpen(repoPath)
+	util.Check(err)
+	w, err := r.Worktree()
+	util.Check(err)
+	return r, w
 }
