@@ -90,9 +90,9 @@ func main() {
 	signal.Notify(c, syscall.SIGTERM)
 
 	if !noPull {
-		util.UpdateGitRepo(defaultCtx, cdnjsPath)
-		util.UpdateGitRepo(defaultCtx, packagesPath)
-		util.UpdateGitRepo(defaultCtx, logsPath)
+		git.UpdateRepo(defaultCtx, cdnjsPath)
+		git.UpdateRepo(defaultCtx, packagesPath)
+		git.UpdateRepo(defaultCtx, logsPath)
 	}
 
 	for _, f := range packages.GetHumanPackageJSONFiles(defaultCtx) {

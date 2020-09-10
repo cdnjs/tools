@@ -126,7 +126,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 			continue
 		}
 
-		if util.IsPathIgnoredByGit(ctx, util.GetCDNJSPath(), pckgpath) {
+		if git.IsPathIgnored(ctx, util.GetCDNJSPath(), pckgpath) {
 			util.Debugf(ctx, "%s is ignored by git; aborting\n", pckgpath)
 			continue
 		}

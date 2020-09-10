@@ -7,6 +7,7 @@ import (
 	"path"
 	"sort"
 
+	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -89,7 +90,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 			continue
 		}
 
-		if util.IsPathIgnoredByGit(ctx, util.GetCDNJSPath(), pckgpath) {
+		if git.IsPathIgnored(ctx, util.GetCDNJSPath(), pckgpath) {
 			util.Debugf(ctx, "%s is ignored by git; aborting\n", pckgpath)
 			continue
 		}
