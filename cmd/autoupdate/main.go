@@ -29,10 +29,16 @@ func init() {
 }
 
 var (
+	// paths
 	basePath     = util.GetBotBasePath()
 	packagesPath = util.GetHumanPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
 	logsPath     = util.GetLogsPath()
+
+	// repos
+	packagesRepo, packagesWorktree = util.GetRepo(packagesPath)
+	cdnjsRepo, cdnjsWorktree       = util.GetRepo(cdnjsPath)
+	logsRepo, logsWorktree         = util.GetRepo(logsPath)
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()

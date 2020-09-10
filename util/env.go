@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	gitv5 "github.com/go-git/go-git/v5"
 )
 
 // GetEnv gets an environment variable, panicking if it is nonexistent.
@@ -54,6 +56,15 @@ func GetLogsPath() string {
 // GetCDNJSLibrariesPath gets the path to the cdnjs libraries.
 func GetCDNJSLibrariesPath() string {
 	return path.Join(GetCDNJSPath(), "ajax", "libs")
+}
+
+// GetRepo gets a git repository and worktree from a path, panicking on error.
+func GetRepo(repoPath string) (*gitv5.Repository, *gitv5.Worktree) {
+	r, err := gitv5.PlainOpen(repoPath)
+	Check(err)
+	w, err := r.Worktree()
+	Check(err)
+	return r, w
 }
 
 // HasHTTPProxy returns true if the http proxy environment
