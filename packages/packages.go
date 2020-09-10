@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/sri"
 	"github.com/cdnjs/tools/util"
 )
@@ -135,7 +136,7 @@ func (p *Package) Versions() (versions []string) {
 	if p.versions != nil {
 		return p.versions
 	}
-	p.versions = GitListPackageVersions(p.ctx, p.LibraryPath())
+	p.versions = git.ListPackageVersions(p.ctx, p.LibraryPath())
 	return p.versions
 }
 
