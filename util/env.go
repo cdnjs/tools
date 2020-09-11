@@ -38,7 +38,7 @@ func GetCDNJSPath() string {
 
 // GetHumanPackagesPath gets the path to the cdnjs/packages repo.
 func GetHumanPackagesPath() string {
-	return path.Join(GetBotBasePath(), "packages", "packages")
+	return path.Join(GetBotBasePath(), "packages")
 }
 
 // GetSRIsPath gets the path to the cdnjs/SRIs repo.
@@ -48,7 +48,7 @@ func GetSRIsPath() string {
 
 // GetLogsPath gets the path to the cdnjs/logs repo.
 func GetLogsPath() string {
-	return path.Join(GetBotBasePath(), "logs", "packages")
+	return path.Join(GetBotBasePath(), "logs")
 }
 
 // GetCDNJSLibrariesPath gets the path to the cdnjs libraries.
