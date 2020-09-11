@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cdnjs/tools/algolia"
+	"github.com/cdnjs/tools/git"
 
 	"github.com/agnivade/levenshtein"
 	"github.com/blang/semver"
@@ -29,10 +30,15 @@ func init() {
 }
 
 var (
+	// paths
 	basePath     = util.GetBotBasePath()
 	packagesPath = util.GetHumanPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
 	logsPath     = util.GetLogsPath()
+
+	// repos
+	cdnjsRepo, cdnjsWorktree = git.Repo(cdnjsPath)
+	logsRepo, logsWorktree   = git.Repo(logsPath)
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
@@ -83,9 +89,9 @@ func main() {
 	signal.Notify(c, syscall.SIGTERM)
 
 	if !noPull {
-		util.UpdateGitRepo(defaultCtx, cdnjsPath)
-		util.UpdateGitRepo(defaultCtx, packagesPath)
-		util.UpdateGitRepo(defaultCtx, logsPath)
+		git.UpdateRepo(defaultCtx, cdnjsPath)
+		git.UpdateRepo(defaultCtx, packagesPath)
+		git.UpdateRepo(defaultCtx, logsPath)
 	}
 
 	for _, f := range packages.GetHumanPackageJSONFiles(defaultCtx) {
@@ -170,8 +176,8 @@ func updateVersions(ctx context.Context, newVersionsToCommit []newVersionToCommi
 	if len(newVersionsToCommit) > 0 {
 		commitNewVersions(ctx, newVersionsToCommit)
 		assets = writeNewVersionsToKV(ctx, newVersionsToCommit)
-		packages.GitPush(ctx, cdnjsPath)
-		packages.GitPush(ctx, logsPath)
+		git.Push(ctx, cdnjsRepo)
+		git.Push(ctx, logsRepo)
 		changed = true
 	}
 
@@ -226,8 +232,8 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 	// Either `version`, `filename` or both changed,
 	// so git push the new metadata.
 	commitPackageVersion(ctx, pckg, packageJSONPath)
-	packages.GitPush(ctx, cdnjsPath)
-	packages.GitPush(ctx, logsPath)
+	git.Push(ctx, cdnjsRepo)
+	git.Push(ctx, logsRepo)
 
 	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
 		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
@@ -258,10 +264,10 @@ func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 	util.Check(err)
 
 	// Will either be ["<package name>"] or [] if the KV write fails
-	packages.GitAdd(ctx, logsPath, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, logsJSON))
+	git.Add(ctx, logsWorktree, pckg.Log("update aggregated metadata: %s: %s", *pckg.Version, logsJSON))
 	logsCommitMsg := fmt.Sprintf("Set %s aggregated metadata (%s)", *pckg.Name, *pckg.Version)
-	packages.GitCommit(ctx, logsPath, logsCommitMsg)
-	packages.GitPush(ctx, logsPath)
+	git.Commit(ctx, logsRepo, logsWorktree, logsCommitMsg)
+	git.Push(ctx, logsRepo)
 }
 
 // Update the package's filename if the latest
@@ -405,11 +411,11 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		util.Check(err)
 
 		// Git add/commit new version to cdnjs/logs
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv files: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
-		packages.GitAdd(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv SRIs: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
+		git.Add(ctx, logsWorktree, newVersionToCommit.pckg.Log("new version: %s: %s", newVersionToCommit.newVersion, kvVersionMetadata))
+		git.Add(ctx, logsWorktree, newVersionToCommit.pckg.Log("new version kv files: %s: %s", newVersionToCommit.newVersion, kvCompressedFilesJSON))
+		git.Add(ctx, logsWorktree, newVersionToCommit.pckg.Log("new version kv SRIs: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
 		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
-		packages.GitCommit(ctx, logsPath, logsCommitMsg)
+		git.Commit(ctx, logsRepo, logsWorktree, logsCommitMsg)
 
 		metrics.ReportNewVersion(ctx)
 
@@ -430,9 +436,9 @@ func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCo
 		optimizeAndMinify(ctx, newVersionToCommit)
 
 		// Git add/commit new version to cdnjs/cdnjs
-		packages.GitAdd(ctx, cdnjsPath, newVersionToCommit.versionPath)
+		git.Add(ctx, cdnjsWorktree, newVersionToCommit.versionPath)
 		commitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
-		packages.GitCommit(ctx, cdnjsPath, commitMsg)
+		git.Commit(ctx, cdnjsRepo, cdnjsWorktree, commitMsg)
 	}
 }
 
@@ -443,12 +449,12 @@ func commitPackageVersion(ctx context.Context, pckg *packages.Package, packageJS
 	kvPackageMetadata := updateVersionInCdnjs(ctx, pckg, packageJSONPath)
 
 	// Git add/commit the updated package.json to cdnjs/cdnjs
-	packages.GitAdd(ctx, cdnjsPath, path.Join(pckg.LibraryPath(), "package.json"))
+	git.Add(ctx, cdnjsWorktree, path.Join(pckg.LibraryPath(), "package.json"))
 	commitMsg := fmt.Sprintf("Set %s package.json (%s)", *pckg.Name, *pckg.Version)
-	packages.GitCommit(ctx, cdnjsPath, commitMsg)
+	git.Commit(ctx, cdnjsRepo, cdnjsWorktree, commitMsg)
 
 	// Git add/commit the updated non-human-readable metadata to cdnjs/logs
-	packages.GitAdd(ctx, logsPath, pckg.Log("update metadata: %s: %s", *pckg.Version, kvPackageMetadata))
+	git.Add(ctx, logsWorktree, pckg.Log("update metadata: %s: %s", *pckg.Version, kvPackageMetadata))
 	logsCommitMsg := fmt.Sprintf("Set %s package metadata (%s)", *pckg.Name, *pckg.Version)
-	packages.GitCommit(ctx, logsPath, logsCommitMsg)
+	git.Commit(ctx, logsRepo, logsWorktree, logsCommitMsg)
 }

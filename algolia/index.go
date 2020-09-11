@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
-	"github.com/cdnjs/tools/github"
+	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
@@ -75,7 +75,7 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 		return nil, fmt.Errorf("could not parse repo URL `%s`", *repo.URL)
 	}
 
-	client := github.GetClient()
+	client := git.GetClient()
 	api, _, err := client.Repositories.Get(util.ContextWithEntries(), res[0][1], strings.ReplaceAll(res[0][2], ".git", ""))
 	if err != nil {
 		return nil, err

@@ -109,14 +109,14 @@ func showFiles(pckgPath string, noPathValidation bool) {
 			// make temp dir and clone
 			packageGitDir, direrr := ioutil.TempDir("", src)
 			util.Check(direrr)
-			out, cloneerr := packages.GitClone(ctx, pckg, packageGitDir)
+			out, cloneerr := git.Clone(ctx, *pckg.Autoupdate.Target, packageGitDir)
 			if cloneerr != nil {
 				err(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
 				return
 			}
 
 			// get git versions and sort
-			gitVersions, _ := git.GetVersions(ctx, pckg, packageGitDir)
+			gitVersions, _ := git.GetVersions(ctx, packageGitDir)
 			sort.Sort(git.ByTimeStamp(gitVersions))
 
 			// cast to interface

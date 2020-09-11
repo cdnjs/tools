@@ -31,14 +31,14 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 	if _, err := os.Stat(packageGitcache); os.IsNotExist(err) {
 		util.Check(os.MkdirAll(packageGitcache, os.ModePerm))
 
-		out, err := packages.GitClone(ctx, pckg, packageGitcache)
+		out, err := git.Clone(ctx, *pckg.Autoupdate.Target, packageGitcache)
 		if err != nil {
 			util.Errf(ctx, "could not clone repo: %s: %s\n", err, out)
 			return newVersionsToCommit, nil
 		}
 	} else {
 		if isValidGit(ctx, packageGitcache) {
-			out, fetcherr := packages.GitFetch(ctx, packageGitcache)
+			out, fetcherr := git.Fetch(ctx, packageGitcache)
 			if fetcherr != nil {
 				util.Errf(ctx, "could not fetch repo %s: %s\n", fetcherr, out)
 				return newVersionsToCommit, nil
@@ -49,7 +49,7 @@ func updateGit(ctx context.Context, pckg *packages.Package) ([]newVersionToCommi
 		}
 	}
 
-	gitVersions, _ := git.GetVersions(ctx, pckg, packageGitcache)
+	gitVersions, _ := git.GetVersions(ctx, packageGitcache)
 	existingVersionSet := pckg.Versions()
 
 	util.Debugf(ctx, "existing git versions: %v\n", existingVersionSet)
@@ -116,7 +116,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 	}
 
 	for _, gitversion := range versions {
-		packages.GitForceCheckout(ctx, gitpath, gitversion.Tag)
+		git.ForceCheckout(ctx, gitpath, gitversion.Tag)
 		filesToCopy := pckg.NpmFilesFrom(gitpath)
 
 		pckgpath := path.Join(pckg.LibraryPath(), gitversion.Version)
@@ -126,7 +126,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 			continue
 		}
 
-		if util.IsPathIgnoredByGit(ctx, util.GetCDNJSPath(), pckgpath) {
+		if git.IsPathIgnored(ctx, util.GetCDNJSPath(), pckgpath) {
 			util.Debugf(ctx, "%s is ignored by git; aborting\n", pckgpath)
 			continue
 		}
