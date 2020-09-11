@@ -100,7 +100,7 @@ func (p *Package) Marshal() ([]byte, error) {
 // `<cdnjs logs path>/m/My-Package/2020/07-31.log`
 func (p *Package) Log(format string, a ...interface{}) string {
 	t := time.Now().UTC()
-	logFileDir := path.Join(util.GetLogsPath(), strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
+	logFileDir := path.Join(util.GetLogsPath(), "packages", strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
 	logFile := t.Format("01-02.log")
 	logFilePath := path.Join(logFileDir, logFile)
 

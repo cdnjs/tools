@@ -105,7 +105,7 @@ func main() {
 		default:
 		}
 
-		pckg, err := packages.ReadHumanJSONFile(ctx, path.Join(packagesPath, f))
+		pckg, err := packages.ReadHumanJSONFile(ctx, path.Join(packagesPath, "packages", f))
 		if err != nil {
 			if invalidHumanErr, ok := err.(packages.InvalidSchemaError); ok {
 				for _, resErr := range invalidHumanErr.Result.Errors() {

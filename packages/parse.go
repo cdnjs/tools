@@ -19,7 +19,7 @@ import (
 //
 // TODO: update this to remove legacy ListFilesGlob
 func GetHumanPackageJSONFiles(ctx context.Context) []string {
-	list, err := util.ListFilesGlob(ctx, util.GetHumanPackagesPath(), "*/*.json")
+	list, err := util.ListFilesGlob(ctx, path.Join(util.GetHumanPackagesPath(), "packages"), "*/*.json")
 	util.Check(err)
 	return list
 }
