@@ -41,6 +41,10 @@ func CSS(ctx context.Context, file string) {
 
 	cmd := exec.Command(cleanCSS, args...)
 	util.Debugf(ctx, "compress: run %s\n", cmd)
-	out := util.CheckCmd(cmd.CombinedOutput())
-	util.Debugf(ctx, "%s\n", out)
+
+	if bytes, err := cmd.CombinedOutput(); err != nil {
+		util.Debugf(ctx, "Failed to compress CSS: %v\n", err)
+	} else {
+		util.Debugf(ctx, "%s\n", bytes)
+	}
 }

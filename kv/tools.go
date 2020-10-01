@@ -105,7 +105,7 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 
 						if err != nil {
 							util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
-							sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
+							sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
 							return
 						}
 					}
