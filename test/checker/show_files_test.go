@@ -351,7 +351,7 @@ b.js
 			expected: `
 
 most recent version: 0.0.2
-` + ciWarn(file, "file a.js ignored due to byte size (10485860 > 10485760)") + `
+` + ciWarn(file, "file a.js ignored due to byte size (26214500 > 26214400)") + `
 ` + "```" + `
 b.js
 ` + "```" + `
