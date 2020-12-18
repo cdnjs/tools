@@ -225,15 +225,16 @@ func updatePackage(ctx context.Context, pckg *packages.Package, allVersions []ve
 		}
 	}
 
+	// sync with KV first, then update legacy package.json
+	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
+		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
+	}
+
 	// Either `version`, `filename` or both changed,
 	// so git push the new metadata.
 	commitPackageVersion(ctx, pckg, packageJSONPath)
 	git.Push(ctx, cdnjsPath)
 	git.Push(ctx, logsPath)
-
-	if err := kv.UpdateKVPackage(ctx, pckg); err != nil {
-		panic(fmt.Sprintf("failed to write KV package metadata %s: %s", *pckg.Name, err.Error()))
-	}
 
 	return true
 }
