@@ -22,7 +22,7 @@ func CSS(ctx context.Context, file string) {
 	outfile := file[0:len(file)-len(ext)] + ".min.css"
 
 	// compressed file already exists, ignore
-	if _, err := os.Stat(outfile); !os.IsNotExist(err) {
+	if _, err := os.Stat(outfile); err == nil {
 		util.Debugf(ctx, "compressed file already exists: %s\n", outfile)
 		return
 	}
