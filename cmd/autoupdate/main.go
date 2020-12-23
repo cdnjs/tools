@@ -97,8 +97,7 @@ func main() {
 	if specifiedPackage == "" {
 		packagesToUpdate = packages.GetHumanPackageJSONFiles(defaultCtx)
 	} else {
-		packagesToUpdate = make([]string, 1)
-		packagesToUpdate[0] = specifiedPackage
+		packagesToUpdate = []string{specifiedPackage}
 	}
 
 	for _, f := range packagesToUpdate {

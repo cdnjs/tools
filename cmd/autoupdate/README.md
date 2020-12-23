@@ -8,4 +8,6 @@ If the flag is set, the autoupdater will not pull from git.
 
 ## -package
 Run the autoupdate for a specific package.
-Usage: `autoupdate -package=path/to/hi-sven.json`
+Usage: `autoupdate -package=h/hi-sven.json`
+
+The path of the file must be in the `packages/packages` repo.
