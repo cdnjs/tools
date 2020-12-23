@@ -69,12 +69,14 @@ func main() {
 	defer sentry.PanicHandler()
 
 	var noUpdate, noPull bool
+	var specifiedPackage string
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
+	flag.StringVar(&specifiedPackage, "package", "", "if set, the autoupdater will update only that package")
 	flag.Parse()
 
 	if util.IsDebug() {
-		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t)\n", noUpdate, noPull)
+		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t, specific package=%s)\n", noUpdate, noPull, specifiedPackage)
 	}
 
 	// get algolia search index to update it in-place
@@ -90,7 +92,16 @@ func main() {
 		git.UpdateRepo(defaultCtx, logsPath)
 	}
 
-	for _, f := range packages.GetHumanPackageJSONFiles(defaultCtx) {
+	var packagesToUpdate []string
+
+	if specifiedPackage == "" {
+		packagesToUpdate = packages.GetHumanPackageJSONFiles(defaultCtx)
+	} else {
+		packagesToUpdate = make([]string, 1)
+		packagesToUpdate[0] = specifiedPackage
+	}
+
+	for _, f := range packagesToUpdate {
 		// create context with file path prefix, standard debug logger
 		ctx := util.ContextWithEntries(util.GetStandardEntries(f, logger)...)
 
