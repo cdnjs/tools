@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"strings"
 
@@ -35,7 +34,7 @@ func ReadHumanJSON(ctx context.Context, name string) (*Package, error) {
 // It will validate the human-readable schema, returning an
 // InvalidSchemaError if the schema is invalid.
 func ReadHumanJSONFile(ctx context.Context, file string) (*Package, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := util.ReadHumanPackageSafely(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
 	}
@@ -81,7 +80,7 @@ func readHumanJSONBytes(ctx context.Context, file string, bytes []byte) (*Packag
 // TODO: THIS IS LEGACY FOR PACKAGE.MIN.JS GENERATION.
 // REMOVE WHEN PACKAGE.MIN.JS IS GONE.
 func ReadNonHumanJSONFile(ctx context.Context, file string) (*Package, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := util.ReadLibFileSafely(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s", file)
 	}

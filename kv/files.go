@@ -3,7 +3,6 @@ package kv
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -63,7 +62,7 @@ func getFileWriteRequests(ctx context.Context, pkg, version, fullPathToVersion s
 		}
 
 		// read file bytes
-		bytes, err := ioutil.ReadFile(fullPath)
+		bytes, err := util.ReadLibFileSafely(fullPath)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -3,7 +3,16 @@ package util
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
+)
+
+var (
+	cdnjsLibsPath     = GetCDNJSLibrariesPath()
+	humanPackagesPath = GetHumanPackagesPath()
+	srisPath          = GetSRIsPath()
 )
 
 // Assert is used to enforce a condition is true.
@@ -36,4 +45,34 @@ func MoveFile(sourcePath, destPath string) error {
 		return fmt.Errorf("Failed removing original file: %s", err)
 	}
 	return nil
+}
+
+// ReadSRISafely reads a cdnjs/sris file safely.
+func ReadSRISafely(file string) ([]byte, error) {
+	return ReadFileSafely(file, srisPath)
+}
+
+// ReadHumanPackageSafely reads a cdnjs/packages file safely.
+func ReadHumanPackageSafely(file string) ([]byte, error) {
+	return ReadFileSafely(file, humanPackagesPath)
+}
+
+// ReadLibFileSafely reads a cdnjs/cdnjs file safely.
+func ReadLibFileSafely(file string) ([]byte, error) {
+	return ReadFileSafely(file, cdnjsLibsPath)
+}
+
+// ReadFileSafely reads a cdnjs file from disk safely, checking that
+// it is located under the correct directory.
+func ReadFileSafely(file, underPath string) ([]byte, error) {
+	// evaluate any symlinks, finding the full path to the target file
+	target, err := filepath.EvalSymlinks(file)
+	if err != nil {
+		return nil, err
+	}
+	// check that the target file is located under a particular directory
+	if !strings.HasPrefix(target, underPath) {
+		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", cdnjsLibsPath, target)
+	}
+	return ioutil.ReadFile(target)
 }
