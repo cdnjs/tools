@@ -14,6 +14,11 @@ func createFakeBotPath() string {
 		panic(err)
 	}
 
+	err = os.MkdirAll(path.Join(botpath, "packages", "packages", "i"), os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
 	// create fake glob that will return all the files all the time
 	{
 		dir := path.Join(botpath, "glob")
@@ -38,9 +43,7 @@ func createFakeBotPath() string {
 }
 
 // start a local proxy server and run the checker binary
-func runChecker(proxy string, validatePath bool, args ...string) string {
-	fakeBotPath := createFakeBotPath()
-
+func runChecker(fakeBotPath string, proxy string, validatePath bool, args ...string) string {
 	// used to avoid validating the package's path
 	if !validatePath {
 		args = append([]string{"-no-path-validation"}, args...)
@@ -53,8 +56,6 @@ func runChecker(proxy string, validatePath bool, args ...string) string {
 	)
 
 	out, _ := cmd.CombinedOutput()
-
-	os.RemoveAll(fakeBotPath)
 
 	return string(out)
 }

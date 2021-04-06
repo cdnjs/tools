@@ -4,14 +4,13 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/cdnjs/tools/util"
 )
 
 // CalculateFileSRI generates a Subresource Integrity string for a particular file.
-func CalculateFileSRI(filename string) string {
-	bytes, err := ioutil.ReadFile(filename)
+func CalculateFileSRI(filepath string) string {
+	bytes, err := util.ReadLibFileSafely(filepath)
 	util.Check(err)
 
 	return CalculateSRI(bytes)

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -21,6 +22,7 @@ const (
 	oversizedFilesPkg   = "oversizePkg"
 	unpublishedFieldPkg = "unpublishedPkg"
 	sortByTimeStampPkg  = "sortByTimePkg"
+	symlinkPkg          = "symlinkPkg"
 	timeStamp1          = "1.0.0"
 	timeStamp2          = "2.0.0"
 	timeStamp3          = "3.0.0"
@@ -42,7 +44,6 @@ func addTarFile(tw *tar.Writer, path string, content string) error {
 	header.Name = path
 	header.Size = int64(len(content))
 	header.Mode = int64(0666)
-	// header.ModTime = stat.ModTime()
 	// write the header to the tarball archive
 	if err := tw.WriteHeader(header); err != nil {
 		return err
@@ -54,7 +55,21 @@ func addTarFile(tw *tar.Writer, path string, content string) error {
 	return nil
 }
 
-func createTar(filemap map[string]string) (*os.File, error) {
+func addTarSymlink(tw *tar.Writer, path string, dst string) error {
+	// now lets create the header as needed for this file within the tarball
+	header := new(tar.Header)
+	header.Typeflag = tar.TypeSymlink
+	header.Name = path
+	header.Linkname = dst
+	header.Mode = int64(0666)
+	// write the header to the tarball archive
+	if err := tw.WriteHeader(header); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createTar(filemap map[string]VirtualFile) (*os.File, error) {
 	file, err := os.Create("/tmp/test.tgz")
 	if err != nil {
 		return nil, err
@@ -65,24 +80,36 @@ func createTar(filemap map[string]string) (*os.File, error) {
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 	// add each file as needed into the current tar archive
-	for path, content := range filemap {
-		if err := addTarFile(tw, "package/"+path, content); err != nil {
-			return nil, err
+	for path, virtualFile := range filemap {
+		if virtualFile.LinkTo != "" {
+			if err := addTarSymlink(tw, "package/"+path, virtualFile.LinkTo); err != nil {
+				return nil, err
+			}
+		}
+		if virtualFile.Content != "" {
+			if err := addTarFile(tw, "package/"+path, virtualFile.Content); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	return file, nil
 }
 
-func servePackage(w http.ResponseWriter, r *http.Request, filemap map[string]string) {
+func servePackage(w http.ResponseWriter, r *http.Request, filemap map[string]VirtualFile) {
 	file, err := createTar(filemap)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
+	defer os.Remove(file.Name())
 
 	http.ServeFile(w, r, file.Name())
-	os.Remove(file.Name())
+}
+
+type VirtualFile struct {
+	Content string
+	LinkTo  string
 }
 
 // fakes the npm api for testing purposes
@@ -181,52 +208,73 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 				"latest": "3.0.0"
 			}
 		}`)
+	case "/" + symlinkPkg:
+		fmt.Fprint(w, `{
+			"versions": {
+				"0.0.2": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+symlinkPkg+`.tgz"
+					}
+				}
+			},
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" },
+			"dist-tags": {
+				"latest": "0.0.2"
+			}
+		}`)
 	case "/" + jsFilesPkg + ".tgz":
-		servePackage(w, r, map[string]string{
-			"a.js": "a",
-			"b.js": "b",
+		servePackage(w, r, map[string]VirtualFile{
+			"a.js": VirtualFile{Content: "a"},
+			"b.js": VirtualFile{Content: "b"},
 		})
 	case "/" + oversizedFilesPkg + ".tgz":
-		servePackage(w, r, map[string]string{
-			"a.js": strings.Repeat("a", int(util.MaxFileSize)+100),
-			"b.js": "ok",
+		servePackage(w, r, map[string]VirtualFile{
+			"a.js": VirtualFile{Content: strings.Repeat("a", int(util.MaxFileSize)+100)},
+			"b.js": VirtualFile{Content: "ok"},
 		})
 	case "/" + unpublishedFieldPkg + ".tgz":
-		servePackage(w, r, map[string]string{
-			"a.js": "a",
-			"b.js": "b",
-			"c.js": "c",
+		servePackage(w, r, map[string]VirtualFile{
+			"a.js": VirtualFile{Content: "a"},
+			"b.js": VirtualFile{Content: "b"},
+			"c.js": VirtualFile{Content: "c"},
 		})
 	case "/" + timeStamp2 + ".tgz":
-		servePackage(w, r, map[string]string{
-			"2.js": "most recent version",
+		servePackage(w, r, map[string]VirtualFile{
+			"2.js": VirtualFile{Content: "most recent version"},
 		})
 	case "/" + timeStamp3 + ".tgz":
-		servePackage(w, r, map[string]string{
-			"3.js": "2nd most recent version",
+		servePackage(w, r, map[string]VirtualFile{
+			"3.js": VirtualFile{Content: "2nd most recent version"},
 		})
 	case "/" + timeStamp1 + ".tgz":
-		servePackage(w, r, map[string]string{
-			"1.js": "3rd most recent version",
+		servePackage(w, r, map[string]VirtualFile{
+			"1.js": VirtualFile{Content: "3rd most recent version"},
 		})
 	case "/" + timeStamp5 + ".tgz":
-		servePackage(w, r, map[string]string{
-			"5.js": "4th most recent version",
+		servePackage(w, r, map[string]VirtualFile{
+			"5.js": VirtualFile{Content: "4th most recent version"},
 		})
 	case "/" + timeStamp4 + ".tgz":
-		servePackage(w, r, map[string]string{
-			"4.js": "5th most recent version",
+		servePackage(w, r, map[string]VirtualFile{
+			"4.js": VirtualFile{Content: "5th most recent version"},
+		})
+	case "/" + symlinkPkg + ".tgz":
+		servePackage(w, r, map[string]VirtualFile{
+			"a.js": VirtualFile{LinkTo: "/etc/issue"},
+			"b.js": VirtualFile{LinkTo: "/dev/urandom"},
+			"c.js": VirtualFile{Content: "/dev/urandom"},
 		})
 	default:
 		panic("unreachable: " + r.URL.Path)
 	}
 }
 
-func TestCheckerShowFiles(t *testing.T) {
-	const (
-		httpTestProxy = "localhost:8666"
-		file          = "/tmp/input-show-files.json"
-	)
+func TestCheckerNPMShowFiles(t *testing.T) {
+	fakeBotPath := createFakeBotPath()
+	defer os.RemoveAll(fakeBotPath)
+
+	httpTestProxy := "localhost:8666"
+	file := path.Join(fakeBotPath, "packages", "packages", "i", "input-show-files.json")
 
 	cases := []ShowFilesTestCase{
 		{
@@ -477,12 +525,73 @@ most recent version: 2.0.0
 				assert.Nil(t, err)
 			}
 
-			out := runChecker(httpTestProxy, tc.validatePath, "show-files", pkgFile)
+			out := runChecker(fakeBotPath, httpTestProxy, tc.validatePath, "show-files", pkgFile)
 			assert.Equal(t, tc.expected, "\n"+out)
 
 			os.Remove(pkgFile)
 		})
 	}
 
+	assert.Nil(t, testproxy.Shutdown(context.Background()))
+}
+
+func TestCheckerShowFilesNPMSymlink(t *testing.T) {
+	fakeBotPath := createFakeBotPath()
+	defer os.RemoveAll(fakeBotPath)
+
+	httpTestProxy := "localhost:8666"
+	pkgFile := path.Join(fakeBotPath, "packages", "packages", "i", "input-show-files.json")
+	input := `{
+		"name": "a-happy-tyler",
+		"description": "Tyler is happy. Be like Tyler.",
+		"keywords": [
+			"tyler",
+			"happy"
+		],
+		"authors": [
+			{
+				"name": "Tyler Caslin",
+				"email": "tylercaslin47@gmail.com",
+				"url": "https://github.com/tc80"
+			}
+		],
+		"license": "MIT",
+		"repository": {
+			"type": "git",
+			"url": "git://github.com/tc80/a-happy-tyler.git"
+		},
+		"filename": "a.js",
+		"homepage": "https://github.com/tc80",
+		"autoupdate": {
+			"source": "npm",
+			"target": "` + symlinkPkg + `",
+			"fileMap": [
+				{ "basePath":"", "files":["*.js"] }
+			]
+		}
+	}`
+	expected := `most recent version: 0.0.2
+
+` + "```" + `
+c.js
+` + "```" + ``
+
+	err := ioutil.WriteFile(pkgFile, []byte(input), 0644)
+	assert.Nil(t, err)
+	defer os.Remove(pkgFile)
+
+	testproxy := &http.Server{
+		Addr:    httpTestProxy,
+		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerShowFiles)),
+	}
+
+	go func() {
+		if err := testproxy.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+
+	out := runChecker(fakeBotPath, httpTestProxy, false, "show-files", pkgFile)
+	assert.Contains(t, out, expected)
 	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }

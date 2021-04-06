@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,11 +64,11 @@ func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestCheckerLint(t *testing.T) {
-	const (
-		pckgPathRegex = "^packages/([a-z0-9])/([a-zA-Z0-9._-]+).json$"
-		httpTestProxy = "localhost:8667"
-		file          = "/tmp/input-lint.json"
-	)
+	fakeBotPath := createFakeBotPath()
+	defer os.RemoveAll(fakeBotPath)
+	pckgPathRegex := "^packages/([a-z0-9])/([a-zA-Z0-9._-]+).json$"
+	httpTestProxy := "localhost:8667"
+	file := path.Join(fakeBotPath, "packages", "packages", "i", "input-lint.json")
 
 	var (
 		invalidPath             = "this/is/an/invalid/path.json"
@@ -105,24 +107,24 @@ func TestCheckerLint(t *testing.T) {
 			input:        ``,
 			validatePath: true,
 			file:         &validPathButNonexistent,
-			expected:     []string{ciError(validPathButNonexistent, "failed to read "+validPathButNonexistent+": open "+validPathButNonexistent+": no such file or directory")},
+			expected:     []string{ciError(validPathButNonexistent, "failed to read")},
 		},
 
 		{
 			name:     "error when invalid JSON",
 			input:    `{ "package":, }`,
-			expected: []string{ciError(file, "failed to parse /tmp/input-lint.json: invalid character ',' looking for beginning of value")},
+			expected: []string{"failed to parse"},
 		},
 
 		{
 			name:  "show required fields",
 			input: `{}`,
 			expected: []string{
-				ciError(file, "(root): autoupdate is required") +
-					ciError(file, "(root): description is required") +
-					ciError(file, "(root): keywords is required") +
-					ciError(file, "(root): name is required") +
-					ciError(file, "(root): repository is required"),
+				ciError(file, "(root): autoupdate is required"),
+				ciError(file, "(root): description is required"),
+				ciError(file, "(root): keywords is required"),
+				ciError(file, "(root): name is required"),
+				ciError(file, "(root): repository is required"),
 			},
 		},
 
@@ -319,8 +321,8 @@ func TestCheckerLint(t *testing.T) {
 		    }
 		}`,
 			expected: []string{
-				ciWarn(file, "stars on GitHub is under 200") +
-					ciWarn(file, "package download per month on npm is under 800"),
+				ciWarn(file, "stars on GitHub is under 200"),
+				ciWarn(file, "package download per month on npm is under 800"),
 			},
 		},
 
@@ -397,12 +399,12 @@ func TestCheckerLint(t *testing.T) {
 			]
 		}`,
 			expected: []string{
-				ciError(file, "(root): autoupdate is required") +
-					ciError(file, "(root): Additional property npmName is not allowed") +
-					ciError(file, "(root): Additional property npmFileMap is not allowed"),
-				ciError(file, "(root): autoupdate is required") +
-					ciError(file, "(root): Additional property npmFileMap is not allowed") +
-					ciError(file, "(root): Additional property npmName is not allowed"),
+				ciError(file, "(root): autoupdate is required"),
+				ciError(file, "(root): Additional property npmName is not allowed"),
+				ciError(file, "(root): Additional property npmFileMap is not allowed"),
+				ciError(file, "(root): autoupdate is required"),
+				ciError(file, "(root): Additional property npmFileMap is not allowed"),
+				ciError(file, "(root): Additional property npmName is not allowed"),
 			},
 		},
 	}
@@ -431,8 +433,10 @@ func TestCheckerLint(t *testing.T) {
 				assert.Nil(t, err)
 			}
 
-			out := runChecker(httpTestProxy, tc.validatePath, "lint", pkgFile)
-			assert.Contains(t, tc.expected, out)
+			out := runChecker(fakeBotPath, httpTestProxy, tc.validatePath, "lint", pkgFile)
+			for _, text := range tc.expected {
+				assert.Contains(t, out, strings.ReplaceAll(text, "\n", ""))
+			}
 
 			os.Remove(pkgFile)
 		})

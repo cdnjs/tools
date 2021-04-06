@@ -111,6 +111,7 @@ func doUpdateNpm(ctx context.Context, pckg *packages.Package, versions []npm.Ver
 				util.Debugf(ctx, "%s -> %s\n", absFrom, absDest)
 
 				err := util.MoveFile(
+					ctx,
 					absFrom,
 					absDest,
 				)
