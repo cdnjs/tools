@@ -22,27 +22,56 @@ func Assert(cond bool) {
 	}
 }
 
-// MoveFile moves a file from a source path to destination path.
-func MoveFile(sourcePath, destPath string) error {
-	inputFile, err := os.Open(sourcePath)
+// Copy a symbolic link.
+func copySymlink(src, dst string) error {
+	l, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+	return os.Symlink(l, dst)
+}
+
+// Copy a regular file.
+func copyFile(src, dst string) error {
+	inputFile, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("Couldn't open source file: %s", err)
 	}
-	outputFile, err := os.Create(destPath)
+	defer inputFile.Close()
+	outputFile, err := os.Create(dst)
 	if err != nil {
-		inputFile.Close()
 		return fmt.Errorf("Couldn't open dest file: %s", err)
 	}
 	defer outputFile.Close()
 	_, err = io.Copy(outputFile, inputFile)
-	inputFile.Close()
 	if err != nil {
 		return fmt.Errorf("Writing to output file failed: %s", err)
 	}
-	// The copy was successful, so now delete the original file
-	err = os.Remove(sourcePath)
+	return nil
+}
+
+// MoveFile moves a file from a source path to destination path.
+func MoveFile(src, dst string) error {
+	info, err := os.Lstat(src)
 	if err != nil {
-		return fmt.Errorf("Failed removing original file: %s", err)
+		return err
+	}
+
+	// copy symlink or file
+	if info.Mode()&os.ModeSymlink != 0 {
+		err = copySymlink(src, dst)
+	} else if info.Mode().IsRegular() {
+		err = copyFile(src, dst)
+	} else {
+		err = fmt.Errorf("Unsupported file type: `%s`", info.Mode())
+	}
+	if err != nil {
+		return err
+	}
+
+	// The copy was successful, so now delete the original file
+	if err := os.Remove(src); err != nil {
+		return fmt.Errorf("Failed removing original file `%s`: `%s`", src, err)
 	}
 	return nil
 }
