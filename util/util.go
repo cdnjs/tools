@@ -1,11 +1,11 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -14,15 +14,6 @@ func Assert(cond bool) {
 	if !cond {
 		panic("assertion failure")
 	}
-}
-
-// Copy a symbolic link.
-func copySymlink(src, dst string) error {
-	l, err := os.Readlink(src)
-	if err != nil {
-		return err
-	}
-	return os.Symlink(l, dst)
 }
 
 // Copy a regular file.
@@ -45,7 +36,7 @@ func copyFile(src, dst string) error {
 }
 
 // MoveFile moves a file from a source path to destination path.
-func MoveFile(src, dst string) error {
+func MoveFile(ctx context.Context, src string, dst string) error {
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -53,7 +44,8 @@ func MoveFile(src, dst string) error {
 
 	// copy symlink or file
 	if info.Mode()&os.ModeSymlink != 0 {
-		err = copySymlink(src, dst)
+		Debugf(ctx, "Unsupported symlink to %s", dst)
+		return nil
 	} else if info.Mode().IsRegular() {
 		err = copyFile(src, dst)
 	} else {
@@ -87,12 +79,7 @@ func ReadLibFileSafely(file string) ([]byte, error) {
 
 // ReadFileSafely reads a cdnjs file from disk safely, checking that
 // it is located under the correct directory.
-func ReadFileSafely(file, underPath string) ([]byte, error) {
-	// evaluate any symlinks, finding the full path to the target file
-	target, err := filepath.EvalSymlinks(file)
-	if err != nil {
-		return nil, err
-	}
+func ReadFileSafely(target, underPath string) ([]byte, error) {
 	// check that the target file is located under a particular directory
 	if !strings.HasPrefix(target, underPath) {
 		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", underPath, target)

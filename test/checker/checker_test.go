@@ -14,7 +14,10 @@ func createFakeBotPath() string {
 		panic(err)
 	}
 
-	os.MkdirAll(path.Join(botpath, "packages", "packages", "i"), os.ModePerm)
+	err = os.MkdirAll(path.Join(botpath, "packages", "packages", "i"), os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 
 	// create fake glob that will return all the files all the time
 	{

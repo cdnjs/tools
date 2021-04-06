@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -270,7 +269,7 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func TestCheckerShowFiles(t *testing.T) {
+func TestCheckerNPMShowFiles(t *testing.T) {
 	fakeBotPath := createFakeBotPath()
 	defer os.RemoveAll(fakeBotPath)
 
@@ -536,7 +535,7 @@ most recent version: 2.0.0
 	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }
 
-func TestCheckerShowFilesSymlink(t *testing.T) {
+func TestCheckerShowFilesNPMSymlink(t *testing.T) {
 	fakeBotPath := createFakeBotPath()
 	defer os.RemoveAll(fakeBotPath)
 

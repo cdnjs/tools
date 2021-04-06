@@ -144,6 +144,7 @@ func doUpdateGit(ctx context.Context, pckg *packages.Package, gitpath string, ve
 				util.Debugf(ctx, "%s -> %s\n", absFrom, absDest)
 
 				err := util.MoveFile(
+					ctx,
 					absFrom,
 					absDest,
 				)
