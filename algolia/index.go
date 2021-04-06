@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -95,7 +94,7 @@ func getSRI(p *packages.Package) (string, error) {
 
 	var j map[string]interface{}
 
-	data, err := ioutil.ReadFile(jsonFile)
+	data, err := util.ReadSRISafely(jsonFile)
 
 	if err != nil {
 		return "", nil
