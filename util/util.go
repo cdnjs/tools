@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-var (
-	cdnjsLibsPath     = GetCDNJSLibrariesPath()
-	humanPackagesPath = GetHumanPackagesPath()
-	srisPath          = GetSRIsPath()
-)
-
 // Assert is used to enforce a condition is true.
 func Assert(cond bool) {
 	if !cond {
@@ -78,17 +72,17 @@ func MoveFile(src, dst string) error {
 
 // ReadSRISafely reads a cdnjs/sris file safely.
 func ReadSRISafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, srisPath)
+	return ReadFileSafely(file, GetSRIsPath())
 }
 
 // ReadHumanPackageSafely reads a cdnjs/packages file safely.
 func ReadHumanPackageSafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, humanPackagesPath)
+	return ReadFileSafely(file, GetHumanPackagesPath())
 }
 
 // ReadLibFileSafely reads a cdnjs/cdnjs file safely.
 func ReadLibFileSafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, cdnjsLibsPath)
+	return ReadFileSafely(file, GetCDNJSLibrariesPath())
 }
 
 // ReadFileSafely reads a cdnjs file from disk safely, checking that
@@ -101,7 +95,7 @@ func ReadFileSafely(file, underPath string) ([]byte, error) {
 	}
 	// check that the target file is located under a particular directory
 	if !strings.HasPrefix(target, underPath) {
-		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", cdnjsLibsPath, target)
+		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", underPath, target)
 	}
 	return ioutil.ReadFile(target)
 }

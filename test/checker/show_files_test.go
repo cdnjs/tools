@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -223,10 +224,11 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestCheckerShowFiles(t *testing.T) {
-	const (
-		httpTestProxy = "localhost:8666"
-		file          = "/tmp/input-show-files.json"
-	)
+	fakeBotPath := createFakeBotPath()
+	defer os.RemoveAll(fakeBotPath)
+
+	httpTestProxy := "localhost:8666"
+	file := path.Join(fakeBotPath, "packages", "packages", "i", "input-show-files.json")
 
 	cases := []ShowFilesTestCase{
 		{
@@ -477,7 +479,7 @@ most recent version: 2.0.0
 				assert.Nil(t, err)
 			}
 
-			out := runChecker(httpTestProxy, tc.validatePath, "show-files", pkgFile)
+			out := runChecker(fakeBotPath, httpTestProxy, tc.validatePath, "show-files", pkgFile)
 			assert.Equal(t, tc.expected, "\n"+out)
 
 			os.Remove(pkgFile)
