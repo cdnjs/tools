@@ -19,7 +19,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/kv"
-	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
@@ -423,8 +422,6 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 		git.Add(ctx, logsPath, newVersionToCommit.pckg.Log("new version kv SRIs: %s: %s", newVersionToCommit.newVersion, kvSRIsJSON))
 		logsCommitMsg := fmt.Sprintf("Add %s (%s)", *newVersionToCommit.pckg.Name, newVersionToCommit.newVersion)
 		git.Commit(ctx, logsPath, logsCommitMsg)
-
-		metrics.ReportNewVersion(ctx)
 
 		assets = append(assets, packages.Asset{
 			Version: newVersionToCommit.newVersion,
