@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -80,6 +81,14 @@ func ReadLibFileSafely(file string) ([]byte, error) {
 // ReadFileSafely reads a cdnjs file from disk safely, checking that
 // it is located under the correct directory.
 func ReadFileSafely(target, underPath string) ([]byte, error) {
+	if !filepath.IsAbs(target) {
+		abspath, err := filepath.Abs(target)
+		if err != nil {
+			return nil, fmt.Errorf("could not get absolute path: %s", err)
+		}
+		target = abspath
+	}
+
 	// check that the target file is located under a particular directory
 	if !strings.HasPrefix(target, underPath) {
 		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", underPath, target)

@@ -74,12 +74,6 @@ func showFiles(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
-	pckgPath, fileerr := filepath.Abs(pckgPath)
-	if fileerr != nil {
-		err(ctx, fmt.Sprintf("malformed path: %s", fileerr))
-		return
-	}
-
 	// parse *Package from JSON
 	pckg := parseHumanPackage(ctx, pckgPath, noPathValidation)
 	if pckg == nil {
@@ -297,11 +291,6 @@ func lintPackage(pckgPath string, noPathValidation bool) {
 	// create context with file path prefix, checker logger
 	ctx := util.ContextWithEntries(util.GetCheckerEntries(pckgPath, logger)...)
 
-	pckgPath, fileerr := filepath.Abs(pckgPath)
-	if fileerr != nil {
-		err(ctx, fmt.Sprintf("malformed path: %s", fileerr))
-		return
-	}
 	util.Debugf(ctx, "Linting %s...\n", pckgPath)
 
 	// parse *Package from JSON
