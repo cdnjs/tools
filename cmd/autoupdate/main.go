@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -383,18 +384,20 @@ func updateVersionInCdnjs(ctx context.Context, pckg *packages.Package, packageJS
 func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 	files := version.pckg.AllFiles(version.newVersion)
 
-	for _, f := range files {
-		switch path.Ext(f) {
-		case ".jpg", ".jpeg":
-			compress.Jpeg(ctx, path.Join(version.versionPath, f))
-		case ".png":
-			compress.Png(ctx, path.Join(version.versionPath, f))
-		case ".js":
-			compress.Js(ctx, path.Join(version.versionPath, f))
-		case ".css":
-			compress.CSS(ctx, path.Join(version.versionPath, f))
+	cpuCount := runtime.NumCPU()
+	jobs := make(chan compress.CompressJob, cpuCount)
+	for w := 1; w <= cpuCount; w++ {
+		go compress.Worker(jobs)
+	}
+
+	for _, file := range files {
+		jobs <- compress.CompressJob{
+			Ctx:         ctx,
+			File:        file,
+			VersionPath: version.versionPath,
 		}
 	}
+	close(jobs)
 }
 
 // write all versions to KV
