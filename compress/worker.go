@@ -22,8 +22,6 @@ func Worker(jobs <-chan CompressJob) {
 			Js(j.Ctx, path.Join(j.VersionPath, j.File))
 		case ".css":
 			CSS(j.Ctx, path.Join(j.VersionPath, j.File))
-		default:
-			panic("unreachable: " + j.File)
 		}
 	}
 }
