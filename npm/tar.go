@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/cdnjs/tools/util"
 )
@@ -25,7 +26,7 @@ func removePackageDir(path string) string {
 }
 
 // Untar uncompresses a tar at a destination.
-func Untar(dst string, r io.Reader) error {
+func Untar(ctx context.Context, dst string, r io.Reader) error {
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return err
@@ -55,9 +56,15 @@ func Untar(dst string, r io.Reader) error {
 		// the target location where the dir/file should be created
 		target := filepath.Join(dst, removePackageDir(header.Name))
 
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
+		// While this check prevents some path walking, a path that contains
+		// UTF-8 might bypass that check. For instance \u002e\u002e\u2215etc/passwd
+		// will be joined to the dst directory and appear safe. However, the open
+		// file syscall will interpret the UTF-8 and effectively allow path walking
+		// again. In production, the bot must run in a sandboxed environment.
+		if !strings.HasPrefix(target, dst) {
+			util.Warnf(ctx, "Unsafe file located outside `%s` with name: `%s`", dst, header.Name)
+			continue
+		}
 
 		// check the file type
 		switch header.Typeflag {
@@ -112,6 +119,6 @@ func DownloadTar(ctx context.Context, url string) string {
 
 	defer resp.Body.Close()
 
-	util.Check(Untar(dest, resp.Body))
+	util.Check(Untar(ctx, dest, resp.Body))
 	return dest
 }

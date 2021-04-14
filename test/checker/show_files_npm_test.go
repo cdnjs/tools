@@ -23,6 +23,7 @@ const (
 	unpublishedFieldPkg = "unpublishedPkg"
 	sortByTimeStampPkg  = "sortByTimePkg"
 	symlinkPkg          = "symlinkPkg"
+	walkerPkg           = "walkerPkg"
 	timeStamp1          = "1.0.0"
 	timeStamp2          = "2.0.0"
 	timeStamp3          = "3.0.0"
@@ -222,6 +223,20 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 				"latest": "0.0.2"
 			}
 		}`)
+	case "/" + walkerPkg:
+		fmt.Fprint(w, `{
+			"versions": {
+				"0.0.2": {
+					"dist": {
+						"tarball": "http://registry.npmjs.org/`+walkerPkg+`.tgz"
+					}
+				}
+			},
+			"time": { "0.0.2": "2012-06-19T04:01:32.220Z" },
+			"dist-tags": {
+				"latest": "0.0.2"
+			}
+		}`)
 	case "/" + jsFilesPkg + ".tgz":
 		servePackage(w, r, map[string]VirtualFile{
 			"a.js": VirtualFile{Content: "a"},
@@ -263,6 +278,12 @@ func fakeNpmHandlerShowFiles(w http.ResponseWriter, r *http.Request) {
 			"a.js": VirtualFile{LinkTo: "/etc/issue"},
 			"b.js": VirtualFile{LinkTo: "/dev/urandom"},
 			"c.js": VirtualFile{Content: "/dev/urandom"},
+		})
+	case "/" + walkerPkg + ".tgz":
+		servePackage(w, r, map[string]VirtualFile{
+			"a.js":          VirtualFile{Content: "a"},
+			"../../b.js":    VirtualFile{Content: "b"},
+			"../../../c.js": VirtualFile{Content: "c"},
 		})
 	default:
 		panic("unreachable: " + r.URL.Path)
@@ -593,5 +614,70 @@ c.js
 
 	out := runChecker(fakeBotPath, httpTestProxy, false, "show-files", pkgFile)
 	assert.Contains(t, out, expected)
+	assert.Nil(t, testproxy.Shutdown(context.Background()))
+}
+
+func TestCheckerShowFilesTarWalker(t *testing.T) {
+	fakeBotPath := createFakeBotPath()
+	defer os.RemoveAll(fakeBotPath)
+
+	httpTestProxy := "localhost:8666"
+	pkgFile := path.Join(fakeBotPath, "packages", "packages", "i", "input-show-files.json")
+	input := `{
+		"name": "a-happy-tyler",
+		"description": "Tyler is happy. Be like Tyler.",
+		"keywords": [
+			"tyler",
+			"happy"
+		],
+		"authors": [
+			{
+				"name": "Tyler Caslin",
+				"email": "tylercaslin47@gmail.com",
+				"url": "https://github.com/tc80"
+			}
+		],
+		"license": "MIT",
+		"repository": {
+			"type": "git",
+			"url": "git://github.com/tc80/a-happy-tyler.git"
+		},
+		"filename": "a.js",
+		"homepage": "https://github.com/tc80",
+		"autoupdate": {
+			"source": "npm",
+			"target": "` + walkerPkg + `",
+			"fileMap": [
+				{ "basePath":"", "files":["*.js"] }
+			]
+		}
+	}`
+	expected := []string{`
+` + "```" + `
+a.js
+` + "```" + ``,
+		"Unsafe file located outside", "with name: `package/../../b.js`",
+		"Unsafe file located outside", "with name: `package/../../../c.js`",
+	}
+
+	err := ioutil.WriteFile(pkgFile, []byte(input), 0644)
+	assert.Nil(t, err)
+	defer os.Remove(pkgFile)
+
+	testproxy := &http.Server{
+		Addr:    httpTestProxy,
+		Handler: http.Handler(http.HandlerFunc(fakeNpmHandlerShowFiles)),
+	}
+
+	go func() {
+		if err := testproxy.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+
+	out := runChecker(fakeBotPath, httpTestProxy, false, "show-files", pkgFile)
+	for _, text := range expected {
+		assert.Contains(t, out, text)
+	}
 	assert.Nil(t, testproxy.Shutdown(context.Background()))
 }
