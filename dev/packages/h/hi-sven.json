@@ -1,0 +1,32 @@
+{
+  "autoupdate": {
+    "fileMap": [
+      {
+        "basePath": "",
+        "files": [
+          "*"
+        ]
+      }
+    ],
+    "source": "npm",
+    "target": "hi-sven"
+  },
+  "description": "Say hi to Sven",
+  "filename": "index.js",
+  "keywords": [
+    "hello"
+  ],
+  "license": "MIT",
+  "name": "hi-sven",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xtuc/hi-sven.git"
+  },
+  "authors": [
+    {
+      "name": "Sven Sauleau",
+      "email": "sven@sauleau.com"
+    }
+  ]
+}
+

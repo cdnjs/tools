@@ -40,3 +40,8 @@ test: clean checker
 lint:
 	go get -u golang.org/x/lint/golint
 	$(GOPATH)/bin/golint ./...
+
+.PHONY: dev
+dev: autoupdate
+	docker build -t cdnjs-dev -f ./dev/Dockerfile .
+	docker run -it cdnjs-dev

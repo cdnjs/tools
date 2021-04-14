@@ -62,19 +62,13 @@ In `tools/` run `npm install`.
 - [zopflipng](https://github.com/google/zopfli)
 - [brotli](https://github.com/google/brotli) (Linux)
 
-## Setup a local environment
+## Local environment
 
-All the tools uses `BOT_BASE_PATH` to define a "cdnjs home".
-
-We are going to create the home at `/tmp/cdnjs` and do the following in the directory:
-
-- `git clone https://github.com/cdnjs/packages.git`
-- `git clone https://github.com/cdnjs/glob.git`
-- `mkdir -p /tmp/cdnjs/cdnjs/ajax/libs` (fake the cdnjs/cdnjs repo)
-
-In glob run `npm install`.
-
-Finally pass the `BOT_BASE_PATH` to the tool, for example: `BOT_BASE_PATH=/tmp/cdnjs bin/autoupdate -no-update`.
+```
+$ make dev
+$ autoupdate -no-pull -package=h/hi-sven.json
+$ ls /cdnjs/cdnjs/ajax/libs/hi-sven
+```
 
 ## License
 
