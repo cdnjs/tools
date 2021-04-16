@@ -75,7 +75,7 @@ func main() {
 	var enforceAppArmorProfile bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
-	flag.BoolVar(&enforceAppArmorProfile, "-enforce-apparmor-profile", false, "if set, will write a file at various paths and ensures that the writes fail")
+	flag.BoolVar(&enforceAppArmorProfile, "enforce-apparmor-profile", false, "if set, will write a file at various paths and ensures that the writes fail")
 	flag.StringVar(&specifiedPackage, "package", "", "if set, the autoupdater will update only that package")
 	flag.Parse()
 
