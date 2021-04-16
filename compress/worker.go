@@ -3,6 +3,7 @@ package compress
 import (
 	"context"
 	"path"
+	"sync"
 )
 
 type CompressJob struct {
@@ -11,7 +12,7 @@ type CompressJob struct {
 	VersionPath string
 }
 
-func Worker(jobs <-chan CompressJob, res chan<- bool) {
+func Worker(wg *sync.WaitGroup, jobs <-chan CompressJob) {
 	for j := range jobs {
 		switch path.Ext(j.File) {
 		case ".jpg", ".jpeg":
@@ -23,6 +24,6 @@ func Worker(jobs <-chan CompressJob, res chan<- bool) {
 		case ".css":
 			CSS(j.Ctx, path.Join(j.VersionPath, j.File))
 		}
-		res <- true
+		wg.Done()
 	}
 }
