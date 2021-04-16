@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path"
 	"runtime"
+	"sync"
 	"syscall"
 	"time"
 
@@ -386,10 +387,12 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 
 	cpuCount := runtime.NumCPU()
 	jobs := make(chan compress.CompressJob, cpuCount)
-	results := make(chan bool, cpuCount)
+
+	var wg sync.WaitGroup
+	wg.Add(len(files))
 
 	for w := 1; w <= cpuCount; w++ {
-		go compress.Worker(jobs, results)
+		go compress.Worker(&wg, jobs)
 	}
 
 	for _, file := range files {
@@ -401,10 +404,7 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 	}
 	close(jobs)
 
-	// Wait for results
-	for range files {
-		<-results
-	}
+	wg.Wait()
 }
 
 // write all versions to KV
