@@ -84,13 +84,12 @@ func main() {
 	}
 
 	if enforceAppArmorProfile {
-		value, err := ioutil.ReadFile("/proc/self/attr/current")
+		status, err := ioutil.ReadFile("/proc/self/attr/current")
 		if err != nil {
 			panic(err)
 		}
-		status := string(value)
-		if status == "unconfined" || status != "/usr/local/bin/autoupdate (enforce)" {
-			panic("bot is not running under AppArmor, got status: " + status)
+		if string(status) != "/usr/local/bin/autoupdate (enforce)" {
+			panic("bot is not running under AppArmor, got status: " + string(status))
 		}
 	}
 
