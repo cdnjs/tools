@@ -84,7 +84,7 @@ func main() {
 	}
 
 	if enforceAppArmorProfile {
-		value, err := ioutil.ReadFile("/proc/self/attr/apparmor/current")
+		value, err := ioutil.ReadFile("/proc/self/attr/current")
 		if err != nil {
 			panic(err)
 		}
