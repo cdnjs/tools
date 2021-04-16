@@ -386,8 +386,10 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 
 	cpuCount := runtime.NumCPU()
 	jobs := make(chan compress.CompressJob, cpuCount)
+	results := make(chan bool, cpuCount)
+
 	for w := 1; w <= cpuCount; w++ {
-		go compress.Worker(jobs)
+		go compress.Worker(jobs, results)
 	}
 
 	for _, file := range files {
@@ -398,6 +400,11 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 		}
 	}
 	close(jobs)
+
+	// Wait for results
+	for range files {
+		<-results
+	}
 }
 
 // write all versions to KV
@@ -437,10 +444,10 @@ func writeNewVersionsToKV(ctx context.Context, newVersionsToCommit []newVersionT
 
 func commitNewVersions(ctx context.Context, newVersionsToCommit []newVersionToCommit) {
 	for _, newVersionToCommit := range newVersionsToCommit {
-		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
-
 		// Optimize/minifiy assets (compressing br/gz will occur later)
 		optimizeAndMinify(ctx, newVersionToCommit)
+
+		util.Debugf(ctx, "adding version %s", newVersionToCommit.newVersion)
 
 		// Git add/commit new version to cdnjs/cdnjs
 		git.Add(ctx, cdnjsPath, newVersionToCommit.versionPath)
