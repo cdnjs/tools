@@ -72,10 +72,10 @@ func main() {
 
 	var noUpdate, noPull bool
 	var specifiedPackage string
-	var testAppArmor bool
+	var enforceAppArmorProfile bool
 	flag.BoolVar(&noUpdate, "no-update", false, "if set, the autoupdater will not commit or push to git")
 	flag.BoolVar(&noPull, "no-pull", false, "if set, the autoupdater will not pull from git")
-	flag.BoolVar(&testAppArmor, "test-apparmor", false, "if set, will write a file at various paths and ensures that the writes fail")
+	flag.BoolVar(&enforceAppArmorProfile, "-enforce-apparmor-profile", false, "if set, will write a file at various paths and ensures that the writes fail")
 	flag.StringVar(&specifiedPackage, "package", "", "if set, the autoupdater will update only that package")
 	flag.Parse()
 
@@ -83,19 +83,14 @@ func main() {
 		fmt.Printf("Running in debug mode (no-update=%t, no-pull=%t, specific package=%s)\n", noUpdate, noPull, specifiedPackage)
 	}
 
-	if testAppArmor {
-		home, err := os.UserHomeDir()
+	if enforceAppArmorProfile {
+		value, err := ioutil.ReadFile("/proc/self/attr/apparmor/current")
 		if err != nil {
 			panic(err)
 		}
-
-		for _, path := range []string{"/etc/test", home + "/test.sh", "/usr/bin/testbot"} {
-			err := ioutil.WriteFile(path, []byte(""), 0644)
-			if err == nil {
-				panic(fmt.Sprintf("Bot not running under AppArmor, writing %s was authorized.", path))
-			} else {
-				util.Debugf(defaultCtx, "writing at %s: %s\n", path, err)
-			}
+		status := string(value)
+		if status == "unconfined" || status != "/usr/local/bin/autoupdate (enforce)" {
+			panic("bot is not running under AppArmor, got status: " + status)
 		}
 	}
 
