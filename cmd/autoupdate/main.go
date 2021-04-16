@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -88,8 +89,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if string(status) != "/usr/local/bin/autoupdate (enforce)" {
-			panic("bot is not running under AppArmor, got status: " + string(status))
+		if bytes.Equal(status, []byte("/usr/local/bin/autoupdate (enforce)")) {
+			panic(fmt.Sprintf("bot is not running under AppArmor, got status: `%s`", status))
 		}
 	}
 
