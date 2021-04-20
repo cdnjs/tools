@@ -152,6 +152,25 @@ const humanReadableProperties = `
             ],
             "additionalProperties": false
         },
+        "optimization": {
+            "description": "Used to enable/disable optimization for particular file types. By default, optimization is enabled for all types.",
+            "type": "object",
+            "properties": {
+                "js": {
+                    "type": "boolean"
+                },
+                "css": {
+                    "type": "boolean"
+                },
+                "png": {
+                    "type": "boolean"
+                },
+                "jpg": {
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false
+        },
         "description": {
             "description": "The description of the library if it has been provided in the cdnjs package JSON file.",
             "type": "string",

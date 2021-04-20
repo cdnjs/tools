@@ -339,6 +339,32 @@ func TestHumanReadableSchema(t *testing.T) {
 			filePath: "schema_tests/human_schema_tests/repository/invalid/type_npm.json",
 			errors:   []string{"repository.type: Does not match pattern '" + repositoryTypeRegex + "'"},
 		},
+		// optimization valid
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/valid/all_fields.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/valid/empty_optimization.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/valid/js_only.json",
+			valid:    true,
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/valid/no_optimization.json",
+			valid:    true,
+		},
+		// optimization invalid
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/invalid/invalid_key.json",
+			errors:   []string{"optimization: Additional property happy is not allowed"},
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/optimization/invalid/not_boolean.json",
+			errors:   []string{"optimization.js: Invalid type. Expected: boolean, given: string"},
+		},
 	}
 
 	runSchemaTestCases(t, packages.HumanReadableSchema, cases)

@@ -32,6 +32,35 @@ type Autoupdate struct {
 	FileMap []FileMap `json:"fileMap,omitempty"`
 }
 
+// Optimization is used to enable/disable optimization
+// for particular file types. By default, we will optimize all files.
+type Optimization struct {
+	JS  *bool `json:"js,omitempty"`
+	CSS *bool `json:"css,omitempty"`
+	PNG *bool `json:"png,omitempty"`
+	JPG *bool `json:"jpg,omitempty"`
+}
+
+// Js returns if we should optimize JavaScript files.
+func (o *Optimization) Js() bool {
+	return o.JS == nil || *o.JS
+}
+
+// Css returns if we should optimize CSS files.
+func (o *Optimization) Css() bool {
+	return o.CSS == nil || *o.CSS
+}
+
+// Png returns if we should optimize PNG files.
+func (o *Optimization) Png() bool {
+	return o.PNG == nil || *o.PNG
+}
+
+// Jpg returns if we should optimize JPG/JPEG files.
+func (o *Optimization) Jpg() bool {
+	return o.JPG == nil || *o.JPG
+}
+
 // FileMap represents a number of files located
 // under a base path.
 type FileMap struct {
@@ -54,15 +83,16 @@ type Package struct {
 	versions []string        // cache list of versions
 
 	// human-readable properties
-	Authors     []Author    `json:"authors,omitempty"`
-	Autoupdate  *Autoupdate `json:"autoupdate,omitempty"`
-	Description *string     `json:"description,omitempty"`
-	Filename    *string     `json:"filename,omitempty"`
-	Homepage    *string     `json:"homepage,omitempty"`
-	Keywords    []string    `json:"keywords,omitempty"`
-	License     *string     `json:"license,omitempty"`
-	Name        *string     `json:"name,omitempty"`
-	Repository  *Repository `json:"repository,omitempty"`
+	Authors      []Author      `json:"authors,omitempty"`
+	Autoupdate   *Autoupdate   `json:"autoupdate,omitempty"`
+	Optimization *Optimization `json:"optimization,omitempty"`
+	Description  *string       `json:"description,omitempty"`
+	Filename     *string       `json:"filename,omitempty"`
+	Homepage     *string       `json:"homepage,omitempty"`
+	Keywords     []string      `json:"keywords,omitempty"`
+	License      *string       `json:"license,omitempty"`
+	Name         *string       `json:"name,omitempty"`
+	Repository   *Repository   `json:"repository,omitempty"`
 
 	// additional properties
 	Version *string `json:"version,omitempty"`

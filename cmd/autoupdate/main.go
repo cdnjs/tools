@@ -406,7 +406,7 @@ func optimizeAndMinify(ctx context.Context, version newVersionToCommit) {
 	wg.Add(len(files))
 
 	for w := 1; w <= cpuCount; w++ {
-		go compress.Worker(&wg, jobs)
+		go compress.Worker(&wg, jobs, version.pckg.Optimization)
 	}
 
 	for _, file := range files {

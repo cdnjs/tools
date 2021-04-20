@@ -4,6 +4,8 @@ import (
 	"context"
 	"path"
 	"sync"
+
+	"github.com/cdnjs/tools/packages"
 )
 
 type CompressJob struct {
@@ -12,17 +14,26 @@ type CompressJob struct {
 	VersionPath string
 }
 
-func Worker(wg *sync.WaitGroup, jobs <-chan CompressJob) {
+func Worker(wg *sync.WaitGroup, jobs <-chan CompressJob, optim *packages.Optimization) {
+	defaultCompress := optim == nil // compress by default if optimization not specified
 	for j := range jobs {
 		switch path.Ext(j.File) {
 		case ".jpg", ".jpeg":
-			Jpeg(j.Ctx, path.Join(j.VersionPath, j.File))
+			if defaultCompress || optim.Jpg() {
+				Jpeg(j.Ctx, path.Join(j.VersionPath, j.File))
+			}
 		case ".png":
-			Png(j.Ctx, path.Join(j.VersionPath, j.File))
+			if defaultCompress || optim.Png() {
+				Png(j.Ctx, path.Join(j.VersionPath, j.File))
+			}
 		case ".js":
-			Js(j.Ctx, path.Join(j.VersionPath, j.File))
+			if defaultCompress || optim.Js() {
+				Js(j.Ctx, path.Join(j.VersionPath, j.File))
+			}
 		case ".css":
-			CSS(j.Ctx, path.Join(j.VersionPath, j.File))
+			if defaultCompress || optim.Css() {
+				CSS(j.Ctx, path.Join(j.VersionPath, j.File))
+			}
 		}
 		wg.Done()
 	}
