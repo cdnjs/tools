@@ -32,9 +32,6 @@
         ]
     },
     "optimization": {
-        "js": true,
-        "css": true,
-        "png": true,
-        "jpg": true
+        "js": "hello"
     }
 }
