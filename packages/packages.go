@@ -32,6 +32,15 @@ type Autoupdate struct {
 	FileMap []FileMap `json:"fileMap,omitempty"`
 }
 
+// Optimization is used to enable/disable optimization
+// for particular file types. By default, we will optimize all files.
+type Optimization struct {
+	JS  *bool `json:"js,omitempty"`
+	CSS *bool `json:"css,omitempty"`
+	PNG *bool `json:"png,omitempty"`
+	JPG *bool `json:"jpg,omitempty"`
+}
+
 // FileMap represents a number of files located
 // under a base path.
 type FileMap struct {
@@ -54,15 +63,16 @@ type Package struct {
 	versions []string        // cache list of versions
 
 	// human-readable properties
-	Authors     []Author    `json:"authors,omitempty"`
-	Autoupdate  *Autoupdate `json:"autoupdate,omitempty"`
-	Description *string     `json:"description,omitempty"`
-	Filename    *string     `json:"filename,omitempty"`
-	Homepage    *string     `json:"homepage,omitempty"`
-	Keywords    []string    `json:"keywords,omitempty"`
-	License     *string     `json:"license,omitempty"`
-	Name        *string     `json:"name,omitempty"`
-	Repository  *Repository `json:"repository,omitempty"`
+	Authors      []Author      `json:"authors,omitempty"`
+	Autoupdate   *Autoupdate   `json:"autoupdate,omitempty"`
+	Optimization *Optimization `json:"optimization,omitempty"`
+	Description  *string       `json:"description,omitempty"`
+	Filename     *string       `json:"filename,omitempty"`
+	Homepage     *string       `json:"homepage,omitempty"`
+	Keywords     []string      `json:"keywords,omitempty"`
+	License      *string       `json:"license,omitempty"`
+	Name         *string       `json:"name,omitempty"`
+	Repository   *Repository   `json:"repository,omitempty"`
 
 	// additional properties
 	Version *string `json:"version,omitempty"`
