@@ -38,6 +38,7 @@ var (
 	packagesPath = util.GetHumanPackagesPath()
 	cdnjsPath    = util.GetCDNJSPath()
 	logsPath     = util.GetLogsPath()
+	srisPath     = util.GetSRIsPath()
 
 	// initialize standard debug logger
 	logger = util.GetStandardLogger()
@@ -105,6 +106,7 @@ func main() {
 		git.UpdateRepo(defaultCtx, cdnjsPath)
 		git.UpdateRepo(defaultCtx, packagesPath)
 		git.UpdateRepo(defaultCtx, logsPath)
+		git.UpdateRepo(defaultCtx, srisPath)
 	}
 
 	var packagesToUpdate []string
