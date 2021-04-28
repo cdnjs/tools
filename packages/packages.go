@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/cdnjs/tools/git"
+	"github.com/pkg/errors"
+
 	"github.com/cdnjs/tools/sri"
 	"github.com/cdnjs/tools/util"
 )
@@ -131,13 +133,24 @@ func (p *Package) LibraryPath() string {
 	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
 }
 
+type APIPackage struct {
+	Versions []string `json:"versions"`
+}
+
 // Versions gets the versions from git for a particular package.
-func (p *Package) Versions() (versions []string) {
-	if p.versions != nil {
-		return p.versions
+func (p *Package) Versions() ([]string, error) {
+	resp, err := http.Get(fmt.Sprintf("https://api.cdnjs.com/libraries/%s", *p.Name))
+	if err != nil {
+		return nil, errors.Wrap(err, "could not fetch packages")
 	}
-	p.versions = git.ListPackageVersions(p.ctx, p.LibraryPath())
-	return p.versions
+
+	defer resp.Body.Close()
+
+	var target APIPackage
+	if err := json.NewDecoder(resp.Body).Decode(&target); err != nil {
+		return nil, errors.Wrap(err, "could not parse API response")
+	}
+	return target.Versions, nil
 }
 
 // CalculateVersionSRIs calculates SRIs for the files in
@@ -238,7 +251,13 @@ type Asset struct {
 func (p *Package) GetAssets() []Asset {
 	assets := make([]Asset, 0)
 
-	for _, version := range p.Versions() {
+	versions, err := p.Versions()
+	// TODO: handle error
+	if err != nil {
+		panic(err)
+	}
+
+	for _, version := range versions {
 		files := p.AllFiles(version)
 
 		assets = append(assets, Asset{
