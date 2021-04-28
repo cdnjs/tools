@@ -9,19 +9,27 @@ algolia:
 
 .PHONY: checker
 checker:
-	go build $(GO_BUILD_ARGS) -o bin/checker ./cmd/checker
+	# go build $(GO_BUILD_ARGS) -o bin/checker ./cmd/checker
+	touch bin/checker
 
 .PHONY: packages
 packages:
-	go build $(GO_BUILD_ARGS) -o bin/packages ./cmd/packages
+	# go build $(GO_BUILD_ARGS) -o bin/packages ./cmd/packages
+	touch bin/packages
 
 .PHONY: autoupdate
 autoupdate:
-	go build $(GO_BUILD_ARGS) -o bin/autoupdate ./cmd/autoupdate
+	# go build $(GO_BUILD_ARGS) -o bin/autoupdate ./cmd/autoupdate
+	touch bin/autoupdate
 
 .PHONY: kv
 kv:
-	go build $(GO_BUILD_ARGS) -o bin/kv ./cmd/kv
+	# go build $(GO_BUILD_ARGS) -o bin/kv ./cmd/kv
+	touch bin/kv
+
+.PHONY: process-version
+process-version:
+	go build $(GO_BUILD_ARGS) -o bin/process-version ./cmd/process-version
 
 .PHONY: schema
 schema:
