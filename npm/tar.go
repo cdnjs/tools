@@ -2,10 +2,10 @@ package npm
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -107,18 +107,15 @@ func Untar(ctx context.Context, dst string, r io.Reader) error {
 	}
 }
 
-// DownloadTar extracts the tarball url into a temporary location.
-func DownloadTar(ctx context.Context, url string) string {
-	dest, err := ioutil.TempDir("", "npmtarball")
-	util.Check(err)
-
-	util.Debugf(ctx, "download %s in %s", url, dest)
+func DownloadTar(ctx context.Context, url string) bytes.Buffer {
+	util.Debugf(ctx, "download %s", url)
 
 	resp, err := http.Get(url)
 	util.Check(err)
-
 	defer resp.Body.Close()
 
-	util.Check(Untar(ctx, dest, resp.Body))
-	return dest
+	var buff bytes.Buffer
+	buff.ReadFrom(resp.Body)
+
+	return buff
 }

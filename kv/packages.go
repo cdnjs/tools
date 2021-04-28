@@ -5,14 +5,16 @@ import (
 	"fmt"
 
 	"github.com/cdnjs/tools/packages"
+
+	cloudflare "github.com/cloudflare/cloudflare-go"
 )
 
 // GetPackage gets the package metadata from KV.
 // It will validate against the non-human-readable schema, returning
 // a packages.InvalidSchemaError if the schema is invalid, a KeyNotFoundError
 // if the KV key is not found, and an AuthError if there is an authentication error.
-func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
-	bytes, err := read(key, packagesNamespaceID)
+func GetPackage(ctx context.Context, api *cloudflare.API, key string) (*packages.Package, error) {
+	bytes, err := read(api, key, packagesNamespaceID)
 
 	if err != nil {
 		return nil, err
@@ -24,7 +26,7 @@ func GetPackage(ctx context.Context, key string) (*packages.Package, error) {
 
 // UpdateKVPackage gets the request to update a package metadata entry in KV with a new version.
 // Must have the `version` field by now.
-func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
+func UpdateKVPackage(ctx context.Context, api *cloudflare.API, p *packages.Package) error {
 	// marshal package into JSON
 	v, err := p.Marshal()
 	if err != nil {
@@ -37,11 +39,11 @@ func UpdateKVPackage(ctx context.Context, p *packages.Package) error {
 		return err
 	}
 
-	req := &writeRequest{
-		key:   *p.Name,
-		value: v,
+	req := &WriteRequest{
+		Key:   *p.Name,
+		Value: v,
 	}
 
-	_, err = encodeAndWriteKVBulk(ctx, []*writeRequest{req}, packagesNamespaceID, true)
+	_, err = EncodeAndWriteKVBulk(ctx, api, []*WriteRequest{req}, packagesNamespaceID, true)
 	return err
 }
