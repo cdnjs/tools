@@ -73,7 +73,7 @@ func Printf(ctx context.Context, format string, v ...interface{}) {
 			logger.Printf(format, v...)
 		}
 	} else {
-		panic("logger does not exist")
+		logger.Printf(format, v...)
 	}
 }
 
