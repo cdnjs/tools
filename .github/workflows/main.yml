@@ -4,8 +4,7 @@ on: [push, pull_request]
 jobs:
   release:
     name: Release
-    needs: [test]
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/sven/gcp-functions'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -20,59 +19,100 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: c${{ github.sha }}
-          release_name: Release ${{ github.sha }}
+          release_name: Release c${{ github.sha }}
           draft: false
           prerelease: false
 
-      - uses: actions/upload-release-asset@v1
-        name: release algolia
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/algolia
-          asset_name: algolia
-          asset_content_type: application/octet-stream
+      # - uses: actions/upload-release-asset@v1
+      #   name: release algolia
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./bin/algolia
+      #     asset_name: algolia
+      #     asset_content_type: application/octet-stream
+
+      # - uses: actions/upload-release-asset@v1
+      #   name: release autoupdate
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./bin/autoupdate
+      #     asset_name: autoupdate
+      #     asset_content_type: application/octet-stream
+
+      # - uses: actions/upload-release-asset@v1
+      #   name: release checker
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./bin/checker
+      #     asset_name: checker
+      #     asset_content_type: application/octet-stream
+
+      # - uses: actions/upload-release-asset@v1
+      #   name: release packages
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./bin/packages
+      #     asset_name: packages
+      #     asset_content_type: application/octet-stream
+
+      # - uses: actions/upload-release-asset@v1
+      #   name: release kv
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./bin/kv
+      #     asset_name: kv
+      #     asset_content_type: application/octet-stream
 
       - uses: actions/upload-release-asset@v1
-        name: release autoupdate
+        name: release process-version function
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/autoupdate
-          asset_name: autoupdate
-          asset_content_type: application/octet-stream
+          asset_path: ./functions/process-version/process-version.zip
+          asset_name: process-version.zip
+          asset_content_type: application/zip
 
       - uses: actions/upload-release-asset@v1
-        name: release checker
+        name: release check-pkg-updates function
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/checker
-          asset_name: checker
-          asset_content_type: application/octet-stream
+          asset_path: ./functions/check-pkg-updates/check-pkg-updates.zip
+          asset_name: check-pkg-updates.zip
+          asset_content_type: application/zip
 
       - uses: actions/upload-release-asset@v1
-        name: release packages
+        name: release kv-pump function
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/packages
-          asset_name: packages
-          asset_content_type: application/octet-stream
+          asset_path: ./functions/kv-pump/kv-pump.zip
+          asset_name: kv-pump.zip
+          asset_content_type: application/zip
 
       - uses: actions/upload-release-asset@v1
-        name: release kv
+        name: release process-version-host
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/kv
-          asset_name: kv
+          asset_path: ./bin/process-version-host
+          asset_name: process-version-host
           asset_content_type: application/octet-stream
+
 
   test:
     name: Test
@@ -96,3 +136,25 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
+
+          name: Publish Docker image
+
+  register_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to GitHub Docker registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          registry: ghcr.io
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker/process-version
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/tools:c${{ github.sha }}
