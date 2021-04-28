@@ -8,14 +8,6 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// CalculateFileSRI generates a Subresource Integrity string for a particular file.
-func CalculateFileSRI(filepath string) string {
-	bytes, err := util.ReadLibFileSafely(filepath)
-	util.Check(err)
-
-	return CalculateSRI(bytes)
-}
-
 // CalculateSRI calculates a Subresource Integrity string from bytes.
 func CalculateSRI(bytes []byte) string {
 	h := sha512.New()
