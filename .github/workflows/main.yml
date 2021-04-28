@@ -4,8 +4,7 @@ on: [push, pull_request]
 jobs:
   release:
     name: Release
-    needs: [test]
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/sven/gcp-functions'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -72,6 +71,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./bin/kv
           asset_name: kv
+          asset_content_type: application/octet-stream
+
+      - uses: actions/upload-release-asset@v1
+        name: release process-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/process-version
+          asset_name: process-version
           asset_content_type: application/octet-stream
 
   test:
