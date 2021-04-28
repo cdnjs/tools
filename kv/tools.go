@@ -25,7 +25,11 @@ func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, met
 	pckg, err := GetPackage(ctx, pckgName)
 	util.Check(err)
 
-	versions := pckg.Versions()
+	versions, err := pckg.Versions()
+	if err != nil {
+		// FIXME: handle err
+		panic(err)
+	}
 	var found bool
 	for _, version := range versions {
 		if version == pckgVersion {
@@ -95,7 +99,11 @@ func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, file
 						return
 					}
 
-					versions := pckg.Versions()
+					versions, err := pckg.Versions()
+					if err != nil {
+						// FIXME: handle err
+						panic(err)
+					}
 					for j, version := range versions {
 						util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
 						dir := path.Join(basePath, *pckg.Name, version)
