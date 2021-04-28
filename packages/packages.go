@@ -5,15 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
-	"sort"
-	"strings"
-	"time"
 
-	"github.com/cdnjs/tools/git"
-	"github.com/cdnjs/tools/sri"
+	"github.com/pkg/errors"
+
 	"github.com/cdnjs/tools/util"
 )
 
@@ -50,8 +48,7 @@ type Repository struct {
 // The additional properties are used to manage the package.
 // Any legacy properties are used to avoid any breaking changes in the API.
 type Package struct {
-	ctx      context.Context // context
-	versions []string        // cache list of versions
+	ctx context.Context // context
 
 	// human-readable properties
 	Authors     []Author    `json:"authors,omitempty"`
@@ -94,65 +91,69 @@ func (p *Package) Marshal() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// Log logs an event to cdnjs/logs.
-// It returns the updated log file as well as if any error occurred.
-// For `My-Package` on July 31, 2020, log file path will be:
-// `<cdnjs logs path>/m/My-Package/2020/07-31.log`
-func (p *Package) Log(format string, a ...interface{}) string {
-	t := time.Now().UTC()
-	logFileDir := path.Join(util.GetLogsPath(), "packages", strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
-	logFile := t.Format("01-02.log")
-	logFilePath := path.Join(logFileDir, logFile)
+// // Log logs an event to cdnjs/logs.
+// // It returns the updated log file as well as if any error occurred.
+// // For `My-Package` on July 31, 2020, log file path will be:
+// // `<cdnjs logs path>/m/My-Package/2020/07-31.log`
+// func (p *Package) Log(format string, a ...interface{}) string {
+// 	t := time.Now().UTC()
+// 	logFileDir := path.Join(util.GetLogsPath(), "packages", strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
+// 	logFile := t.Format("01-02.log")
+// 	logFilePath := path.Join(logFileDir, logFile)
 
-	util.Debugf(p.ctx, "Logging to %s: %s\n", logFilePath, fmt.Sprintf(format, a...))
+// 	util.Debugf(p.ctx, "Logging to %s: %s\n", logFilePath, fmt.Sprintf(format, a...))
 
-	// make dir path
-	util.Check(os.MkdirAll(logFileDir, 0755))
+// 	// make dir path
+// 	util.Check(os.MkdirAll(logFileDir, 0755))
 
-	// open log file
-	f, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-	util.Check(err)
-	defer f.Close()
+// 	// open log file
+// 	f, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+// 	util.Check(err)
+// 	defer f.Close()
 
-	// append to log file
-	logger := log.New(f, fmt.Sprintf("%s %s: ", t.Format("2006-01-02 15:04:05"), *p.Name), 0)
-	logger.Printf(format, a...)
+// 	// append to log file
+// 	logger := log.New(f, fmt.Sprintf("%s %s: ", t.Format("2006-01-02 15:04:05"), *p.Name), 0)
+// 	logger.Printf(format, a...)
 
-	return logFilePath
-}
+// 	return logFilePath
+// }
 
 // LatestVersionKVKey gets the key needed to get the latest KV version metadata.
 func (p *Package) LatestVersionKVKey() string {
 	return path.Join(*p.Name, *p.Version)
 }
 
-// LibraryPath returns the location of the package in the cdnjs repo.
-func (p *Package) LibraryPath() string {
-	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
+// // LibraryPath returns the location of the package in the cdnjs repo.
+// func (p *Package) LibraryPath() string {
+// 	return path.Join(util.GetCDNJSLibrariesPath(), *p.Name)
+// }
+
+type APIPackage struct {
+	Versions []string `json:"versions"`
 }
 
 // Versions gets the versions from git for a particular package.
-func (p *Package) Versions() (versions []string) {
-	if p.versions != nil {
-		return p.versions
+func (p *Package) Versions() ([]string, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/libraries/%s", util.GetCdnjsAPI(), *p.Name))
+	if err != nil {
+		return nil, errors.Wrap(err, "could not fetch packages")
 	}
-	p.versions = git.ListPackageVersions(p.ctx, p.LibraryPath())
-	return p.versions
-}
 
-// CalculateVersionSRIs calculates SRIs for the files in
-// a particular package version.
-func (p *Package) CalculateVersionSRIs(version string) map[string]string {
-	sriFileMap := make(map[string]string)
+	defer resp.Body.Close()
 
-	for _, relFile := range p.AllFiles(version) {
-		if path.Ext(relFile) == ".js" || path.Ext(relFile) == ".css" {
-			absFile := path.Join(p.LibraryPath(), version, relFile)
-			sriFileMap[relFile] = sri.CalculateFileSRI(absFile)
+	if resp.StatusCode != 200 {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not read response body")
 		}
+		return nil, errors.Errorf("API returned %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	return sriFileMap
+	var target APIPackage
+	if err := json.NewDecoder(resp.Body).Decode(&target); err != nil {
+		return nil, errors.Wrap(err, "could not parse API response")
+	}
+	return target.Versions, nil
 }
 
 // TODO: Remove when no longer writing files to disk, and all files can
@@ -163,6 +164,15 @@ func (p *Package) CalculateVersionSRIs(version string) map[string]string {
 type NpmFileMoveOp struct {
 	From string
 	To   string
+}
+
+func (p *Package) HasVersion(name string) bool {
+	for _, asset := range p.Assets {
+		if asset.Version == name {
+			return true
+		}
+	}
+	return false
 }
 
 // NpmFilesFrom lists files that match the npm glob pattern in the `base` directory
@@ -215,40 +225,21 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 	return out
 }
 
-// AllFiles lists all files in the version directory.
-func (p *Package) AllFiles(version string) []string {
-	out := make([]string, 0)
+// // AllFiles lists all files in the version directory.
+// func (p *Package) AllFiles(version string) []string {
+// 	out := make([]string, 0)
 
-	absPath := path.Join(p.LibraryPath(), version)
-	list, err := util.ListFilesInVersion(p.ctx, absPath)
-	util.Check(err)
-	out = append(out, list...)
+// 	absPath := path.Join(p.LibraryPath(), version)
+// 	list, err := util.ListFilesInVersion(p.ctx, absPath)
+// 	util.Check(err)
+// 	out = append(out, list...)
 
-	return out
-}
+// 	return out
+// }
 
 // Asset associates a number of files as strings
 // with a version.
 type Asset struct {
 	Version string   `json:"version"`
 	Files   []string `json:"files"`
-}
-
-// GetAssets gets all the assets for a particular package.
-func (p *Package) GetAssets() []Asset {
-	assets := make([]Asset, 0)
-
-	for _, version := range p.Versions() {
-		files := p.AllFiles(version)
-
-		assets = append(assets, Asset{
-			Version: version,
-			Files:   files,
-		})
-	}
-
-	// Sort by version
-	sort.Sort(ByVersionAsset(assets))
-
-	return assets
 }
