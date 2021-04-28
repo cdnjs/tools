@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 
 	"github.com/karrick/godirwalk"
@@ -28,7 +27,7 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) ([]string, 
 		return list, nil
 	}
 
-	cmd := exec.Command(path.Join(GetBotBasePath(), "glob", "index.js"), pattern)
+	cmd := exec.Command("/glob/index.js", pattern)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
