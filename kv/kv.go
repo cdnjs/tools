@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"sort"
+	// "sort"
 	"strings"
 
 	"github.com/cdnjs/tools/sentry"
@@ -261,26 +261,26 @@ func encodeAndWriteKVBulk(ctx context.Context, kvs []*writeRequest, namespaceID 
 //
 // For example:
 // InsertNewVersionToKV("1000hz-bootstrap-validator", "0.10.0", "/tmp/1000hz-bootstrap-validator/0.10.0")
-func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly, filesOnly, noPush, panicOversized bool) ([]string, []byte, []string, []string, int, int, error) {
-	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
-	if err != nil {
-		return nil, nil, nil, nil, 0, 0, err
-	}
-	sort.Strings(fromVersionPaths)
+// func InsertNewVersionToKV(ctx context.Context, pkg, version, fullPathToVersion string, metaOnly, srisOnly, filesOnly, noPush, panicOversized bool) ([]string, []byte, []string, []string, int, int, error) {
+// 	fromVersionPaths, err := util.ListFilesInVersion(ctx, fullPathToVersion)
+// 	if err != nil {
+// 		return nil, nil, nil, nil, 0, 0, err
+// 	}
+// 	sort.Strings(fromVersionPaths)
 
-	var versionBytes []byte
-	if !filesOnly && !srisOnly && !noPush {
-		// write version metadata to KV
-		versionBytes, err = updateKVVersion(ctx, pkg, version, fromVersionPaths)
-		if err != nil {
-			return nil, nil, nil, nil, 0, 0, err
-		}
-		if metaOnly {
-			return fromVersionPaths, versionBytes, nil, nil, 0, 0, nil
-		}
-	}
+// 	var versionBytes []byte
+// 	if !filesOnly && !srisOnly && !noPush {
+// 		// write version metadata to KV
+// 		versionBytes, err = updateKVVersion(ctx, pkg, version, fromVersionPaths)
+// 		if err != nil {
+// 			return nil, nil, nil, nil, 0, 0, err
+// 		}
+// 		if metaOnly {
+// 			return fromVersionPaths, versionBytes, nil, nil, 0, 0, nil
+// 		}
+// 	}
 
-	// write files to KV
-	srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly, filesOnly, noPush, panicOversized)
-	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err
-}
+// 	// write files to KV
+// 	srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err := updateKVFiles(ctx, pkg, version, fullPathToVersion, fromVersionPaths, srisOnly, filesOnly, noPush, panicOversized)
+// 	return fromVersionPaths, versionBytes, srisPushedToKV, filesPushedToKV, theoreticalSRIKeys, theoreticalFileKeys, err
+// }

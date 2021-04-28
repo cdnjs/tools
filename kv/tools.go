@@ -6,50 +6,54 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
-	"runtime"
-	"strings"
-	"sync"
+	// "path"
+	// "runtime"
+	// "strings"
+	// "sync"
 
 	"github.com/cdnjs/tools/compress"
 
 	"github.com/cdnjs/tools/packages"
-	"github.com/cdnjs/tools/sentry"
+	// "github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 )
 
 // InsertVersionFromDisk is a helper tool to insert a single version from disk.
-func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
-	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+// func InsertVersionFromDisk(logger *log.Logger, pckgName, pckgVersion string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
+// 	ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
 
-	pckg, err := GetPackage(ctx, pckgName)
-	util.Check(err)
+// 	pckg, err := GetPackage(ctx, pckgName)
+// 	util.Check(err)
 
-	versions := pckg.Versions()
-	var found bool
-	for _, version := range versions {
-		if version == pckgVersion {
-			found = true
-			break
-		}
-	}
+// 	versions, err := pckg.Versions()
+// 	if err != nil {
+// 		// FIXME: handle err
+// 		panic(err)
+// 	}
+// 	var found bool
+// 	for _, version := range versions {
+// 		if version == pckgVersion {
+// 			found = true
+// 			break
+// 		}
+// 	}
 
-	if !found {
-		panic(fmt.Sprintf("package `%s` version `%s` not found in git", pckgName, pckgVersion))
-	}
+// 	if !found {
+// 		panic(fmt.Sprintf("package `%s` version `%s` not found in git", pckgName, pckgVersion))
+// 	}
 
-	basePath := util.GetCDNJSLibrariesPath()
-	dir := path.Join(basePath, *pckg.Name, pckgVersion)
-	_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to insert %s (%s): %s", *pckg.Name, pckgVersion, err))
-	}
+// 	basePath := util.GetCDNJSLibrariesPath()
+// 	dir := path.Join(basePath, *pckg.Name, pckgVersion)
+// 	_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, pckgVersion, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
+// 	if err != nil {
+// 		panic(fmt.Sprintf("Failed to insert %s (%s): %s", *pckg.Name, pckgVersion, err))
+// 	}
 
-	util.Infof(ctx, fmt.Sprintf("Uploaded %s (%s).\n", pckgName, pckgVersion))
-	if count {
-		util.Infof(ctx, fmt.Sprintf("\ttheoretical SRI keys=%d\n\ttheoretical file keys=%d.\n", theoreticalSRIKeys, theoreticalFileKeys))
-	}
-}
+// 	util.Infof(ctx, fmt.Sprintf("Uploaded %s (%s).\n", pckgName, pckgVersion))
+// 	if count {
+// 		util.Infof(ctx, fmt.Sprintf("\ttheoretical SRI keys=%d\n\ttheoretical file keys=%d.\n", theoreticalSRIKeys, theoreticalFileKeys))
+// 	}
+// }
 
 type uploadResult struct {
 	Name                string
@@ -64,142 +68,146 @@ type uploadWork struct {
 
 // InsertFromDisk is a helper tool to insert a number of packages from disk.
 // Note: Only inserting versions (not updating package metadata).
-func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
-	basePath := util.GetCDNJSLibrariesPath()
+// func InsertFromDisk(logger *log.Logger, pckgs []string, metaOnly, srisOnly, filesOnly, count, noPush, panicOversized bool) {
+// 	basePath := util.GetCDNJSLibrariesPath()
 
-	done := make(chan uploadResult)
-	jobs := make(chan uploadWork, len(pckgs))
+// 	done := make(chan uploadResult)
+// 	jobs := make(chan uploadWork, len(pckgs))
 
-	log.Println("Starting...")
+// 	log.Println("Starting...")
 
-	// spawn workers
-	for w := 0; w < runtime.NumCPU()*10; w++ {
-		go func() {
-			for j := range jobs {
-				func() {
-					i, pckgName := j.Index, j.Name
-					var pckgTotalSRIKeys, pckgTotalFileKeys int
-					defer func() {
-						done <- uploadResult{
-							Name:                pckgName,
-							TheoreticalSRIKeys:  pckgTotalSRIKeys,
-							TheoreticalFileKeys: pckgTotalFileKeys,
-						}
-					}()
+// 	// spawn workers
+// 	for w := 0; w < runtime.NumCPU()*10; w++ {
+// 		go func() {
+// 			for j := range jobs {
+// 				func() {
+// 					i, pckgName := j.Index, j.Name
+// 					var pckgTotalSRIKeys, pckgTotalFileKeys int
+// 					defer func() {
+// 						done <- uploadResult{
+// 							Name:                pckgName,
+// 							TheoreticalSRIKeys:  pckgTotalSRIKeys,
+// 							TheoreticalFileKeys: pckgTotalFileKeys,
+// 						}
+// 					}()
 
-					ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
-					pckg, readerr := GetPackage(ctx, pckgName)
-					if readerr != nil {
-						util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, readerr)
-						sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, readerr))
-						return
-					}
+// 					ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+// 					pckg, readerr := GetPackage(ctx, pckgName)
+// 					if readerr != nil {
+// 						util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, readerr)
+// 						sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, readerr))
+// 						return
+// 					}
 
-					versions := pckg.Versions()
-					for j, version := range versions {
-						util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
-						dir := path.Join(basePath, *pckg.Name, version)
-						_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
-						pckgTotalSRIKeys += theoreticalSRIKeys
-						pckgTotalFileKeys += theoreticalFileKeys
+// 					versions, err := pckg.Versions()
+// 					if err != nil {
+// 						// FIXME: handle err
+// 						panic(err)
+// 					}
+// 					for j, version := range versions {
+// 						util.Debugf(ctx, "p(%d/%d) v(%d/%d) Inserting %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+// 						dir := path.Join(basePath, *pckg.Name, version)
+// 						_, _, _, _, theoreticalSRIKeys, theoreticalFileKeys, err := InsertNewVersionToKV(ctx, *pckg.Name, version, dir, metaOnly, srisOnly, filesOnly, noPush, panicOversized)
+// 						pckgTotalSRIKeys += theoreticalSRIKeys
+// 						pckgTotalFileKeys += theoreticalFileKeys
 
-						if err != nil {
-							util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
-							sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
-							return
-						}
-					}
-				}()
-			}
-		}()
-	}
+// 						if err != nil {
+// 							util.Infof(ctx, "p(%d/%d) v(%d/%d) failed to insert %s (%s): %s\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err)
+// 							sentry.NotifyError(fmt.Errorf("p(%d/%d) v(%d/%d) failed to insert %s (%s) to KV: %s", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version, err))
+// 							return
+// 						}
+// 					}
+// 				}()
+// 			}
+// 		}()
+// 	}
 
-	for index, name := range pckgs {
-		jobs <- uploadWork{
-			Index: index,
-			Name:  name,
-		}
-	}
-	close(jobs)
+// 	for index, name := range pckgs {
+// 		jobs <- uploadWork{
+// 			Index: index,
+// 			Name:  name,
+// 		}
+// 	}
+// 	close(jobs)
 
-	var totalSRIKeys, totalFileKeys int
+// 	var totalSRIKeys, totalFileKeys int
 
-	// show some progress
-	for i := 0; i < len(pckgs); i++ {
-		res := <-done
-		log.Printf("Completed (%d/%d): %s (sris_keys=%d, file_keys=%d)\n", i+1, len(pckgs), res.Name, res.TheoreticalSRIKeys, res.TheoreticalFileKeys)
-		totalSRIKeys += res.TheoreticalSRIKeys
-		totalFileKeys += res.TheoreticalFileKeys
-	}
-	close(done)
+// 	// show some progress
+// 	for i := 0; i < len(pckgs); i++ {
+// 		res := <-done
+// 		log.Printf("Completed (%d/%d): %s (sris_keys=%d, file_keys=%d)\n", i+1, len(pckgs), res.Name, res.TheoreticalSRIKeys, res.TheoreticalFileKeys)
+// 		totalSRIKeys += res.TheoreticalSRIKeys
+// 		totalFileKeys += res.TheoreticalFileKeys
+// 	}
+// 	close(done)
 
-	log.Println("Done.")
+// 	log.Println("Done.")
 
-	if count {
-		log.Printf("Summary\n\tTotal Theoretical SRI Keys: %d\n\tTotal Theoretical File Keys: %d\n", totalSRIKeys, totalFileKeys)
-	}
-}
+// 	if count {
+// 		log.Printf("Summary\n\tTotal Theoretical SRI Keys: %d\n\tTotal Theoretical File Keys: %d\n", totalSRIKeys, totalFileKeys)
+// 	}
+// }
 
-// InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
-// into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
-func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
-	var wg sync.WaitGroup
-	done := make(chan string)
+// // InsertAggregateMetadataFromScratch is a helper tool to insert a number of packages' aggregated metadata
+// // into KV from scratch. The tool will scrape all metadata for each package from KV to create the aggregated entry.
+// func InsertAggregateMetadataFromScratch(logger *log.Logger, pckgs []string) {
+// 	var wg sync.WaitGroup
+// 	done := make(chan string)
 
-	log.Println("Starting...")
-	for index, name := range pckgs {
-		wg.Add(1)
-		go func(i int, pckgName string) {
-			defer wg.Done()
-			defer func() { done <- pckgName }()
+// 	log.Println("Starting...")
+// 	for index, name := range pckgs {
+// 		wg.Add(1)
+// 		go func(i int, pckgName string) {
+// 			defer wg.Done()
+// 			defer func() { done <- pckgName }()
 
-			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
-			pckg, err := GetPackage(ctx, pckgName)
-			if err != nil {
-				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
-				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
-				return
-			}
+// 			ctx := util.ContextWithEntries(util.GetStandardEntries(pckgName, logger)...)
+// 			pckg, err := GetPackage(ctx, pckgName)
+// 			if err != nil {
+// 				util.Infof(ctx, "p(%d/%d) failed to get package %s: %s\n", i+1, len(pckgs), pckgName, err)
+// 				sentry.NotifyError(fmt.Errorf("failed to get package from KV: %s: %s", pckgName, err))
+// 				return
+// 			}
 
-			util.Debugf(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
-			versions, err := GetVersions(pckgName)
-			util.Check(err)
+// 			util.Debugf(ctx, "p(%d/%d) Fetching %s versions...\n", i+1, len(pckgs), *pckg.Name)
+// 			versions, err := GetVersions(pckgName)
+// 			util.Check(err)
 
-			var assets []packages.Asset
-			for j, version := range versions {
-				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
-				files, err := GetVersion(ctx, version)
-				util.Check(err)
-				assets = append(assets, packages.Asset{
-					Version: strings.TrimPrefix(version, pckgName+"/"),
-					Files:   files,
-				})
-			}
+// 			var assets []packages.Asset
+// 			for j, version := range versions {
+// 				util.Debugf(ctx, "p(%d/%d) v(%d/%d) Fetching %s (%s)\n", i+1, len(pckgs), j+1, len(versions), *pckg.Name, version)
+// 				files, err := GetVersion(ctx, version)
+// 				util.Check(err)
+// 				assets = append(assets, packages.Asset{
+// 					Version: strings.TrimPrefix(version, pckgName+"/"),
+// 					Files:   files,
+// 				})
+// 			}
 
-			pckg.Assets = assets
-			successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
-			util.Check(err)
+// 			pckg.Assets = assets
+// 			successfulWrites, err := writeAggregatedMetadata(ctx, pckg)
+// 			util.Check(err)
 
-			if len(successfulWrites) == 0 {
-				util.Infof(ctx, "p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name)
-				sentry.NotifyError(fmt.Errorf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
-			}
-		}(index, name)
-	}
+// 			if len(successfulWrites) == 0 {
+// 				util.Infof(ctx, "p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name)
+// 				sentry.NotifyError(fmt.Errorf("p(%d/%d) %s: failed to write aggregated metadata", i+1, len(pckgs), *pckg.Name))
+// 			}
+// 		}(index, name)
+// 	}
 
-	// show some progress
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < len(pckgs); i++ {
-			name := <-done
-			log.Printf("Completed (%d/%d): %s\n", i+1, len(pckgs), name)
-		}
-	}()
+// 	// show some progress
+// 	wg.Add(1)
+// 	go func() {
+// 		defer wg.Done()
+// 		for i := 0; i < len(pckgs); i++ {
+// 			name := <-done
+// 			log.Printf("Completed (%d/%d): %s\n", i+1, len(pckgs), name)
+// 		}
+// 	}()
 
-	wg.Wait()
-	log.Println("Done.")
-}
+// 	wg.Wait()
+// 	log.Println("Done.")
+// }
 
 // OutputAllAggregatePackages outputs all the names of all aggregated package metadata entries in KV.
 func OutputAllAggregatePackages() {
