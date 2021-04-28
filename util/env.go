@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"os"
-	"path"
 )
 
 // GetEnv gets an environment variable, panicking if it is nonexistent.
@@ -26,36 +25,6 @@ func IsDebug() bool {
 	return EnvExists("DEBUG")
 }
 
-// GetBotBasePath gets the bot base path from an environment variable.
-func GetBotBasePath() string {
-	return GetEnv("BOT_BASE_PATH")
-}
-
-// GetCDNJSPath gets the path to the cdnjs repo.
-func GetCDNJSPath() string {
-	return path.Join(GetBotBasePath(), "cdnjs")
-}
-
-// GetHumanPackagesPath gets the path to the cdnjs/packages repo.
-func GetHumanPackagesPath() string {
-	return path.Join(GetBotBasePath(), "packages")
-}
-
-// GetSRIsPath gets the path to the cdnjs/SRIs repo.
-func GetSRIsPath() string {
-	return path.Join(GetBotBasePath(), "SRIs")
-}
-
-// GetLogsPath gets the path to the cdnjs/logs repo.
-func GetLogsPath() string {
-	return path.Join(GetBotBasePath(), "logs")
-}
-
-// GetCDNJSLibrariesPath gets the path to the cdnjs libraries.
-func GetCDNJSLibrariesPath() string {
-	return path.Join(GetCDNJSPath(), "ajax", "libs")
-}
-
 // HasHTTPProxy returns true if the http proxy environment
 // variable is set.
 func HasHTTPProxy() bool {
@@ -68,4 +37,12 @@ func GetProtocol() string {
 		return "http"
 	}
 	return "https"
+}
+
+func GetCdnjsAPI() string {
+	v, ok := os.LookupEnv("CDNJS_API_BASEURL")
+	if ok {
+		return v
+	}
+	return "https://api.cdnjs.com"
 }
