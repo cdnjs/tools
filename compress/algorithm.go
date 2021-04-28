@@ -5,6 +5,8 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os/exec"
 
 	"github.com/cdnjs/tools/util"
@@ -19,8 +21,11 @@ func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdOut, &stdErr
 
+	log.Println(cmd)
 	util.Debugf(ctx, "algorithm: run %s\n", cmd)
 	err := cmd.Run()
+	log.Println(string(stdOut.Bytes()))
+	log.Println(string(stdErr.Bytes()))
 	util.Check(err)
 
 	if stdErr.Len() > 0 {
@@ -32,8 +37,8 @@ func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 
 // Brotli11CLI returns a brotli compressed file as bytes
 // at optimal compression (quality 11).
-func Brotli11CLI(ctx context.Context, filePath string) []byte {
-	return runAlgorithm(ctx, "brotli", "--quality", "11", "--output", "/dev/stdout", "--input", filePath)
+func Brotli11CLI(ctx context.Context, src string, out string) {
+	runAlgorithm(ctx, "brotli", "--quality=11", "--output="+out, src)
 }
 
 // UnBrotliCLI returns a brotli compressed file as bytes
@@ -44,17 +49,21 @@ func UnBrotliCLI(ctx context.Context, filePath string) []byte {
 
 // Gzip9Native returns a gzip compressed file as bytes
 // at optimal compression (level 9).
-func Gzip9Native(uncompressed []byte) []byte {
+func Gzip9Native(ctx context.Context, src string, out string) error {
 	var b bytes.Buffer
 
 	w, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
 	util.Check(err)
 
+	uncompressed, err := ioutil.ReadFile(src)
+	util.Check(err)
 	_, err = w.Write(uncompressed)
 	util.Check(err)
 	util.Check(w.Close())
 
-	return b.Bytes()
+	err = ioutil.WriteFile(out, b.Bytes(), 0644)
+	util.Check(err)
+	return nil
 }
 
 // UnGzip uncompresses a gzip file as bytes.
