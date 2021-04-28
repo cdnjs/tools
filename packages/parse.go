@@ -51,12 +51,12 @@ func ReadHumanJSONFile(ctx context.Context, file string) (*Package, error) {
 		return nil, InvalidSchemaError{res}
 	}
 
-	return readHumanJSONBytes(ctx, file, bytes)
+	return ReadHumanJSONBytes(ctx, file, bytes)
 }
 
 // Unmarshals the human-readable JSON into a *Package,
 // setting the legacy `author` field if needed.
-func readHumanJSONBytes(ctx context.Context, file string, bytes []byte) (*Package, error) {
+func ReadHumanJSONBytes(ctx context.Context, file string, bytes []byte) (*Package, error) {
 	// unmarshal JSON into package
 	var p Package
 	if err := json.Unmarshal(bytes, &p); err != nil {
