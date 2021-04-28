@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 // Assert is used to enforce a condition is true.
@@ -61,37 +58,4 @@ func MoveFile(ctx context.Context, src string, dst string) error {
 		return fmt.Errorf("Failed removing original file `%s`: `%s`", src, err)
 	}
 	return nil
-}
-
-// ReadSRISafely reads a cdnjs/sris file safely.
-func ReadSRISafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, GetSRIsPath())
-}
-
-// ReadHumanPackageSafely reads a cdnjs/packages file safely.
-func ReadHumanPackageSafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, GetHumanPackagesPath())
-}
-
-// ReadLibFileSafely reads a cdnjs/cdnjs file safely.
-func ReadLibFileSafely(file string) ([]byte, error) {
-	return ReadFileSafely(file, GetCDNJSLibrariesPath())
-}
-
-// ReadFileSafely reads a cdnjs file from disk safely, checking that
-// it is located under the correct directory.
-func ReadFileSafely(target, underPath string) ([]byte, error) {
-	if !filepath.IsAbs(target) {
-		abspath, err := filepath.Abs(target)
-		if err != nil {
-			return nil, fmt.Errorf("could not get absolute path: %s", err)
-		}
-		target = abspath
-	}
-
-	// check that the target file is located under a particular directory
-	if !strings.HasPrefix(target, underPath) {
-		return nil, fmt.Errorf("Unsafe file located outside `%s` with path: `%s`", underPath, target)
-	}
-	return ioutil.ReadFile(target)
 }
