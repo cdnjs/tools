@@ -1,0 +1,1 @@
+cp -rv /input /ouput
