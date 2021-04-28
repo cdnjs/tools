@@ -18,3 +18,4 @@ bin/
 
 node_modules/
 package.json
+functions/*/*.zip
