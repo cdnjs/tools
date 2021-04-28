@@ -12,8 +12,8 @@ import (
 
 // Extensions the compression handle
 var (
-	UGLIFYJS = path.Join(basePath, "tools", "node_modules/uglify-js/bin/uglifyjs")
-	UGLIFYES = path.Join(basePath, "tools", "node_modules/uglify-es/bin/uglifyjs")
+	UGLIFYJS = "/node_modules/uglify-js/bin/uglifyjs"
+	UGLIFYES = "/node_modules/uglify-es/bin/uglifyjs"
 )
 
 // Js performs a compression of the file.
