@@ -2,6 +2,7 @@ package compress
 
 import (
 	"context"
+	"log"
 	"os/exec"
 
 	"github.com/cdnjs/tools/util"
@@ -19,7 +20,7 @@ func Png(ctx context.Context, file string) {
 	}
 
 	cmd := exec.Command("zopflipng", args...)
-	util.Debugf(ctx, "compress: run %s\n", cmd)
+	log.Printf("compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
 	util.Debugf(ctx, "%s\n", out)
 }
