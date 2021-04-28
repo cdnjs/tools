@@ -31,12 +31,6 @@ func (n Version) Get() string {
 	return n.Version
 }
 
-// Download will download a particular npm version.
-func (n Version) Download(args ...interface{}) string {
-	ctx := args[0].(context.Context)
-	return DownloadTar(ctx, n.Tarball) // return download dir
-}
-
 // Clean is used to clean up a download directory.
 func (n Version) Clean(downloadDir string) {
 	os.RemoveAll(downloadDir) // clean up temp tarball dir
