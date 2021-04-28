@@ -292,53 +292,6 @@ func updateAggregatedMetadata(ctx context.Context, pckg *packages.Package, newAs
 	git.Push(ctx, logsPath)
 }
 
-// Update the package's filename if the latest
-// version does not contain the filename
-// Note that if the filename is nil it will stay nil.
-func updateFilenameIfMissing(ctx context.Context, pckg *packages.Package) {
-	key := pckg.LatestVersionKVKey()
-	assets, err := kv.GetVersion(ctx, key)
-	if err != nil {
-		// All package metadata will be in KV, so this error should never occur.
-		panic(fmt.Sprintf("KV metadata not found for latest version `%s`: %s", key, err))
-	}
-
-	if len(assets) == 0 {
-		panic(fmt.Sprintf("KV version `%s` contains no assets", key))
-	}
-
-	if pckg.Filename != nil {
-		// check if assets contains filename
-		filename := *pckg.Filename
-		for _, asset := range assets {
-			if asset == filename {
-				return // filename included in latest version, so return
-			}
-		}
-
-		// set filename to be the most similar string in []assets
-		mostSimilar := getMostSimilarFilename(filename, assets)
-		pckg.Filename = &mostSimilar
-		util.Debugf(ctx, "Updated `%s` filename `%s` -> `%s`\n", key, filename, mostSimilar)
-		return
-	}
-	util.Debugf(ctx, "Filename in `%s` missing, so will stay missing.\n", key)
-}
-
-// Gets the most similar filename to a target filename.
-// The []string of alternatives must have at least one element.
-func getMostSimilarFilename(target string, filenames []string) string {
-	var mostSimilar string
-	var minDist int = math.MaxInt32
-	for _, f := range filenames {
-		if dist := levenshtein.ComputeDistance(target, f); dist < minDist {
-			mostSimilar = f
-			minDist = dist
-		}
-	}
-	return mostSimilar
-}
-
 // Gets the latest stable version by time stamp. A  "stable" version is
 // considered to be a version that contains no pre-releases.
 // If no latest stable version is found (ex. all are non-semver), a nil *string
