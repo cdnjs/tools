@@ -2,6 +2,7 @@ package compress
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -12,8 +13,7 @@ import (
 
 // Extensions the compression handle
 var (
-	basePath = util.GetBotBasePath()
-	cleanCSS = path.Join(basePath, "tools", "node_modules/clean-css-cli/bin/cleancss")
+	cleanCSS = "/node_modules/clean-css-cli/bin/cleancss"
 )
 
 // CSS performs a compression of the file.
@@ -40,7 +40,7 @@ func CSS(ctx context.Context, file string) {
 	}
 
 	cmd := exec.Command(cleanCSS, args...)
-	util.Debugf(ctx, "compress: run %s\n", cmd)
+	log.Printf("compress: run %s\n", cmd)
 
 	if bytes, err := cmd.CombinedOutput(); err != nil {
 		util.Debugf(ctx, "Failed to compress CSS: %v\n", err)

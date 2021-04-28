@@ -2,6 +2,7 @@ package compress
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -12,8 +13,8 @@ import (
 
 // Extensions the compression handle
 var (
-	UGLIFYJS = path.Join(basePath, "tools", "node_modules/uglify-js/bin/uglifyjs")
-	UGLIFYES = path.Join(basePath, "tools", "node_modules/uglify-es/bin/uglifyjs")
+	UGLIFYJS = "/node_modules/uglify-js/bin/uglifyjs"
+	UGLIFYES = "/node_modules/uglify-es/bin/uglifyjs"
 )
 
 // Js performs a compression of the file.
@@ -42,7 +43,7 @@ func Js(ctx context.Context, file string) {
 
 	// try with uglifyjs, if it fails retry with uglifyes
 	cmd := exec.Command(UGLIFYJS, args...)
-	util.Debugf(ctx, "compress: run %s\n", cmd)
+	log.Printf("compress: run %s\n", cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		util.Debugf(ctx, "failed with %s: %s\n", err, out)
