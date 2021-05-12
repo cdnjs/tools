@@ -12,56 +12,6 @@ import (
 	"github.com/cdnjs/tools/util"
 )
 
-// Version represents a version of a git repo.
-type Version struct {
-	Tag       string
-	Version   string
-	TimeStamp time.Time
-}
-
-// Get gets the version of a particular Version.
-func (g Version) Get() string {
-	return g.Version
-}
-
-// Download will git check out a particular version.
-func (g Version) Download(args ...interface{}) string {
-	ctx, dir := args[0].(context.Context), args[1].(string)
-	ForceCheckout(ctx, dir, g.Tag)
-	return dir // download dir is the same as original dir
-}
-
-// Clean is used to satisfy the checker's version interface.
-func (g Version) Clean(_ string) {
-}
-
-// GetTimeStamp gets the time stamp for a particular git version.
-func (g Version) GetTimeStamp() time.Time {
-	return g.TimeStamp
-}
-
-// GetVersions gets all of the versions associated with a git repo,
-// as well as the latest version.
-func GetVersions(ctx context.Context, packageGitcache string) ([]Version, *string) {
-	gitTags := Tags(ctx, packageGitcache)
-	util.Debugf(ctx, "found tags in git: %s\n", gitTags)
-
-	gitVersions := make([]Version, 0)
-	for _, tag := range gitTags {
-		version := strings.TrimPrefix(tag, "v")
-		gitVersions = append(gitVersions, Version{
-			Tag:       tag,
-			Version:   version,
-			TimeStamp: TimeStamp(ctx, packageGitcache, tag),
-		})
-	}
-
-	if latest := GetMostRecentVersion(gitVersions); latest != nil {
-		return gitVersions, &latest.Version
-	}
-	return gitVersions, nil
-}
-
 // ListPackageVersions first lists all the versions (and top-level package.json)
 // in the package and passes the list to git ls-tree which filters out
 // those not in the tree.
@@ -163,25 +113,6 @@ func Clone(ctx context.Context, target string, gitpath string) ([]byte, error) {
 	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
 	out, err := cmd.CombinedOutput()
 	return out, err
-}
-
-// Tags returns the []string of git tags for a package.
-func Tags(ctx context.Context, gitpath string) []string {
-	args := []string{"tag"}
-
-	cmd := exec.Command("git", args...)
-	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
-	out := util.CheckCmd(cmd.CombinedOutput())
-
-	tags := make([]string, 0)
-	for _, line := range strings.Split(out, "\n") {
-		if strings.Trim(line, " ") != "" {
-			tags = append(tags, line)
-		}
-	}
-
-	return tags
 }
 
 // TimeStamp gets the time stamp for a particular tag (ex. v1.0).
