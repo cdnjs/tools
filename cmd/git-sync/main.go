@@ -130,10 +130,6 @@ func addNewVersion(item Item) (*time.Time, error) {
 	defer tar.Close()
 
 	dest := fmt.Sprintf("ajax/libs/%s/%s", item.Metadata.Pkg, item.Metadata.Version)
-	if err := os.MkdirAll(dest, 0755); err != nil {
-		return nil, errors.Wrap(err, "failed to create version directory")
-	}
-
 	if _, err := os.Stat(dest); !os.IsNotExist(err) {
 		log.Printf("version %s already exists, ignoring\n", dest)
 
@@ -143,6 +139,10 @@ func addNewVersion(item Item) (*time.Time, error) {
 			return nil, errors.Wrap(err, "failed to parse last sync datetime")
 		}
 		return &t, nil
+	}
+
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return nil, errors.Wrap(err, "failed to create version directory")
 	}
 
 	onFile := func(name string, r io.Reader) error {
