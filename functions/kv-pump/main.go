@@ -1,9 +1,7 @@
 package kv_pump
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	b64 "encoding/base64"
 	"encoding/json"
@@ -99,7 +97,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		}
 		return nil
 	}
-	if err := inflate(bytes.NewReader(archive), onFile); err != nil {
+	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
 
@@ -116,23 +114,23 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	pkg := new(packages.Package)
 	if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
-		log.Fatalf("failed to parse config: %s", err)
+		return fmt.Errorf("failed to parse config: %s", err)
 	}
 
 	if err := updateVersions(ctx, cfapi, pkg, version, newFiles); err != nil {
-		log.Fatalf("failed to update versions: %s", err)
+		return fmt.Errorf("failed to update versions: %s", err)
 	}
 
 	if err := updateAggregatedMetadata(ctx, cfapi, pkg, version, newFiles); err != nil {
-		log.Fatalf("failed to update aggregated metadata: %s", err)
+		return fmt.Errorf("failed to update aggregated metadata: %s", err)
 	}
 
 	if err := updatePackage(ctx, cfapi, pkg, version, newFiles); err != nil {
-		log.Fatalf("failed to update package: %s", err)
+		return fmt.Errorf("failed to update package: %s", err)
 	}
 
 	if err := updateSRIs(ctx, cfapi, sris); err != nil {
-		log.Fatalf("failed to update SRIs: %s", err)
+		return fmt.Errorf("failed to update SRIs: %s", err)
 	}
 
 	return nil
@@ -316,40 +314,4 @@ func newMetadata(size int) *kv.FileMetadata {
 		ETag:         etag,
 		LastModified: lastModifiedStr,
 	}
-}
-
-func inflate(gzipStream io.Reader, onFile func(string, io.Reader) error) error {
-	uncompressedStream, err := gzip.NewReader(gzipStream)
-	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed")
-	}
-
-	tarReader := tar.NewReader(uncompressedStream)
-
-	for {
-		header, err := tarReader.Next()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
-		}
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			// do nothing
-		case tar.TypeReg:
-			if err := onFile(header.Name, tarReader); err != nil {
-				return errors.Wrap(err, "failed to handle file")
-			}
-		default:
-			return errors.Errorf(
-				"ExtractTarGz: uknown type: %x in %s",
-				header.Typeflag,
-				header.Name)
-		}
-	}
-	return nil
 }
