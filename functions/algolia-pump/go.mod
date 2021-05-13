@@ -1,4 +1,4 @@
-module github.com/cdnjs/tools/functions/check-pkg-updates
+module github.com/cdnjs/tools/functions/algolia-pump
 
 go 1.16
 
