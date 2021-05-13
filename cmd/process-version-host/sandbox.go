@@ -29,18 +29,36 @@ func setupSandbox() (string, string, error) {
 	return inDir, outDir, nil
 }
 
-func runSandbox(in, out string) (string, error) {
-	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func initSandbox(ctx context.Context) error {
+	cli, err := getCli()
 	if err != nil {
-		return "", errors.Wrap(err, "could not create client")
+		return errors.Wrap(err, "could not create client")
 	}
 
 	reader, err := cli.ImagePull(ctx, DOCKER_IMAGE, types.ImagePullOptions{})
 	if err != nil {
-		return "", errors.Wrap(err, "could not pull image")
+		return errors.Wrap(err, "could not pull image")
 	}
-	io.Copy(os.Stdout, reader)
+	if _, err := io.Copy(os.Stdout, reader); err != nil {
+		return errors.Wrap(err, "failed to display pull logs")
+	}
+	return nil
+}
+
+func getCli() (*client.Client, error) {
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+	return cli, nil
+}
+
+func runSandbox(ctx context.Context, in, out string) (string, error) {
+	cli, err := getCli()
+	if err != nil {
+		return "", errors.Wrap(err, "could not create client")
+	}
 
 	resp, err := cli.ContainerCreate(ctx,
 		&container.Config{
