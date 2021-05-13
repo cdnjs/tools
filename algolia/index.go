@@ -1,24 +1,18 @@
 package algolia
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/packages"
-	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
-)
 
-func init() {
-	sentry.Init()
-}
+	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
+	"github.com/pkg/errors"
+)
 
 // SearchEntry represents an entry in the Algolia Search index.
 type SearchEntry struct {
@@ -89,30 +83,19 @@ func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	}, nil
 }
 
-func getSRI(p *packages.Package) (string, error) {
-	jsonFile := path.Join(util.GetSRIsPath(), *p.Name, *p.Version+".json")
-
-	var j map[string]interface{}
-
-	data, err := util.ReadSRISafely(jsonFile)
-
-	if err != nil {
-		return "", nil
-	}
-
-	util.Check(json.Unmarshal(data, &j))
-
+func getSRI(p *packages.Package, srimap map[string]string) (string, error) {
 	if p.Filename == nil {
 		return "", errors.New("SRI could not get converted to a string (nil filename)")
 	}
-	if str, ok := j[*p.Filename].(string); ok {
-		return str, nil
+	str, ok := srimap[*p.Filename]
+	if !ok {
+		return "", errors.Errorf("SRI could not be found for file %s", *p.Filename)
 	}
-	return "", errors.New("SRI could not get converted to a string")
+	return str, nil
 }
 
 // IndexPackage saves a package to the Algolia.
-func IndexPackage(p *packages.Package, index *search.Index) error {
+func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]string) error {
 	var author string
 	if p.Author != nil {
 		author = *p.Author
@@ -133,19 +116,17 @@ func IndexPackage(p *packages.Package, index *search.Index) error {
 		homepage = *p.Homepage
 	}
 
-	repository := p.Repository
-
-	github, githuberr := getGitHubMeta(repository)
-	if githuberr != nil {
-		fmt.Printf("%s", githuberr)
-		if strings.Contains(githuberr.Error(), "403 API rate limit") {
-			return fmt.Errorf("Fatal error `%s`", githuberr)
+	github, err := getGitHubMeta(p.Repository)
+	if err != nil {
+		fmt.Printf("%s", err)
+		if strings.Contains(err.Error(), "403 API rate limit") {
+			return fmt.Errorf("Fatal error `%s`", err)
 		}
 	}
 
-	sri, srierr := getSRI(p)
-	if srierr != nil {
-		fmt.Printf("%s", srierr)
+	sri, err := getSRI(p, srimap)
+	if err != nil {
+		fmt.Printf("%s", err)
 	}
 
 	searchEntry := SearchEntry{
@@ -160,12 +141,12 @@ func IndexPackage(p *packages.Package, index *search.Index) error {
 		Version:          *p.Version,
 		License:          license,
 		Homepage:         homepage,
-		Repository:       repository,
+		Repository:       p.Repository,
 		Author:           author,
 		OriginalName:     *p.Name,
 		Sri:              sri,
 	}
 
-	_, err := index.SaveObject(searchEntry)
+	_, err = index.SaveObject(searchEntry)
 	return err
 }
