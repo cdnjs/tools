@@ -4,16 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"path"
+	"strings"
 
 	"github.com/cdnjs/tools/util"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/pkg/errors"
 )
 
-// // GetVersions gets the list of KV version keys for a particular package.
-// func GetVersions(pckgname string) ([]string, error) {
-// 	return listByPrefixNamesOnly(pckgname+"/", versionsNamespaceID)
-// }
+// GetVersions gets the list of KV version keys for a particular package.
+func GetVersions(api *cloudflare.API, pckgname string) ([]string, error) {
+	list, err := listByPrefixNamesOnly(api, pckgname+"/", versionsNamespaceID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list versions")
+	}
+
+	versions := make([]string, len(list))
+	for i, item := range list {
+		parts := strings.Split(item, "/")
+		versions[i] = parts[1]
+	}
+
+	return versions, nil
+}
 
 // // GetVersion gets metadata for a particular version.
 func GetVersion(ctx context.Context, api *cloudflare.API, key string) ([]string, error) {

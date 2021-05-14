@@ -1,9 +1,7 @@
 package check_pkg_updates
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -11,23 +9,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cdnjs/tools/kv"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 	"github.com/cdnjs/tools/util"
 
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 )
 
-var httpclient = &http.Client{
-	Timeout: 10 * time.Second,
-}
-
-type version interface {
-	Get() string             // Get the version.
-	GetTimeStamp() time.Time // GetTimeStamp gets the time stamp associated with the version.
-}
-
 var (
+	KV_TOKEN      = os.Getenv("KV_TOKEN")
+	CF_ACCOUNT_ID = os.Getenv("CF_ACCOUNT_ID")
 	RESTRICT_PKGS = strings.Split(os.Getenv("RESTRICT_PKGS"), ",")
 )
 
@@ -35,49 +28,18 @@ type APIPackage struct {
 	Versions []string `json:"versions"`
 }
 
-type newVersionToCommit struct {
-	versionPath string
-	newVersion  string
-	pckg        *packages.Package
-	timestamp   time.Time
-}
-
-// Get is used to get the new version.
-func (n newVersionToCommit) Get() string {
-	return n.newVersion
-}
-
-// GetTimeStamp gets the time stamp associated with the new version.
-func (n newVersionToCommit) GetTimeStamp() time.Time {
-	return n.timestamp
-}
-
 func getExistingVersions(p *packages.Package) ([]string, error) {
-	resp, err := httpclient.Get(fmt.Sprintf("%s/libraries/%s?fields=versions", util.GetCdnjsAPI(), *p.Name))
+	cfapi, err := cloudflare.NewWithAPIToken(KV_TOKEN, cloudflare.UsingAccount(CF_ACCOUNT_ID))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get existing versions")
+		return nil, errors.Wrap(err, "failed to create cloudflare API client")
 	}
 
-	defer resp.Body.Close()
-
-	// package is not known by the API yet
-	if resp.StatusCode == 404 {
-		return make([]string, 0), nil
+	versions, err := kv.GetVersions(cfapi, *p.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get verions")
 	}
 
-	if resp.StatusCode != 200 {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not read response body")
-		}
-		return nil, errors.Errorf("API returned %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var target APIPackage
-	if err := json.NewDecoder(resp.Body).Decode(&target); err != nil {
-		return nil, errors.Wrap(err, "could not parse API response")
-	}
-	return target.Versions, nil
+	return versions, nil
 }
 
 func Invoke(w http.ResponseWriter, r *http.Request) {

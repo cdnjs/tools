@@ -38,11 +38,3 @@ func GetProtocol() string {
 	}
 	return "https"
 }
-
-func GetCdnjsAPI() string {
-	v, ok := os.LookupEnv("CDNJS_API_BASEURL")
-	if ok {
-		return v
-	}
-	return "https://api.cdnjs.com"
-}
