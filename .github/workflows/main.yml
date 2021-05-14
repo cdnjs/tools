@@ -4,7 +4,7 @@ on: [push, pull_request]
 jobs:
   release:
     name: Release
-    if: github.ref == 'refs/heads/sven/update-algolia'
+    if: github.ref == 'refs/heads/sven/get-versions-from-kv'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
