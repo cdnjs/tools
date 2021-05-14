@@ -10,10 +10,10 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 )
 
-// // GetVersions gets the list of KV version keys for a particular package.
-// func GetVersions(pckgname string) ([]string, error) {
-// 	return listByPrefixNamesOnly(pckgname+"/", versionsNamespaceID)
-// }
+// GetVersions gets the list of KV version keys for a particular package.
+func GetVersions(api *cloudflare.API, pckgname string) ([]string, error) {
+	return listByPrefixNamesOnly(api, pckgname+"/", versionsNamespaceID)
+}
 
 // // GetVersion gets metadata for a particular version.
 func GetVersion(ctx context.Context, api *cloudflare.API, key string) ([]string, error) {

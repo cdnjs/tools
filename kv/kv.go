@@ -159,7 +159,6 @@ func EncodeAndWriteKVBulk(ctx context.Context, cfapi *cloudflare.API,
 				}
 				continue
 			}
-			log.Printf("writing metadata: %s\n", bytes)
 			writePair.Metadata = kv.Meta
 			size += metasize
 		}
@@ -199,4 +198,44 @@ func EncodeAndWriteKVBulk(ctx context.Context, cfapi *cloudflare.API,
 	}
 
 	return successfulWrites, nil
+}
+
+// Returns all KVs that start with a prefix.
+func listByPrefix(api *cloudflare.API, prefix, namespaceID string) ([]cloudflare.StorageKey, error) {
+	var cursor *string
+	var results []cloudflare.StorageKey
+	for {
+		o := cloudflare.ListWorkersKVsOptions{
+			Prefix: &prefix,
+			Cursor: cursor,
+		}
+
+		resp, err := api.ListWorkersKVsWithOptions(context.Background(), namespaceID, o)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, resp.Result...)
+
+		if resp.Cursor == "" {
+			return results, nil
+		}
+
+		cursor = &resp.Cursor
+	}
+}
+
+// Lists by prefix and then returns only the names of the results.
+func listByPrefixNamesOnly(api *cloudflare.API, prefix string, namespaceID string) ([]string, error) {
+	results, err := listByPrefix(api, prefix, namespaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+	for _, r := range results {
+		names = append(names, r.Name)
+	}
+
+	return names, nil
 }
