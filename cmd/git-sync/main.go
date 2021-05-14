@@ -120,6 +120,15 @@ func writeFile(target string, r io.Reader) error {
 	return nil
 }
 
+func dirExists(path string) bool {
+	cmd := exec.Command("git", "ls-tree", "-d", "origin/master:"+path)
+	if err := cmd.Run(); err != nil {
+		return false
+	} else {
+		return true
+	}
+}
+
 func addNewVersion(item Item) (*time.Time, error) {
 	log.Printf("add new version %s %s", item.Metadata.Pkg, item.Metadata.Version)
 
@@ -130,7 +139,7 @@ func addNewVersion(item Item) (*time.Time, error) {
 	defer tar.Close()
 
 	dest := fmt.Sprintf("ajax/libs/%s/%s", item.Metadata.Pkg, item.Metadata.Version)
-	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+	if dirExists(dest) {
 		log.Printf("version %s already exists, ignoring\n", dest)
 
 		// Version already exists for some reason, don't make any changes.
