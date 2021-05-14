@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -89,6 +90,10 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
+
+	// shuffle package order
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(list), func(i, j int) { list[i], list[j] = list[j], list[i] })
 
 	for _, pkg := range list {
 		if err := checkPackage(pkg); err != nil {

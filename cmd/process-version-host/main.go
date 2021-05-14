@@ -45,7 +45,12 @@ func main() {
 	sub.ReceiveSettings.MaxOutstandingMessages = 5
 	sub.ReceiveSettings.NumGoroutines = runtime.NumCPU()
 
+	if err := initSandbox(ctx); err != nil {
+		log.Fatalf("failed to init sandbox: %s", err)
+	}
+
 	for {
+		log.Printf("started consuming messages\n")
 		if err := consume(client, sub); err != nil {
 			log.Fatalf("could not pull messages: %s", err)
 		}
@@ -96,14 +101,14 @@ func processMessage(ctx context.Context, data []byte) error {
 		return errors.Wrapf(err, "failed to download: %s", message.Tar)
 	}
 
-	logs, err := runSandbox(inDir, outDir)
+	logs, err := runSandbox(ctx, inDir, outDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to run sandbox")
 	}
 	log.Println("logs", logs)
 
 	if err := audit.ProcessedVersion(ctx, message.Pkg, message.Version, logs); err != nil {
-		log.Printf("could not audit: %s", err)
+		return errors.Wrap(err, "could not post audit")
 	}
 
 	var buff bytes.Buffer

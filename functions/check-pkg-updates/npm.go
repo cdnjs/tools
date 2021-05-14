@@ -72,16 +72,20 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 }
 
 func DoUpdateNpm(ctx context.Context, pkg *packages.Package, versions []npm.Version) error {
-	for _, version := range versions {
-		log.Printf("%s: new version detected: %s\n", *pkg.Name, version.Version)
-		tarball := npm.DownloadTar(ctx, version.Tarball)
-		if err := gcp.AddIncomingFile(path.Base(version.Tarball), tarball, pkg, version); err != nil {
-			return errors.Wrap(err, "could not store in GCS: %s")
-		}
+	if len(versions) == 0 {
+		return nil
+	}
+	// only update one versions at a time to reduce race conditions
+	version := versions[0]
 
-		if err := audit.NewVersionDetected(ctx, *pkg.Name, version.Version); err != nil {
-			return errors.Wrap(err, "could not audit")
-		}
+	log.Printf("%s: new version detected: %s\n", *pkg.Name, version.Version)
+	tarball := npm.DownloadTar(ctx, version.Tarball)
+	if err := gcp.AddIncomingFile(path.Base(version.Tarball), tarball, pkg, version); err != nil {
+		return errors.Wrap(err, "could not store in GCS: %s")
+	}
+
+	if err := audit.NewVersionDetected(ctx, *pkg.Name, version.Version); err != nil {
+		return errors.Wrap(err, "could not audit")
 	}
 
 	return nil

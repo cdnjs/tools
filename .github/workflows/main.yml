@@ -4,7 +4,7 @@ on: [push, pull_request]
 jobs:
   release:
     name: Release
-    if: github.ref == 'refs/heads/sven/gcp-functions'
+    if: github.ref == 'refs/heads/sven/update-algolia'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -51,6 +51,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./functions/kv-pump/kv-pump.zip
           asset_name: kv-pump.zip
+          asset_content_type: application/zip
+
+      - uses: actions/upload-release-asset@v1
+        name: release algolia-pump function
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./functions/algolia-pump/algolia-pump.zip
+          asset_name: algolia-pump.zip
           asset_content_type: application/zip
 
       - uses: actions/upload-release-asset@v1
