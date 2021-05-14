@@ -8,6 +8,8 @@ import (
 	"path"
 
 	"github.com/cdnjs/tools/util"
+
+	"github.com/blang/semver"
 )
 
 // Author represents an author.
@@ -248,4 +250,28 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 type Asset struct {
 	Version string   `json:"version"`
 	Files   []string `json:"files"`
+}
+
+// A "stable" version is considered to be a version that contains no pre-releases.
+// If no latest stable version is found (ex. all are non-semver), a nil *string
+// will be returned.
+func GetLatestStableVersion(versions []string) *string {
+	var latest *semver.Version
+	for _, version := range versions {
+		if s, err := semver.Parse(version); err == nil && len(s.Pre) == 0 {
+			if latest != nil {
+				if latest.LT(s) {
+					latest = &s
+				}
+			} else {
+				latest = &s
+			}
+		}
+	}
+	if latest != nil {
+		s := latest.String()
+		return &s
+	} else {
+		return nil
+	}
 }
