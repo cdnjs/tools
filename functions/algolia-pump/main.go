@@ -12,17 +12,35 @@ import (
 	"os"
 	"path/filepath"
 
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
 	"github.com/cdnjs/tools/algolia"
 	"github.com/cdnjs/tools/gcp"
+	"github.com/cdnjs/tools/kv"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 )
 
 var (
-	ENV = os.Getenv("ENV")
+	ENV           = os.Getenv("ENV")
+	KV_TOKEN      = os.Getenv("KV_TOKEN")
+	CF_ACCOUNT_ID = os.Getenv("CF_ACCOUNT_ID")
 )
+
+func getExistingVersions(p *packages.Package) ([]string, error) {
+	cfapi, err := cloudflare.NewWithAPIToken(KV_TOKEN, cloudflare.UsingAccount(CF_ACCOUNT_ID))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create cloudflare API client")
+	}
+
+	versions, err := kv.GetVersions(cfapi, *p.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get verions")
+	}
+
+	return versions, nil
+}
 
 func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	sentry.Init()
@@ -32,7 +50,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	log.Printf("Metadata: %v\n", e.Metadata)
 
 	pkgName := e.Metadata["package"].(string)
-	version := e.Metadata["version"].(string)
+	currVersion := e.Metadata["version"].(string)
 
 	configStr, err := b64.StdEncoding.DecodeString(e.Metadata["config"].(string))
 	if err != nil {
@@ -44,7 +62,14 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("could not decode config: %v", err)
 	}
 	// update package version with latest
-	pkg.Version = &version
+	versions, err := getExistingVersions(pkg)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve existing versions: %s", err)
+	}
+	// add the current version in case it was yet present in KV
+	versions = append(versions, currVersion)
+
+	pkg.Version = packages.GetLatestStableVersion(versions)
 
 	archive, err := gcp.ReadObject(ctx, e.Bucket, e.Name)
 	if err != nil {
@@ -74,7 +99,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
 
-	log.Printf("updating %s %s in search index\n", pkgName, version)
+	log.Printf("updating %s in search index (last version %s)\n", pkgName, printStrPtr(pkg.Version))
 	if ENV != "prod" {
 		log.Printf("Algolia doesn't update in %s\n", ENV)
 		return nil
@@ -86,4 +111,12 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("failed to update algolia index: %v", err)
 	}
 	return nil
+}
+
+func printStrPtr(v *string) string {
+	if v == nil {
+		return "<nil>"
+	} else {
+		return *v
+	}
 }

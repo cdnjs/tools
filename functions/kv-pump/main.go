@@ -155,6 +155,15 @@ func cleanNewKVFiles(files []string) []string {
 	return out
 }
 
+func getExistingVersions(cfapi *cloudflare.API, p *packages.Package) ([]string, error) {
+	versions, err := kv.GetVersions(cfapi, *p.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get verions")
+	}
+
+	return versions, nil
+}
+
 func updateVersions(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Package,
 	version string, files []string) error {
 	_, err := kv.UpdateKVVersion(ctx, cfapi, *pkg.Name, version, files)
@@ -166,53 +175,21 @@ func updateVersions(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pa
 }
 
 func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Package,
-	version string, files []string) error {
-	pkg.Version = &version
+	currVersion string, files []string) error {
+	// update package version with latest
+	versions, err := getExistingVersions(cfapi, pkg)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve existing versions: %s", err)
+	}
+	// add the current version in case it was yet present in KV
+	versions = append(versions, currVersion)
+
+	pkg.Version = packages.GetLatestStableVersion(versions)
 	log.Println("updated package", pkg)
 
-	// latestVersion := getLatestStableVersion(allVersions)
-
-	// if latestVersion == nil {
-	// 	latestVersion = getLatestVersion(allVersions)
-	// }
-
-	// latestVersion must be non-nil by now
-	// since we determined len(allVersions) > 0
-	// pkg.Version = latestVersion
 	if err := updateFilenameIfMissing(ctx, cfapi, pkg, files); err != nil {
 		return errors.Wrap(err, "failed to fix missing filename")
 	}
-
-	// destpckg, err := kv.GetPackage(ctx, *pckg.Name)
-	// if err != nil {
-	// 	// check for errors
-	// 	// Note: currently panicking on unhandled errors, including AuthError
-	// 	switch e := err.(type) {
-	// 	case kv.KeyNotFoundError:
-	// 		{
-	// 			// key not found (new package)
-	// 			util.Debugf(ctx, "KV key `%s` not found, inserting package metadata...\n", *pckg.Name)
-	// 		}
-	// 	case packages.InvalidSchemaError:
-	// 		{
-	// 			// invalid schema found
-	// 			// this should not occur, so log in sentry
-	// 			// and rewrite the key so it follows the JSON schema
-	// 			sentry.NotifyError(fmt.Errorf("schema invalid for KV package metadata `%s`: %s", *pckg.Name, e))
-	// 		}
-	// 	default:
-	// 		{
-	// 			// unhandled error occurred
-	// 			panic(fmt.Sprintf("unhandled error reading KV package metadata: %s", e.Error()))
-	// 		}
-	// 	}
-	// } else if destpckg.Version != nil && *destpckg.Version == *pckg.Version {
-	// 	// latest version is already in KV, but we still
-	// 	// need to check if the `filename` changed or not
-	// 	if (destpckg.Filename == nil && pckg.Filename == nil) || (destpckg.Filename != nil && pckg.Filename != nil && *destpckg.Filename == *pckg.Filename) {
-	// 		return false
-	// 	}
-	// }
 
 	// sync with KV first, then update legacy package.json
 	if err := kv.UpdateKVPackage(ctx, cfapi, pkg); err != nil {
