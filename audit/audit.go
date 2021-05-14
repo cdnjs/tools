@@ -3,7 +3,6 @@ package audit
 import (
 	"bytes"
 	"context"
-	b64 "encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -25,9 +24,9 @@ var (
 	GH_BRANCH = os.Getenv("AUDIT_GH_BRANCH")
 )
 
-func getPath(pkgName, version string) string {
+func getPath(pkgName, version, stage string) string {
 	firstLetter := pkgName[0:1]
-	return fmt.Sprintf("packages/%s/%s/%s.log", firstLetter, pkgName, version)
+	return fmt.Sprintf("packages/%s/%s/%s/%s.log", firstLetter, pkgName, version, stage)
 }
 
 func getClient(ctx context.Context) *github.Client {
@@ -38,62 +37,10 @@ func getClient(ctx context.Context) *github.Client {
 	return github.NewClient(tc)
 }
 
-func get(ctx context.Context, pkgName string, version string) (*github.RepositoryContent, error) {
-	client := getClient(ctx)
-	file := getPath(pkgName, version)
-	opts := github.RepositoryContentGetOptions{
-		Ref: GH_BRANCH,
-	}
-	res, _, _, err := client.Repositories.GetContents(ctx, GH_OWNER, GH_REPO, file, &opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get file")
-	}
-	return res, nil
-}
-
-func update(ctx context.Context, pkgName string, version string,
-	newContent *bytes.Buffer) error {
-	message := fmt.Sprintf("Update %s %s", pkgName, version)
-	file := getPath(pkgName, version)
-	client := getClient(ctx)
-
-	currContent, err := get(ctx, pkgName, version)
-	if err != nil {
-		return errors.Wrap(err, "failed to get current file")
-	}
-
-	var content bytes.Buffer
-	currDecodedContent, _ := b64.StdEncoding.DecodeString(*currContent.Content)
-	content.Write(currDecodedContent)
-	content.Write(newContent.Bytes())
-
-	commitOption := &github.RepositoryContentFileOptions{
-		Branch:  github.String(GH_BRANCH),
-		Message: github.String(message),
-		Committer: &github.CommitAuthor{
-			Name:  github.String(GH_NAME),
-			Email: github.String(GH_EMAIL),
-		},
-		Author: &github.CommitAuthor{
-			Name:  github.String(GH_NAME),
-			Email: github.String(GH_EMAIL),
-		},
-		Content: content.Bytes(),
-		SHA:     currContent.SHA,
-	}
-
-	c, resp, err := client.Repositories.UpdateFile(ctx, GH_OWNER, GH_REPO, file, commitOption)
-	if err != nil {
-		return errors.Wrap(err, "could not update file")
-	}
-	log.Printf("audit updated: resp.Status=%v commit=%s", resp.Status, *c.SHA)
-	return nil
-}
-
-func create(ctx context.Context, pkgName string, version string,
+func create(ctx context.Context, pkgName string, version string, stage string,
 	content *bytes.Buffer) error {
-	message := fmt.Sprintf("Create %s %s", pkgName, version)
-	file := getPath(pkgName, version)
+	message := fmt.Sprintf("add %s %s (%s)", pkgName, version, stage)
+	file := getPath(pkgName, version, stage)
 
 	client := getClient(ctx)
 
@@ -120,11 +67,10 @@ func create(ctx context.Context, pkgName string, version string,
 }
 
 func NewVersionDetected(ctx context.Context, pkgName string, version string) error {
-
 	content := bytes.NewBufferString("")
 	fmt.Fprintf(content, "New version: %s\n", version)
 
-	if err := create(ctx, pkgName, version, content); err != nil {
+	if err := create(ctx, pkgName, version, "new-version", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
 	}
 	return nil
@@ -134,7 +80,7 @@ func ProcessedVersion(ctx context.Context, pkgName string, version string, log s
 	content := bytes.NewBufferString("")
 	fmt.Fprintf(content, "Processing log:\n ---\n%s\n---\n", log)
 
-	if err := update(ctx, pkgName, version, content); err != nil {
+	if err := create(ctx, pkgName, version, "processing", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
 	}
 	return nil
@@ -154,7 +100,7 @@ func WroteKV(ctx context.Context, pkgName string, version string,
 		fmt.Fprintf(content, "- %s: %s\n", name, sri)
 	}
 
-	if err := update(ctx, pkgName, version, content); err != nil {
+	if err := create(ctx, pkgName, version, "KV publish", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
 	}
 	return nil
