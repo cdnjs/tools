@@ -70,10 +70,10 @@ func consume(client *pubsub.Client, sub *pubsub.Subscription) error {
 	err := sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
 		log.Printf("received message: %s\n", msg.Data)
 
+		msg.Ack()
 		if err := processMessage(ctx, msg.Data); err != nil {
 			log.Fatalf("failed to process message: %s", err)
 		}
-		msg.Ack()
 	})
 	if err != nil {
 		return errors.Wrap(err, "could not receive from subscription")
