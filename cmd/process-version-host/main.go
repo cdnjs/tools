@@ -72,7 +72,7 @@ func consume(client *pubsub.Client, sub *pubsub.Subscription) error {
 
 		msg.Ack()
 		if err := processMessage(ctx, msg.Data); err != nil {
-			log.Fatalf("failed to process message: %s", err)
+			log.Printf("failed to process message: %s\n", err)
 		}
 	})
 	if err != nil {
