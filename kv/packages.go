@@ -32,17 +32,10 @@ func UpdateKVPackage(ctx context.Context, api *cloudflare.API, p *packages.Packa
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
 	}
 
-	// enforce schema when writing non-human package JSON
-	_, err = packages.ReadNonHumanJSONBytes(ctx, *p.Name, v)
-	if err != nil {
-		return err
-	}
-
 	req := &WriteRequest{
 		Key:   *p.Name,
 		Value: v,
 	}
-
 	_, err = EncodeAndWriteKVBulk(ctx, api, []*WriteRequest{req}, packagesNamespaceID, true)
 	return err
 }
