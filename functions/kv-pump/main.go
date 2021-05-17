@@ -107,7 +107,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	}
 	log.Println("files", res)
 	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
-		return fmt.Errorf("failed to audit: %s", err)
+		log.Printf("failed to audit: %s\n", err)
 	}
 
 	newFiles := cleanNewKVFiles(kvfiles)
