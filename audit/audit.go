@@ -3,6 +3,7 @@ package audit
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -44,6 +45,7 @@ func create(ctx context.Context, pkgName string, version string, stage string,
 
 	client := getClient(ctx)
 
+	encodedContent := base64.StdEncoding.EncodeToString(content.Bytes())
 	commitOption := &github.RepositoryContentFileOptions{
 		Branch:  github.String(GH_BRANCH),
 		Message: github.String(message),
@@ -55,7 +57,7 @@ func create(ctx context.Context, pkgName string, version string, stage string,
 			Name:  github.String(GH_NAME),
 			Email: github.String(GH_EMAIL),
 		},
-		Content: content.Bytes(),
+		Content: []byte(encodedContent),
 	}
 
 	c, resp, err := client.Repositories.CreateFile(ctx, GH_OWNER, GH_REPO, file, commitOption)
