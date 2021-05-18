@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -108,7 +109,7 @@ func Untar(ctx context.Context, dst string, r io.Reader) error {
 }
 
 func DownloadTar(ctx context.Context, url string) bytes.Buffer {
-	util.Debugf(ctx, "download %s", url)
+	log.Printf("download %s\n", url)
 
 	resp, err := http.Get(url)
 	util.Check(err)

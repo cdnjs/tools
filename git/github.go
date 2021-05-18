@@ -154,7 +154,7 @@ query {
 	}
 
 	// gitTags := Tags(ctx, packageGitcache)
-	// util.Debugf(ctx, "found tags in git: %s\n", gitTags)
+	// log.Printf("found tags in git: %s\n", gitTags)
 
 	// gitVersions := make([]Version, 0)
 	// for _, tag := range gitTags {

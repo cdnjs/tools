@@ -3,6 +3,7 @@ package git
 import (
 	"bytes"
 	"context"
+	"log"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -40,7 +41,7 @@ func ListPackageVersions(ctx context.Context, basePath string) []string {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = basePath
-	util.Debugf(ctx, "run %s from %s\n", cmd, basePath)
+	log.Printf("run %s from %s\n", cmd, basePath)
 	out := util.CheckCmd(cmd.CombinedOutput())
 
 	outFiles := strings.Split(out, "\n")
@@ -70,7 +71,7 @@ func Add(ctx context.Context, gitpath, relpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	log.Printf("run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -80,7 +81,7 @@ func Commit(ctx context.Context, gitpath, msg string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	log.Printf("run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -90,7 +91,7 @@ func Fetch(ctx context.Context, gitpath string) ([]byte, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
+	log.Printf("%s: run %s\n", gitpath, cmd)
 	return cmd.CombinedOutput()
 }
 
@@ -100,7 +101,7 @@ func Push(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	log.Printf("run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -110,7 +111,7 @@ func Clone(ctx context.Context, target string, gitpath string) ([]byte, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
+	log.Printf("%s: run %s\n", gitpath, cmd)
 	out, err := cmd.CombinedOutput()
 	return out, err
 }
@@ -126,7 +127,7 @@ func TimeStamp(ctx context.Context, gitpath, tag string) time.Time {
 	cmd.Dir = gitpath
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	util.Debugf(ctx, "run %s\n", cmd)
+	log.Printf("run %s\n", cmd)
 	err := cmd.Run()
 
 	if err != nil {
@@ -146,7 +147,7 @@ func ForceCheckout(ctx context.Context, gitpath, tag string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "run %s\n", cmd)
+	log.Printf("run %s\n", cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -171,7 +172,7 @@ func UpdateRepo(ctx context.Context, gitpath string) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
+	log.Printf("%s: run %s\n", gitpath, cmd)
 	util.CheckCmd(cmd.CombinedOutput())
 }
 
@@ -190,7 +191,7 @@ func isPathIgnored(ctx context.Context, gitpath string, path string) bool {
 
 	cmd := exec.Command("git", args...)
 	cmd.Dir = gitpath
-	util.Debugf(ctx, "%s: run %s\n", gitpath, cmd)
+	log.Printf("%s: run %s\n", gitpath, cmd)
 
 	return cmd.Run() == nil
 }

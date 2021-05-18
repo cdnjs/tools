@@ -118,33 +118,6 @@ func (p *Package) Marshal() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// // Log logs an event to cdnjs/logs.
-// // It returns the updated log file as well as if any error occurred.
-// // For `My-Package` on July 31, 2020, log file path will be:
-// // `<cdnjs logs path>/m/My-Package/2020/07-31.log`
-// func (p *Package) Log(format string, a ...interface{}) string {
-// 	t := time.Now().UTC()
-// 	logFileDir := path.Join(util.GetLogsPath(), "packages", strings.ToLower(string((*p.Name)[0])), *p.Name, t.Format("2006"))
-// 	logFile := t.Format("01-02.log")
-// 	logFilePath := path.Join(logFileDir, logFile)
-
-// 	util.Debugf(p.ctx, "Logging to %s: %s\n", logFilePath, fmt.Sprintf(format, a...))
-
-// 	// make dir path
-// 	util.Check(os.MkdirAll(logFileDir, 0755))
-
-// 	// open log file
-// 	f, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-// 	util.Check(err)
-// 	defer f.Close()
-
-// 	// append to log file
-// 	logger := log.New(f, fmt.Sprintf("%s %s: ", t.Format("2006-01-02 15:04:05"), *p.Name), 0)
-// 	logger.Printf(format, a...)
-
-// 	return logFilePath
-// }
-
 // LatestVersionKVKey gets the key needed to get the latest KV version metadata.
 func (p *Package) LatestVersionKVKey() string {
 	return path.Join(*p.Name, *p.Version)

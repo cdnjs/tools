@@ -22,5 +22,5 @@ func Png(ctx context.Context, file string) {
 	cmd := exec.Command("zopflipng", args...)
 	log.Printf("compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
-	util.Debugf(ctx, "%s\n", out)
+	log.Printf("%s\n", out)
 }

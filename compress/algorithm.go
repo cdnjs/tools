@@ -21,8 +21,7 @@ func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdOut, &stdErr
 
-	log.Println(cmd)
-	util.Debugf(ctx, "algorithm: run %s\n", cmd)
+	log.Printf("algorithm: run %s\n", cmd)
 	err := cmd.Run()
 	// log.Println(string(stdOut.Bytes()))
 	// log.Println(string(stdErr.Bytes()))

@@ -13,5 +13,5 @@ func Jpeg(ctx context.Context, file string) {
 	cmd := exec.Command("jpegoptim", file)
 	log.Printf("compress: run %s\n", cmd)
 	out := util.CheckCmd(cmd.CombinedOutput())
-	util.Debugf(ctx, "%s\n", out)
+	log.Printf("%s\n", out)
 }
