@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,12 +19,12 @@ func ListFilesGlob(ctx context.Context, base string, pattern string) ([]string, 
 
 	// check if the version is hidden
 	if isHidden(base) {
-		Debugf(ctx, "ignoring hidden version %s", base)
+		log.Printf("ignoring hidden version %s\n", base)
 		return list, nil
 	}
 
 	if _, err := os.Stat(base); os.IsNotExist(err) {
-		Debugf(ctx, "match %s in %s but doesn't exists", pattern, base)
+		log.Printf("match %s in %s but doesn't exists\n", pattern, base)
 		return list, nil
 	}
 
@@ -63,7 +64,7 @@ func ListFilesInVersion(ctx context.Context, base string) ([]string, error) {
 
 	// check if the version is hidden
 	if isHidden(base) {
-		Debugf(ctx, "ignoring hidden version %s", base)
+		log.Printf("ignoring hidden version %s\n", base)
 		return list, nil
 	}
 
