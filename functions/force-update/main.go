@@ -2,10 +2,10 @@ package force_update
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"path"
 
 	"github.com/cdnjs/tools/audit"
@@ -14,12 +14,19 @@ import (
 	"github.com/cdnjs/tools/packages"
 )
 
-var (
-	PKG     = os.Getenv("PKG")
-	VERSION = os.Getenv("VERSION")
-)
+type UpdateReq struct {
+	Pkg     string `json:"package"`
+	Version string `json:"version"`
+}
 
 func Invoke(w http.ResponseWriter, r *http.Request) {
+	var d UpdateReq
+	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
+		http.Error(w, "invalid request", 400)
+		fmt.Println(err)
+		return
+	}
+
 	list, err := packages.FetchPackages()
 	if err != nil {
 		http.Error(w, "failed to fetch packages", 500)
@@ -29,19 +36,20 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	for _, pkg := range list {
-		if *pkg.Name == PKG {
+		if *pkg.Name == d.Pkg {
 			npmVersions, _ := npm.GetVersions(ctx, *pkg.Autoupdate.Target)
 
 			var targetVersion *npm.Version
 			for _, version := range npmVersions {
-				if version.Version == VERSION {
+				if version.Version == d.Version {
 					targetVersion = &version
 					break
 				}
 			}
 
 			if targetVersion == nil {
-				log.Fatalf("target version doesn't exists")
+				http.Error(w, "target version not found", 500)
+				return
 			}
 
 			tarball := npm.DownloadTar(ctx, targetVersion.Tarball)
