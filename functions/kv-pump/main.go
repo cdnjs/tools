@@ -134,7 +134,8 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 			return fmt.Errorf("failed to update SRIs: %s", err)
 		}
 	} else {
-		return errors.New("no files to publish")
+		log.Println("no files to publish")
+		return nil
 	}
 
 	return nil
