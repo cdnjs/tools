@@ -154,6 +154,7 @@ func addNewVersion(item Item) (*time.Time, error) {
 		return nil, errors.Wrap(err, "failed to create version directory")
 	}
 
+	hasFiles := false
 	onFile := func(name string, r io.Reader) error {
 		ext := filepath.Ext(name)
 		if ext == ".woff2" {
@@ -181,19 +182,24 @@ func addNewVersion(item Item) (*time.Time, error) {
 			}
 		}
 
+		hasFiles = true
 		return nil
 	}
 	if err := inflate(tar, onFile); err != nil {
 		return nil, errors.Wrap(err, "failed to extract files")
 	}
 
-	if err := git("add", dest); err != nil {
-		return nil, errors.Wrap(err, "failed to run git")
-	}
+	if hasFiles {
+		if err := git("add", dest); err != nil {
+			return nil, errors.Wrap(err, "failed to run git")
+		}
 
-	commitMsg := fmt.Sprintf("Add %s (%s)", item.Metadata.Pkg, item.Metadata.Version)
-	if err := git("commit", "-m", commitMsg); err != nil {
-		return nil, errors.Wrap(err, "failed to run git")
+		commitMsg := fmt.Sprintf("Add %s (%s)", item.Metadata.Pkg, item.Metadata.Version)
+		if err := git("commit", "-m", commitMsg); err != nil {
+			return nil, errors.Wrap(err, "failed to run git")
+		}
+	} else {
+		log.Printf("no files present")
 	}
 
 	t, err := item.Time()
