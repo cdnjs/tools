@@ -101,36 +101,40 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
 
-	res, err := kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, FILES_KV_NAMESPACE_ID, false)
-	if err != nil {
-		return fmt.Errorf("failed to write KV: %s", err)
-	}
-	log.Println("files", res)
-	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
-		log.Printf("failed to audit: %s\n", err)
-	}
+	if len(pairs) > 0 {
+		res, err := kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, FILES_KV_NAMESPACE_ID, false)
+		if err != nil {
+			return fmt.Errorf("failed to write KV: %s", err)
+		}
+		log.Println("files", res)
+		if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
+			log.Printf("failed to audit: %s\n", err)
+		}
 
-	newFiles := cleanNewKVFiles(kvfiles)
+		newFiles := cleanNewKVFiles(kvfiles)
 
-	pkg := new(packages.Package)
-	if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
-		return fmt.Errorf("failed to parse config: %s", err)
-	}
+		pkg := new(packages.Package)
+		if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
+			return fmt.Errorf("failed to parse config: %s", err)
+		}
 
-	if err := updateVersions(ctx, cfapi, pkg, version, newFiles); err != nil {
-		return fmt.Errorf("failed to update versions: %s", err)
-	}
+		if err := updateVersions(ctx, cfapi, pkg, version, newFiles); err != nil {
+			return fmt.Errorf("failed to update versions: %s", err)
+		}
 
-	if err := updateAggregatedMetadata(ctx, cfapi, pkg, version, newFiles); err != nil {
-		return fmt.Errorf("failed to update aggregated metadata: %s", err)
-	}
+		if err := updateAggregatedMetadata(ctx, cfapi, pkg, version, newFiles); err != nil {
+			return fmt.Errorf("failed to update aggregated metadata: %s", err)
+		}
 
-	if err := updatePackage(ctx, cfapi, pkg, version, newFiles); err != nil {
-		return fmt.Errorf("failed to update package: %s", err)
-	}
+		if err := updatePackage(ctx, cfapi, pkg, version, newFiles); err != nil {
+			return fmt.Errorf("failed to update package: %s", err)
+		}
 
-	if err := updateSRIs(ctx, cfapi, sris); err != nil {
-		return fmt.Errorf("failed to update SRIs: %s", err)
+		if err := updateSRIs(ctx, cfapi, sris); err != nil {
+			return fmt.Errorf("failed to update SRIs: %s", err)
+		}
+	} else {
+		return errors.New("no files to publish")
 	}
 
 	return nil
