@@ -163,6 +163,8 @@ func extractInput() error {
 		target := removePackageDir(header.Name)
 
 		switch header.Typeflag {
+		case tar.TypeDir:
+			// ignore dirs
 		case tar.TypeReg:
 			if err := os.MkdirAll(path.Join(WORKSPACE, filepath.Dir(target)), 0755); err != nil {
 				return errors.Wrap(err, "ExtractTarGz: Mkdir() failed")
