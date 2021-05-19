@@ -209,10 +209,8 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 // version does not contain the filename
 // Note that if the filename is nil it will stay nil.
 func updateFilenameIfMissing(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Package, files []string) error {
-	key := pkg.LatestVersionKVKey()
-
 	if len(files) == 0 {
-		return errors.Errorf("KV version `%s` contains no files", key)
+		return errors.Errorf("KV version contains no files")
 	}
 
 	if pkg.Filename != nil {
@@ -227,10 +225,10 @@ func updateFilenameIfMissing(ctx context.Context, cfapi *cloudflare.API, pkg *pa
 		// set filename to be the most similar string in []assets
 		mostSimilar := getMostSimilarFilename(filename, files)
 		pkg.Filename = &mostSimilar
-		log.Printf("Updated `%s` filename `%s` -> `%s`\n", key, filename, mostSimilar)
+		log.Printf("Updated filename `%s` -> `%s`\n", filename, mostSimilar)
 		return nil
 	}
-	log.Printf("Filename in `%s` missing, so will stay missing.\n", key)
+	log.Printf("Filename missing, so will stay missing.\n")
 	return nil
 }
 
