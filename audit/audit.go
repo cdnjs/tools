@@ -63,10 +63,10 @@ func create(ctx context.Context, pkgName string, version string, stage string,
 	if err != nil {
 		if strings.Contains(err.Error(), "422 Invalid request") {
 			// that errors means that the file already exists and we need to override it
-			if err := deleteFile(ctx, pkgName, version, stage); err != nil {
+			if err := override(ctx, pkgName, version, stage, content); err != nil {
 				return errors.Wrap(err, "could not override audit")
 			}
-			return create(ctx, pkgName, version, stage, content)
+			return nil
 		} else {
 			return errors.Wrap(err, "could not create file")
 		}
@@ -75,11 +75,18 @@ func create(ctx context.Context, pkgName string, version string, stage string,
 	return nil
 }
 
-func deleteFile(ctx context.Context, pkgName string, version string, stage string) error {
-	client := getClient(ctx)
-	message := fmt.Sprintf("delete %s %s (%s)", pkgName, version, stage)
+func override(ctx context.Context, pkgName string, version string, stage string,
+	content *bytes.Buffer) error {
+	message := fmt.Sprintf("update %s %s (%s)", pkgName, version, stage)
 	file := getPath(pkgName, version, stage)
-	opts := &github.RepositoryContentFileOptions{
+	client := getClient(ctx)
+
+	currContent, err := get(ctx, pkgName, version, stage)
+	if err != nil {
+		return errors.Wrap(err, "failed to get current file")
+	}
+
+	commitOption := &github.RepositoryContentFileOptions{
 		Branch:  github.String(GH_BRANCH),
 		Message: github.String(message),
 		Committer: &github.CommitAuthor{
@@ -90,14 +97,29 @@ func deleteFile(ctx context.Context, pkgName string, version string, stage strin
 			Name:  github.String(GH_NAME),
 			Email: github.String(GH_EMAIL),
 		},
-	}
-	_, _, err := client.Repositories.DeleteFile(ctx, GH_OWNER, GH_REPO, file, opts)
-	if err != nil {
-		return errors.Wrap(err, "could not delete file")
+		Content: content.Bytes(),
+		SHA:     currContent.SHA,
 	}
 
-	log.Printf("audit deleted %s\n", file)
+	c, resp, err := client.Repositories.UpdateFile(ctx, GH_OWNER, GH_REPO, file, commitOption)
+	if err != nil {
+		return errors.Wrap(err, "could not override file")
+	}
+	log.Printf("audit overriden: resp.Status=%v commit=%s", resp.Status, *c.SHA)
 	return nil
+}
+
+func get(ctx context.Context, pkgName string, version string, stage string) (*github.RepositoryContent, error) {
+	client := getClient(ctx)
+	file := getPath(pkgName, version, stage)
+	opts := github.RepositoryContentGetOptions{
+		Ref: GH_BRANCH,
+	}
+	res, _, _, err := client.Repositories.GetContents(ctx, GH_OWNER, GH_REPO, file, &opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get file")
+	}
+	return res, nil
 }
 
 func NewVersionDetected(ctx context.Context, pkgName string, version string) error {
