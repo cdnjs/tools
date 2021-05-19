@@ -43,9 +43,11 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
-		if err := DoUpdateNpm(ctx, pkg, newNpmVersions); err != nil {
-			return errors.Wrap(err, "failed to update new version")
-		}
+		go func(ctx context.Context, pkg *packages.Package, npmVersions []npm.Version) {
+			if err := DoUpdateNpm(ctx, pkg, newNpmVersions); err != nil {
+				log.Fatalf("failed to update new version: %s\n", err)
+			}
+		}(ctx, pkg, npmVersions)
 	} else {
 		if len(existingVersionSet) > 0 {
 			// all existing versions are not on npm anymore
@@ -64,9 +66,11 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 		// It matters when we will commit the updates
 		sort.Sort(sort.Reverse(npm.ByTimeStamp(npmVersions)))
 
-		if err := DoUpdateNpm(ctx, pkg, npmVersions); err != nil {
-			return errors.Wrap(err, "failed to import all version")
-		}
+		go func(ctx context.Context, pkg *packages.Package, npmVersions []npm.Version) {
+			if err := DoUpdateNpm(ctx, pkg, npmVersions); err != nil {
+				log.Fatalf("failed to import all versions: %s\n", err)
+			}
+		}(ctx, pkg, npmVersions)
 	}
 	return nil
 }
