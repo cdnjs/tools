@@ -45,7 +45,7 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 
 		go func(ctx context.Context, pkg *packages.Package, npmVersions []npm.Version) {
 			if err := DoUpdateNpm(ctx, pkg, newNpmVersions); err != nil {
-				log.Fatalf("failed to update new version: %s\n", err)
+				log.Printf("%s: failed to update new version: %s\n", *pkg.Name, err)
 			}
 		}(ctx, pkg, npmVersions)
 	} else {
@@ -68,7 +68,7 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 
 		go func(ctx context.Context, pkg *packages.Package, npmVersions []npm.Version) {
 			if err := DoUpdateNpm(ctx, pkg, npmVersions); err != nil {
-				log.Fatalf("failed to import all versions: %s\n", err)
+				log.Printf("%s: failed to import all versions: %s\n", *pkg.Name, err)
 			}
 		}(ctx, pkg, npmVersions)
 	}
