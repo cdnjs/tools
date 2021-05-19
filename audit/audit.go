@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
@@ -60,9 +61,42 @@ func create(ctx context.Context, pkgName string, version string, stage string,
 
 	c, resp, err := client.Repositories.CreateFile(ctx, GH_OWNER, GH_REPO, file, commitOption)
 	if err != nil {
-		return errors.Wrap(err, "could not create file")
+		if strings.Contains(err.Error(), "422 Invalid request") {
+			// that errors means that the file already exists and we need to override it
+			if err := deleteFile(ctx, pkgName, version, stage); err != nil {
+				return errors.Wrap(err, "could not override audit")
+			}
+			return create(ctx, pkgName, version, stage, content)
+		} else {
+			return errors.Wrap(err, "could not create file")
+		}
 	}
 	log.Printf("audit created: resp.Status=%v commit=%s", resp.Status, *c.SHA)
+	return nil
+}
+
+func deleteFile(ctx context.Context, pkgName string, version string, stage string) error {
+	client := getClient(ctx)
+	message := fmt.Sprintf("delete %s %s (%s)", pkgName, version, stage)
+	file := getPath(pkgName, version, stage)
+	opts := &github.RepositoryContentFileOptions{
+		Branch:  github.String(GH_BRANCH),
+		Message: github.String(message),
+		Committer: &github.CommitAuthor{
+			Name:  github.String(GH_NAME),
+			Email: github.String(GH_EMAIL),
+		},
+		Author: &github.CommitAuthor{
+			Name:  github.String(GH_NAME),
+			Email: github.String(GH_EMAIL),
+		},
+	}
+	_, _, err := client.Repositories.DeleteFile(ctx, GH_OWNER, GH_REPO, file, opts)
+	if err != nil {
+		return errors.Wrap(err, "could not delete file")
+	}
+
+	log.Printf("audit deleted %s\n", file)
 	return nil
 }
 
