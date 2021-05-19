@@ -129,6 +129,11 @@ func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]st
 		fmt.Printf("failed to get SRI: %s", err)
 	}
 
+	if p.Version == nil {
+		s := ""
+		p.Version = &s
+	}
+
 	searchEntry := SearchEntry{
 		Name:             *p.Name,
 		Filename:         filename,
