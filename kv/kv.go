@@ -154,6 +154,8 @@ func EncodeAndWriteKVBulk(ctx context.Context, cfapi *cloudflare.API,
 		successfulWrites = append(successfulWrites, kv.GetName())
 		totalSize += size
 		totalKeys++
+
+		kv.Consumed()
 	}
 	bulkWrites = append(bulkWrites, bulkWrite)
 
