@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/cdnjs/tools/algolia"
+	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/kv"
 	"github.com/cdnjs/tools/packages"
@@ -113,6 +114,9 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	if err := algolia.IndexPackage(pkg, index, sris); err != nil {
 		return fmt.Errorf("failed to update algolia index: %v", err)
+	}
+	if err := audit.WroteAlgolia(ctx, pkgName, currVersion, pkg.Version); err != nil {
+		return fmt.Errorf("failed to audit: %s", err)
 	}
 	return nil
 }

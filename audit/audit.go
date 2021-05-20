@@ -161,3 +161,17 @@ func WroteKV(ctx context.Context, pkgName string, version string,
 	}
 	return nil
 }
+
+func WroteAlgolia(ctx context.Context, pkgName string, currVersion string, lastVersion *string) error {
+	content := bytes.NewBufferString("")
+	fmt.Fprintf(content, "current version: %s\n", currVersion)
+	if lastVersion != nil {
+		fmt.Fprintf(content, "set last version: %s\n", *lastVersion)
+	} else {
+		fmt.Fprintf(content, "set last version: <nil>\n")
+	}
+	if err := create(ctx, pkgName, currVersion, "algolia-publish", content); err != nil {
+		return errors.Wrap(err, "could not create audit log file")
+	}
+	return nil
+}
