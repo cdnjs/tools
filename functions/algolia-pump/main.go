@@ -66,17 +66,13 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	if err != nil {
 		return fmt.Errorf("failed to retrieve existing versions: %s", err)
 	}
-	// add the current version in case it was yet present in KV
-	versions = append(versions, currVersion)
-
-	pkg.Version = packages.GetLatestStableVersion(versions)
-
 	archive, err := gcp.ReadObject(ctx, e.Bucket, e.Name)
 	if err != nil {
 		return fmt.Errorf("could not read object: %v", err)
 	}
 
 	sris := make(map[string]string)
+	hasFiles := false
 	onFile := func(name string, r io.Reader) error {
 		ext := filepath.Ext(name)
 		// remove leading slash
@@ -92,12 +88,20 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 			sris[filename] = string(content)
 			return nil
 		}
+		hasFiles = true
 		return nil
 	}
 	log.Printf("SRIs: %s\n", sris)
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
+
+	if hasFiles {
+		// add the current version in case it was yet present in KV
+		versions = append(versions, currVersion)
+	}
+
+	pkg.Version = packages.GetLatestStableVersion(versions)
 
 	log.Printf("updating %s in search index (last version %s)\n", pkgName, printStrPtr(pkg.Version))
 	if ENV != "prod" {
