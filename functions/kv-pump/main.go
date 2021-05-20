@@ -39,6 +39,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	pkgName := e.Metadata["package"].(string)
 	version := e.Metadata["version"].(string)
+	log.Printf("Invoke %s %s\n", pkgName, version)
 
 	configStr, err := b64.StdEncoding.DecodeString(e.Metadata["config"].(string))
 	if err != nil {
