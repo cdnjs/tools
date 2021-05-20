@@ -50,25 +50,6 @@ func (a AuthError) Error() string {
 	return fmt.Sprintf("%s: %s", authError, a.err)
 }
 
-// Represents a KV write request, consisting of
-// a string key, a []byte value, and file metadata.
-// The name field is used to identify this write request
-// with a human-readable friendly name.
-type WriteRequest struct {
-	Key   string
-	Name  string
-	Value []byte
-	Meta  *FileMetadata
-}
-
-// FileMetadata represents metadata for a
-// particular KV.
-type FileMetadata struct {
-	ETag         string `json:"etag,omitempty"`
-	LastModified string `json:"last_modified,omitempty"`
-	SRI          string `json:"sri,omitempty"`
-}
-
 // Ensure a response is successful and the error is nil.
 func checkSuccess(r cloudflare.Response, err error) error {
 	if err != nil {
@@ -119,47 +100,47 @@ func encodeToBase64(bytes []byte) string {
 // Encodes key-value pairs to base64 and writes them to KV in multiple bulk requests.
 // Returns the list of human-readable names of successful writes.
 func EncodeAndWriteKVBulk(ctx context.Context, cfapi *cloudflare.API,
-	kvs []*WriteRequest, namespaceID string, panicOversized bool) ([]string, error) {
+	kvs []WriteRequest, namespaceID string, panicOversized bool) ([]string, error) {
 	var bulkWrites []cloudflare.WorkersKVBulkWriteRequest
 	var bulkWrite []*cloudflare.WorkersKVPair
 	var successfulWrites []string
 	var totalSize, totalKeys int64
 
 	for _, kv := range kvs {
-		if unencodedSize := int64(len(kv.Value)); unencodedSize > util.MaxFileSize {
-			log.Printf("ignoring oversized file: %s (%d)\n", kv.Key, unencodedSize)
-			sentry.NotifyError(fmt.Errorf("ignoring oversized file: %s (%d)", kv.Key, unencodedSize))
+		if unencodedSize := int64(len(kv.GetValue())); unencodedSize > util.MaxFileSize {
+			log.Printf("ignoring oversized file: %s (%d)\n", kv.GetKey(), unencodedSize)
+			sentry.NotifyError(fmt.Errorf("ignoring oversized file: %s (%d)", kv.GetKey(), unencodedSize))
 			if panicOversized {
-				panic(fmt.Sprintf("oversized file: %s (%d)", kv.Key, unencodedSize))
+				panic(fmt.Sprintf("oversized file: %s (%d)", kv.GetKey(), unencodedSize))
 			}
 			continue
 		}
 		// Note that after encoding in base64 the size may get larger, but after decoding
 		// it will be reduced, so it is okay if the size is larger than util.MaxFileSize after encoding base64.
 		// However, we still need to check for the KV bulk request limit of 100MiB.
-		encodedValue := encodeToBase64(kv.Value)
+		encodedValue := encodeToBase64(kv.GetValue())
 		size := int64(len(encodedValue))
 		writePair := &cloudflare.WorkersKVPair{
-			Key:    kv.Key,
+			Key:    kv.GetKey(),
 			Value:  encodedValue,
 			Base64: true,
 		}
-		if kv.Meta != nil {
+		if kv.GetMeta() != nil {
 			// Marshal metadata into JSON bytes.
-			bytes, err := json.Marshal(kv.Meta)
+			bytes, err := json.Marshal(kv.GetMeta())
 			if err != nil {
 				return nil, err
 			}
 			metasize := int64(len(bytes))
 			if metasize > util.MaxMetadataSize {
-				log.Printf("ignoring oversized metadata: %s (%d)\n", kv.Key, metasize)
-				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s", kv.Key, metasize, bytes))
+				log.Printf("ignoring oversized metadata: %s (%d)\n", kv.GetKey(), metasize)
+				sentry.NotifyError(fmt.Errorf("oversized metadata: %s (%d) - %s", kv.GetKey(), metasize, bytes))
 				if panicOversized {
-					panic(fmt.Sprintf("oversized metadata: %s (%d)", kv.Key, metasize))
+					panic(fmt.Sprintf("oversized metadata: %s (%d)", kv.GetKey(), metasize))
 				}
 				continue
 			}
-			writePair.Metadata = kv.Meta
+			writePair.Metadata = kv.GetMeta()
 			size += metasize
 		}
 		if totalSize+size > util.MaxBulkWritePayload || totalKeys == util.MaxBulkKeys {
@@ -170,7 +151,7 @@ func EncodeAndWriteKVBulk(ctx context.Context, cfapi *cloudflare.API,
 			totalKeys = 0
 		}
 		bulkWrite = append(bulkWrite, writePair)
-		successfulWrites = append(successfulWrites, kv.Name)
+		successfulWrites = append(successfulWrites, kv.GetName())
 		totalSize += size
 		totalKeys++
 	}

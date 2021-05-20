@@ -80,12 +80,12 @@ func writeAggregatedMetadata(ctx context.Context, api *cloudflare.API, p *packag
 	}
 
 	// gzip the bytes
-	req := &WriteRequest{
+	req := &InMemoryWriteRequest{
 		Name:  *p.Name,
 		Key:   *p.Name,
 		Value: compress.Gzip9Bytes(v),
 	}
 
 	// write aggregated to KV
-	return EncodeAndWriteKVBulk(ctx, api, []*WriteRequest{req}, aggregatedMetadataNamespaceID, true)
+	return EncodeAndWriteKVBulk(ctx, api, []WriteRequest{req}, aggregatedMetadataNamespaceID, true)
 }

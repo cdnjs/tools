@@ -55,7 +55,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return errors.Wrap(err, "failed to create cloudflare API client")
 	}
 
-	var pairs []*kv.WriteRequest
+	var pairs []kv.WriteRequest
 	kvKeys := make([]string, 0)
 	sris := make(map[string]string)
 	kvfiles := make([]string, 0)
@@ -82,14 +82,12 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 			kvfiles = append(kvfiles, name)
 
 			meta := newMetadata(len(content))
-			writePair := &kv.WriteRequest{
+			writePair := &kv.InMemoryWriteRequest{
 				Key:   key,
 				Name:  key,
 				Value: content,
 				Meta:  meta,
 			}
-			metaStr, _ := json.Marshal(meta)
-			log.Printf("%s (%s)\n", key, metaStr)
 			pairs = append(pairs, writePair)
 		}
 		return nil
@@ -262,10 +260,10 @@ func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,
 }
 
 func updateSRIs(ctx context.Context, cfapi *cloudflare.API, sris map[string]string) error {
-	pairs := make([]*kv.WriteRequest, 0)
+	pairs := make([]kv.WriteRequest, 0)
 
 	for name, sri := range sris {
-		pairs = append(pairs, &kv.WriteRequest{
+		pairs = append(pairs, &kv.InMemoryWriteRequest{
 			Key:  name,
 			Name: name,
 			Meta: &kv.FileMetadata{
