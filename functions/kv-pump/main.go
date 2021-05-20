@@ -206,7 +206,8 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 // Note that if the filename is nil it will stay nil.
 func updateFilenameIfMissing(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Package, files []string) error {
 	if len(files) == 0 {
-		return errors.Errorf("KV version contains no files")
+		log.Printf("%s: KV version contains no files\n", *pkg.Name)
+		return nil
 	}
 
 	if pkg.Filename != nil {
