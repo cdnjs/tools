@@ -29,9 +29,14 @@ type InMemoryWriteRequest struct {
 	Meta  *FileMetadata
 }
 
-func (r InMemoryWriteRequest) GetKey() string         { return r.Key }
-func (r InMemoryWriteRequest) GetName() string        { return r.Name }
-func (r InMemoryWriteRequest) GetValue() []byte       { return r.Value }
+func (r InMemoryWriteRequest) GetKey() string  { return r.Key }
+func (r InMemoryWriteRequest) GetName() string { return r.Name }
+func (r InMemoryWriteRequest) GetValue() []byte {
+	if r.Value == nil {
+		panic(r.GetName() + ": write request has already been consumed")
+	}
+	return r.Value
+}
 func (r InMemoryWriteRequest) GetMeta() *FileMetadata { return r.Meta }
 func (r InMemoryWriteRequest) Consumed() {
 	r.Value = nil
