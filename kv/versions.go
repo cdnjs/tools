@@ -48,7 +48,7 @@ func updateVersionRequest(pkg, version string, files []string) WriteRequest {
 	v, err := json.Marshal(files)
 	util.Check(err)
 
-	return &InMemoryWriteRequest{
+	return &ConsumableWriteRequest{
 		Key:   key,
 		Value: v,
 	}

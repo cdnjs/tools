@@ -83,7 +83,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 			kvfiles = append(kvfiles, name)
 
 			meta := newMetadata(len(content))
-			writePair := &kv.InMemoryWriteRequest{
+			writePair := &kv.ConsumableWriteRequest{
 				Key:   key,
 				Name:  key,
 				Value: content,
@@ -264,7 +264,7 @@ func updateSRIs(ctx context.Context, cfapi *cloudflare.API, sris map[string]stri
 	pairs := make([]kv.WriteRequest, 0)
 
 	for name, sri := range sris {
-		pairs = append(pairs, &kv.InMemoryWriteRequest{
+		pairs = append(pairs, &kv.MetaWriteRequest{
 			Key:  name,
 			Name: name,
 			Meta: &kv.FileMetadata{

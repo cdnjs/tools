@@ -22,22 +22,34 @@ type WriteRequest interface {
 	Consumed()
 }
 
-type InMemoryWriteRequest struct {
+type ConsumableWriteRequest struct {
 	Key   string
 	Name  string
 	Value []byte
 	Meta  *FileMetadata
 }
 
-func (r InMemoryWriteRequest) GetKey() string  { return r.Key }
-func (r InMemoryWriteRequest) GetName() string { return r.Name }
-func (r InMemoryWriteRequest) GetValue() []byte {
+func (r ConsumableWriteRequest) GetKey() string  { return r.Key }
+func (r ConsumableWriteRequest) GetName() string { return r.Name }
+func (r ConsumableWriteRequest) GetValue() []byte {
 	if r.Value == nil {
 		panic(r.GetName() + ": write request has already been consumed")
 	}
 	return r.Value
 }
-func (r InMemoryWriteRequest) GetMeta() *FileMetadata { return r.Meta }
-func (r InMemoryWriteRequest) Consumed() {
+func (r ConsumableWriteRequest) GetMeta() *FileMetadata { return r.Meta }
+func (r ConsumableWriteRequest) Consumed() {
 	r.Value = nil
 }
+
+type MetaWriteRequest struct {
+	Key  string
+	Name string
+	Meta *FileMetadata
+}
+
+func (r MetaWriteRequest) GetKey() string         { return r.Key }
+func (r MetaWriteRequest) GetName() string        { return r.Name }
+func (r MetaWriteRequest) GetValue() []byte       { return nil }
+func (r MetaWriteRequest) GetMeta() *FileMetadata { return r.Meta }
+func (r MetaWriteRequest) Consumed()              {}

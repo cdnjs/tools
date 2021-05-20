@@ -80,7 +80,7 @@ func writeAggregatedMetadata(ctx context.Context, api *cloudflare.API, p *packag
 	}
 
 	// gzip the bytes
-	req := &InMemoryWriteRequest{
+	req := &ConsumableWriteRequest{
 		Name:  *p.Name,
 		Key:   *p.Name,
 		Value: compress.Gzip9Bytes(v),

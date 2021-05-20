@@ -32,7 +32,7 @@ func UpdateKVPackage(ctx context.Context, api *cloudflare.API, p *packages.Packa
 		return fmt.Errorf("failed to marshal KV package JSON: %s", *p.Name)
 	}
 
-	req := &InMemoryWriteRequest{
+	req := &ConsumableWriteRequest{
 		Key:   *p.Name,
 		Value: v,
 	}
