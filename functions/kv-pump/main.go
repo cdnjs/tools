@@ -37,9 +37,6 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	sentry.Init()
 	defer sentry.PanicHandler()
 
-	log.Printf("File: %v\n", e.Name)
-	log.Printf("Metadata: %v\n", e.Metadata)
-
 	pkgName := e.Metadata["package"].(string)
 	version := e.Metadata["version"].(string)
 
@@ -102,40 +99,39 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	}
 
 	if len(pairs) > 0 {
-		res, err := kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, FILES_KV_NAMESPACE_ID, false)
+		_, err = kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, FILES_KV_NAMESPACE_ID, false)
 		if err != nil {
 			return fmt.Errorf("failed to write KV: %s", err)
 		}
-		log.Println("files", res)
-		if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
-			log.Printf("failed to audit: %s\n", err)
-		}
-
-		newFiles := cleanNewKVFiles(kvfiles)
-
-		pkg := new(packages.Package)
-		if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
-			return fmt.Errorf("failed to parse config: %s", err)
-		}
-
-		if err := updateVersions(ctx, cfapi, pkg, version, newFiles); err != nil {
-			return fmt.Errorf("failed to update versions: %s", err)
-		}
-
-		if err := updateAggregatedMetadata(ctx, cfapi, pkg, version, newFiles); err != nil {
-			return fmt.Errorf("failed to update aggregated metadata: %s", err)
-		}
-
-		if err := updatePackage(ctx, cfapi, pkg, version, newFiles); err != nil {
-			return fmt.Errorf("failed to update package: %s", err)
-		}
-
-		if err := updateSRIs(ctx, cfapi, sris); err != nil {
-			return fmt.Errorf("failed to update SRIs: %s", err)
-		}
 	} else {
-		log.Println("no files to publish")
-		return nil
+		log.Printf("%s: no files to publish\n", pkgName)
+	}
+
+	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
+		log.Printf("failed to audit: %s\n", err)
+	}
+
+	newFiles := cleanNewKVFiles(kvfiles)
+
+	pkg := new(packages.Package)
+	if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
+		return fmt.Errorf("failed to parse config: %s", err)
+	}
+
+	if err := updateVersions(ctx, cfapi, pkg, version, newFiles); err != nil {
+		return fmt.Errorf("failed to update versions: %s", err)
+	}
+
+	if err := updateAggregatedMetadata(ctx, cfapi, pkg, version, newFiles); err != nil {
+		return fmt.Errorf("failed to update aggregated metadata: %s", err)
+	}
+
+	if err := updatePackage(ctx, cfapi, pkg, version, newFiles); err != nil {
+		return fmt.Errorf("failed to update package: %s", err)
+	}
+
+	if err := updateSRIs(ctx, cfapi, sris); err != nil {
+		return fmt.Errorf("failed to update SRIs: %s", err)
 	}
 
 	return nil
@@ -175,7 +171,7 @@ func updateVersions(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pa
 	if err != nil {
 		return errors.Wrap(err, "failed to update version in KV")
 	}
-	log.Println("add version in KV")
+	log.Printf("%s: add %s version in KV\n", *pkg.Name, version)
 	return nil
 }
 
