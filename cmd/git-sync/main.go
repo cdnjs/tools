@@ -37,7 +37,8 @@ type ItemMetadata struct {
 }
 
 type List struct {
-	Items []Item `json:"items"`
+	NextPageToken *string `json:"nextPageToken"`
+	Items         []Item  `json:"items"`
 }
 
 func readLastSync(path string) (time.Time, error) {
@@ -66,6 +67,10 @@ func updateLastSync(path string, t time.Time) error {
 	return nil
 }
 
+var (
+	DEBUG = os.Getenv("DEBUG")
+)
+
 func main() {
 	if len(os.Args) != 3 {
 		log.Fatal("last sync file and bucket missing")
@@ -76,17 +81,22 @@ func main() {
 	}
 
 	bucket := os.Args[2]
-	list, err := getList(bucket)
+	items, err := getItems(bucket)
 	if err != nil {
-		log.Fatalf("failed to list: %s", err)
+		log.Fatalf("failed to get items: %s", err)
 	}
 
-	newVersions, err := diff(lastSync, list.Items)
+	newVersions, err := diff(lastSync, items)
 	if err != nil {
 		log.Fatalf("failed to detect new versions: %s", err)
 	}
 
 	log.Printf("%d updates since %s\n", len(newVersions), lastSync)
+	if DEBUG == "1" {
+		for _, version := range newVersions {
+			log.Printf("new version %s created at %s\n", version.Name, version.TimeCreated)
+		}
+	}
 
 	// Keep track of the last successful version we addedd
 	lastSuccessfullSync := lastSync
@@ -121,6 +131,9 @@ func writeFile(target string, r io.Reader) error {
 }
 
 func dirExists(path string) bool {
+	if DEBUG == "1" {
+		return false
+	}
 	cmd := exec.Command("git", "ls-tree", "-d", "origin/master:"+path)
 	if err := cmd.Run(); err != nil {
 		return false
@@ -214,8 +227,10 @@ func git(args ...string) error {
 	log.Printf("running: %s", cmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to run command")
+	if DEBUG != "1" {
+		if err := cmd.Run(); err != nil {
+			return errors.Wrap(err, "failed to run command")
+		}
 	}
 	return nil
 }
@@ -237,20 +252,32 @@ func download(item Item) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func getList(bucket string) (*List, error) {
+func getItems(bucket string) ([]Item, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	r, err := client.Get(fmt.Sprintf("https://www.googleapis.com/storage/v1/b/%s/o", bucket))
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get listing")
-	}
-	defer r.Body.Close()
+	items := make([]Item, 0)
 
-	target := new(List)
-	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return nil, errors.Wrap(err, "could not decode response")
+	nextPageToken := ""
+	for {
+		r, err := client.Get(fmt.Sprintf("https://www.googleapis.com/storage/v1/b/%s/o?pageToken=%s", bucket, nextPageToken))
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get listing")
+		}
+		defer r.Body.Close()
+
+		target := new(List)
+		if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+			return nil, errors.Wrap(err, "could not decode response")
+		}
+
+		items = append(items, target.Items...)
+		if target.NextPageToken == nil {
+			break
+		}
+		nextPageToken = *target.NextPageToken
 	}
-	return target, nil
+
+	return items, nil
 }
 
 func diff(lastSync time.Time, items []Item) ([]Item, error) {
