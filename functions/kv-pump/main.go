@@ -244,6 +244,10 @@ func getMostSimilarFilename(target string, filenames []string) string {
 
 func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,
 	pkg *packages.Package, version string, newFiles []string) error {
+	if len(newFiles) == 0 {
+		log.Println("update contains no files, ignoring")
+		return nil
+	}
 	// Update aggregated package metadata for cdnjs API.
 	newAssets := packages.Asset{
 		Version: version,
