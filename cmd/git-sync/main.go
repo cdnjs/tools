@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,8 +28,12 @@ type Item struct {
 	Metadata    ItemMetadata `json:"metadata"`
 }
 
-func (i Item) Time() (time.Time, error) {
-	return time.Parse(time.RFC3339Nano, i.TimeCreated)
+func (i Item) Time() time.Time {
+	t, err := time.Parse(time.RFC3339Nano, i.TimeCreated)
+	if err != nil {
+		panic("could not parse date")
+	}
+	return t
 }
 
 type ItemMetadata struct {
@@ -68,7 +73,7 @@ func updateLastSync(path string, t time.Time) error {
 }
 
 var (
-	DEBUG = os.Getenv("DEBUG")
+	DEBUG = os.Getenv("DEBUG") == "1"
 )
 
 func main() {
@@ -92,9 +97,9 @@ func main() {
 	}
 
 	log.Printf("%d updates since %s\n", len(newVersions), lastSync)
-	if DEBUG == "1" {
+	if DEBUG {
 		for _, version := range newVersions {
-			log.Printf("new version %s created at %s\n", version.Name, version.TimeCreated)
+			log.Printf("%s new version %s\n", version.TimeCreated, version.Name)
 		}
 	}
 
@@ -131,7 +136,7 @@ func writeFile(target string, r io.Reader) error {
 }
 
 func dirExists(path string) bool {
-	if DEBUG == "1" {
+	if DEBUG {
 		return false
 	}
 	cmd := exec.Command("git", "ls-tree", "-d", "origin/master:"+path)
@@ -156,10 +161,7 @@ func addNewVersion(item Item) (*time.Time, error) {
 		log.Printf("version %s already exists, ignoring\n", dest)
 
 		// Version already exists for some reason, don't make any changes.
-		t, err := item.Time()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse last sync datetime")
-		}
+		t := item.Time()
 		return &t, nil
 	}
 
@@ -215,10 +217,7 @@ func addNewVersion(item Item) (*time.Time, error) {
 		log.Printf("no files present")
 	}
 
-	t, err := item.Time()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse last sync datetime")
-	}
+	t := item.Time()
 	return &t, nil
 }
 
@@ -227,7 +226,7 @@ func git(args ...string) error {
 	log.Printf("running: %s", cmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if DEBUG != "1" {
+	if !DEBUG {
 		if err := cmd.Run(); err != nil {
 			return errors.Wrap(err, "failed to run command")
 		}
@@ -277,6 +276,10 @@ func getItems(bucket string) ([]Item, error) {
 		nextPageToken = *target.NextPageToken
 	}
 
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Time().Before(items[j].Time())
+	})
+
 	return items, nil
 }
 
@@ -284,10 +287,7 @@ func diff(lastSync time.Time, items []Item) ([]Item, error) {
 	changes := make([]Item, 0)
 
 	for _, item := range items {
-		t, err := item.Time()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse last sync datetime")
-		}
+		t := item.Time()
 		if !t.Equal(lastSync) && t.After(lastSync) {
 			changes = append(changes, item)
 		}
