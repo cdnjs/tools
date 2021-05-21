@@ -181,8 +181,12 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 	if err != nil {
 		return fmt.Errorf("failed to retrieve existing versions: %s", err)
 	}
-	// add the current version in case it was yet present in KV
-	versions = append(versions, currVersion)
+	if len(files) > 0 {
+		// add the current version in case it was yet present in KV
+		versions = append(versions, currVersion)
+	} else {
+		log.Println("updatePackage: update contains no files, ignoring")
+	}
 
 	pkg.Version = packages.GetLatestStableVersion(versions)
 	log.Println("updated package", pkg)
@@ -245,7 +249,7 @@ func getMostSimilarFilename(target string, filenames []string) string {
 func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,
 	pkg *packages.Package, version string, newFiles []string) error {
 	if len(newFiles) == 0 {
-		log.Println("update contains no files, ignoring")
+		log.Println("updateAggregatedMetadata: update contains no files, ignoring")
 		return nil
 	}
 	// Update aggregated package metadata for cdnjs API.
@@ -277,9 +281,11 @@ func updateSRIs(ctx context.Context, cfapi *cloudflare.API, sris map[string]stri
 		})
 	}
 
-	_, err := kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, SRI_KV_NAMESPACE, false)
-	if err != nil {
-		return errors.Wrap(err, "could not write bulk KV")
+	if len(pairs) > 0 {
+		_, err := kv.EncodeAndWriteKVBulk(ctx, cfapi, pairs, SRI_KV_NAMESPACE, false)
+		if err != nil {
+			return errors.Wrap(err, "could not write bulk KV")
+		}
 	}
 	return nil
 }
