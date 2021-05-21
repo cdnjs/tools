@@ -110,7 +110,6 @@ func main() {
 		t, err := addNewVersion(version)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to add new version: %s\n", err)
-			break
 		} else {
 			lastSuccessfullSync = *t
 		}
@@ -279,7 +278,6 @@ func getItems(bucket string) ([]Item, error) {
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Time().Before(items[j].Time())
 	})
-
 	return items, nil
 }
 
