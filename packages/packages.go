@@ -22,9 +22,10 @@ type Author struct {
 // Autoupdate is used to update particular files from
 // a source type located at a target destination.
 type Autoupdate struct {
-	Source  *string   `json:"source,omitempty"`
-	Target  *string   `json:"target,omitempty"`
-	FileMap []FileMap `json:"fileMap,omitempty"`
+	Source         *string   `json:"source,omitempty"`
+	Target         *string   `json:"target,omitempty"`
+	FileMap        []FileMap `json:"fileMap,omitempty"`
+	IgnoreVersions []string  `json:"ignoreVersions"`
 }
 
 // Optimization is used to enable/disable optimization

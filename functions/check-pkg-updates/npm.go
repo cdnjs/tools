@@ -23,7 +23,7 @@ func updateNpm(ctx context.Context, pkg *packages.Package) error {
 	}
 	log.Printf("%s: existing versions: %s\n", *pkg.Name, strings.Join(existingVersionSet, ","))
 
-	npmVersions, _ := npm.GetVersions(ctx, *pkg.Autoupdate.Target)
+	npmVersions, _ := npm.GetVersions(ctx, pkg.Autoupdate)
 	lastExistingVersion, _ := npm.GetMostRecentExistingVersion(ctx, existingVersionSet, npmVersions)
 
 	if lastExistingVersion != nil {

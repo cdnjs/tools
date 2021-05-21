@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
+
+	"github.com/gobwas/glob"
 )
 
 // Registry contains metadata about a particular npm package.
@@ -69,9 +73,20 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 	return counts
 }
 
+func isVersionIgnored(config *packages.Autoupdate, version string) bool {
+	for _, ignored := range config.IgnoreVersions {
+		g := glob.MustCompile(ignored)
+		if g.Match(version) {
+			return true
+		}
+	}
+	return false
+}
+
 // GetVersions gets all of the versions associated with an npm package,
 // as well as the latest version based on the `latest` tag.
-func GetVersions(ctx context.Context, name string) ([]Version, *string) {
+func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]Version, *string) {
+	name := *config.Target
 	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
@@ -94,11 +109,15 @@ func GetVersions(ctx context.Context, name string) ([]Version, *string) {
 					timeStamp, err := time.Parse(time.RFC3339, timeStr)
 					util.Check(err)
 
-					versions = append(versions, Version{
-						Version:   k,
-						Tarball:   tarball,
-						TimeStamp: timeStamp,
-					})
+					if !isVersionIgnored(config, k) {
+						versions = append(versions, Version{
+							Version:   k,
+							Tarball:   tarball,
+							TimeStamp: timeStamp,
+						})
+					} else {
+						log.Printf("%s: version %s is ignored\n", name, k)
+					}
 					continue
 				}
 			}
