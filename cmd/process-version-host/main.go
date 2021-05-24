@@ -7,6 +7,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -101,7 +102,8 @@ func processMessage(ctx context.Context, data []byte) error {
 		return errors.Wrapf(err, "failed to download: %s", message.Tar)
 	}
 
-	logs, err := runSandbox(ctx, inDir, outDir)
+	name := fmt.Sprintf("%s_%s", message.Pkg, message.Version)
+	logs, err := runSandbox(ctx, name, inDir, outDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to run sandbox")
 	}
