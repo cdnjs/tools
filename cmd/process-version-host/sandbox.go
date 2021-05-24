@@ -109,5 +109,11 @@ func runSandbox(ctx context.Context, containerName, in, out string) (string, err
 		return "", errors.Wrap(err, "could not display logs")
 	}
 
+	// once we are done remove the container to free the name in case we rerun it
+	removeopts := types.ContainerRemoveOptions{}
+	if err := cli.ContainerRemove(ctx, resp.ID, removeopts); err != nil {
+		return "", errors.Wrapf(err, "could not remove container %s / %s", resp.ID, containerName)
+	}
+
 	return buff.String(), nil
 }
