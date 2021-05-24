@@ -113,11 +113,13 @@ func processMessage(ctx context.Context, data []byte) error {
 		return errors.Wrap(err, "could not post audit")
 	}
 
+	log.Printf("compressing %s\n", outDir)
 	var buff bytes.Buffer
 	if err := compress(outDir, &buff); err != nil {
 		return errors.Wrap(err, "failed to compress out dir")
 	}
 
+	log.Println("uploading")
 	if err := uploadToOutgoing(buff, message); err != nil {
 		return errors.Wrap(err, "failed to upload to outgoing bucket")
 	}
