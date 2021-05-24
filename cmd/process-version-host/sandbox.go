@@ -54,7 +54,7 @@ func getCli() (*client.Client, error) {
 	return cli, nil
 }
 
-func runSandbox(ctx context.Context, in, out string) (string, error) {
+func runSandbox(ctx context.Context, containerName, in, out string) (string, error) {
 	cli, err := getCli()
 	if err != nil {
 		return "", errors.Wrap(err, "could not create client")
@@ -78,7 +78,7 @@ func runSandbox(ctx context.Context, in, out string) (string, error) {
 					Target: "/output",
 				},
 			},
-		}, nil, nil, "")
+		}, nil, nil, containerName)
 	if err != nil {
 		return "", errors.Wrap(err, "could not create container")
 	}
