@@ -107,7 +107,7 @@ func processMessage(ctx context.Context, data []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to run sandbox")
 	}
-	log.Println("logs", logs)
+	log.Println("logs", len(logs), logs)
 
 	if err := audit.ProcessedVersion(ctx, message.Pkg, message.Version, logs); err != nil {
 		return errors.Wrap(err, "could not post audit")

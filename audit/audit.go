@@ -132,9 +132,16 @@ func NewVersionDetected(ctx context.Context, pkgName string, version string) err
 	return nil
 }
 
-func ProcessedVersion(ctx context.Context, pkgName string, version string, log string) error {
+const MAX_LOGS_LENGTH = 1 * 1024 * 1024 // 1 Mb
+
+func ProcessedVersion(ctx context.Context, pkgName string, version string, logs string) error {
+	// cut logs to avoid hitting the GitHub API limits
+	if len(logs) > MAX_LOGS_LENGTH {
+		logs = logs[:MAX_LOGS_LENGTH]
+	}
+
 	content := bytes.NewBufferString("")
-	fmt.Fprintf(content, "%s", log)
+	fmt.Fprintf(content, "%s", logs)
 
 	if err := create(ctx, pkgName, version, "processing", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
