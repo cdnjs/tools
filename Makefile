@@ -10,6 +10,9 @@ endef
 all: bin/process-version-host bin/git-sync \
    ;$(foreach n,${CLOUD_FUNCTIONS},$(call generate-func-make,$n))
 
+bin/checker:
+	go build $(GO_BUILD_ARGS) -o bin/checker ./cmd/checker
+
 bin/git-sync:
 	go build $(GO_BUILD_ARGS) -o bin/git-sync ./cmd/git-sync
 
