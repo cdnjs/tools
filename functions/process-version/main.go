@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/cdnjs/tools/gcp"
-	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 
 	"cloud.google.com/go/iam/credentials/apiv1"
@@ -47,11 +46,11 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 }
 
 type Message struct {
-	OutgoingSignedURL string           `json:"outgoingSignedURL"`
-	Tar               string           `json:"tar"`
-	Pkg               string           `json:"package"`
-	Version           string           `json:"version"`
-	Config            packages.Package `json:"config"`
+	OutgoingSignedURL string `json:"outgoingSignedURL"`
+	Tar               string `json:"tar"`
+	Pkg               string `json:"package"`
+	Version           string `json:"version"`
+	Config            string `json:"config"`
 }
 
 func publish(tar, pkg, version, configStr string) error {
@@ -68,17 +67,12 @@ func publish(tar, pkg, version, configStr string) error {
 		return errors.Wrap(err, "could not generate signed URL")
 	}
 
-	var config packages.Package
-	if err := json.Unmarshal([]byte(configStr), &config); err != nil {
-		return errors.Wrap(err, "could not unmarshal filemap")
-	}
-
 	msg := Message{
 		OutgoingSignedURL: signedURL,
 		Tar:               tar,
 		Pkg:               pkg,
 		Version:           version,
-		Config:            config,
+		Config:            configStr,
 	}
 	bytes, err := json.Marshal(msg)
 	if err != nil {
