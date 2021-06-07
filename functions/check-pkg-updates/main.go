@@ -67,7 +67,7 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 }
 
 func isAllowed(pkg string) bool {
-	if len(RESTRICT_PKGS) == 0 {
+	if os.Getenv("RESTRICT_PKGS") == "" {
 		return true
 	}
 	for _, n := range RESTRICT_PKGS {
