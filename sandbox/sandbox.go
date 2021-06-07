@@ -1,4 +1,4 @@
-package main
+package sandbox
 
 import (
 	"bytes"
@@ -15,7 +15,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func setupSandbox() (string, string, error) {
+var (
+	DOCKER_IMAGE = os.Getenv("DOCKER_IMAGE")
+)
+
+func Setup() (string, string, error) {
 	tmpDir := os.TempDir()
 	inDir, err := ioutil.TempDir(tmpDir, "in")
 	if err != nil {
@@ -29,7 +33,11 @@ func setupSandbox() (string, string, error) {
 	return inDir, outDir, nil
 }
 
-func initSandbox(ctx context.Context) error {
+func Init(ctx context.Context) error {
+	if DOCKER_IMAGE == "" {
+		return errors.New("DOCKER_IMAGE needs to be present")
+	}
+
 	cli, err := getCli()
 	if err != nil {
 		return errors.Wrap(err, "could not create client")
@@ -54,7 +62,7 @@ func getCli() (*client.Client, error) {
 	return cli, nil
 }
 
-func runSandbox(ctx context.Context, containerName, in, out string) (string, error) {
+func Run(ctx context.Context, containerName, in, out string) (string, error) {
 	cli, err := getCli()
 	if err != nil {
 		return "", errors.Wrap(err, "could not create client")

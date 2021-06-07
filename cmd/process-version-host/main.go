@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cdnjs/tools/audit"
+	"github.com/cdnjs/tools/sandbox"
 	"github.com/cdnjs/tools/sentry"
 
 	"cloud.google.com/go/pubsub"
@@ -28,7 +29,6 @@ import (
 var (
 	PROJECT      = os.Getenv("PROJECT")
 	SUBSCRIPTION = os.Getenv("SUBSCRIPTION")
-	DOCKER_IMAGE = os.Getenv("DOCKER_IMAGE")
 )
 
 func init() {
@@ -46,7 +46,7 @@ func main() {
 	sub.ReceiveSettings.MaxOutstandingMessages = 5
 	sub.ReceiveSettings.NumGoroutines = runtime.NumCPU()
 
-	if err := initSandbox(ctx); err != nil {
+	if err := sandbox.Init(ctx); err != nil {
 		log.Fatalf("failed to init sandbox: %s", err)
 	}
 
@@ -88,7 +88,7 @@ func processMessage(ctx context.Context, data []byte) error {
 		return errors.Wrap(err, "failed to parse")
 	}
 
-	inDir, outDir, err := setupSandbox()
+	inDir, outDir, err := sandbox.Setup()
 	if err != nil {
 		return errors.Wrap(err, "failed to setup sandbox")
 	}
@@ -103,7 +103,7 @@ func processMessage(ctx context.Context, data []byte) error {
 	}
 
 	name := fmt.Sprintf("%s_%s", message.Pkg, message.Version)
-	logs, err := runSandbox(ctx, name, inDir, outDir)
+	logs, err := sandbox.Run(ctx, name, inDir, outDir)
 	if err != nil {
 		return errors.Wrap(err, "failed to run sandbox")
 	}
