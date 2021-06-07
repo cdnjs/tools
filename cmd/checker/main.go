@@ -149,6 +149,10 @@ func showFiles(pckgPath string, noPathValidation bool) error {
 				showErr(ctx, "no version found on npm")
 			}
 		}
+	case "git":
+		{
+			// WIP
+		}
 	// case "git":
 	// 	{
 	// 		// make temp dir and clone
