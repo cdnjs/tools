@@ -7,7 +7,7 @@ define generate-func-make
 endef
 
 .PHONY: all
-all: bin/process-version-host bin/git-sync \
+all: bin/process-version-host bin/git-sync bin/checker \
    ;$(foreach n,${CLOUD_FUNCTIONS},$(call generate-func-make,$n))
 
 bin/checker:
@@ -30,7 +30,7 @@ clean:
 	rm -rfv functions/*/*.zip
 
 .PHONY: test
-test: clean checker
+test: clean
 	go test -v ./test/...
 
 .PHONY: lint
