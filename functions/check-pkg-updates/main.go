@@ -103,8 +103,7 @@ func checkPackage(pkg *packages.Package) error {
 	}
 
 	switch src {
-	case "npm":
-	case "git":
+	case "npm", "git":
 		{
 			if err := updatePackage(ctx, pkg); err != nil {
 				return errors.Wrap(err, "failed to update package via "+src)
