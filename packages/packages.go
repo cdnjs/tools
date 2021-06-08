@@ -25,7 +25,7 @@ type Autoupdate struct {
 	Source         *string   `json:"source,omitempty"`
 	Target         *string   `json:"target,omitempty"`
 	FileMap        []FileMap `json:"fileMap,omitempty"`
-	IgnoreVersions []string  `json:"ignoreVersions"`
+	IgnoreVersions []string  `json:"ignoreVersions,omitempty"`
 }
 
 // Optimization is used to enable/disable optimization
