@@ -10,6 +10,7 @@ import (
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/git"
+	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
 	"github.com/cdnjs/tools/version"
@@ -17,61 +18,73 @@ import (
 	"github.com/pkg/errors"
 )
 
-func updatePackage(ctx context.Context, pkg *packages.Package) error {
+func updatePackage(ctx context.Context, pkg *packages.Package, src string) error {
 	existingVersionSet, err := getExistingVersions(pkg)
 	if err != nil {
 		return errors.Wrap(err, "could not detect existing versions")
 	}
 	log.Printf("%s: existing versions: %s\n", *pkg.Name, strings.Join(existingVersionSet, ","))
 
-	gitVersions, _ := git.GetVersions(ctx, pkg.Autoupdate)
-	lastExistingVersion, _ := version.GetMostRecentExistingVersion(ctx, existingVersionSet, gitVersions)
+	var versions []version.Version
+
+	switch src {
+	case "git":
+		versions, err = git.GetVersions(ctx, pkg.Autoupdate)
+		if err != nil {
+			return errors.Wrap(err, "failed to get git versions")
+		}
+	case "npm":
+		versions, _ = npm.GetVersions(ctx, pkg.Autoupdate)
+	default:
+		panic("unreachable")
+	}
+
+	lastExistingVersion, _ := version.GetMostRecentExistingVersion(ctx, existingVersionSet, versions)
 
 	if lastExistingVersion != nil {
 		log.Printf("%s: last existing version: %s\n", *pkg.Name, lastExistingVersion.Version)
 
-		versionDiff := version.VersionDiff(gitVersions, existingVersionSet)
+		versionDiff := version.VersionDiff(versions, existingVersionSet)
 		sort.Sort(version.ByDate(versionDiff))
 
-		newGitVersions := make([]version.Version, 0)
+		newVersions := make([]version.Version, 0)
 
 		for i := len(versionDiff) - 1; i >= 0; i-- {
 			v := versionDiff[i]
 			if v.Date.After(lastExistingVersion.Date) {
-				newGitVersions = append(newGitVersions, v)
+				newVersions = append(newVersions, v)
 			}
 		}
 
-		sort.Sort(sort.Reverse(version.ByDate(gitVersions)))
+		sort.Sort(sort.Reverse(version.ByDate(versions)))
 
-		go func(ctx context.Context, pkg *packages.Package, gitVersions []version.Version) {
-			if err := DoUpdate(ctx, pkg, newGitVersions); err != nil {
+		go func(ctx context.Context, pkg *packages.Package, versions []version.Version) {
+			if err := DoUpdate(ctx, pkg, newVersions); err != nil {
 				log.Printf("%s: failed to update new version: %s\n", *pkg.Name, err)
 			}
-		}(ctx, pkg, gitVersions)
+		}(ctx, pkg, versions)
 	} else {
 		if len(existingVersionSet) > 0 {
-			// all existing versions are not on git anymore
-			log.Printf("%s: all existing versions not on git\n", *pkg.Name)
+			log.Printf("%s: all existing versions not on %s\n", *pkg.Name, src)
 		}
-		// Import all the versions since we have no current git versions locally.
+		// Import all the versions since we have no current git/npm versions locally.
 		// Limit the number of version to an arbitrary number to avoid publishing
 		// too many outdated versions.
-		sort.Sort(sort.Reverse(version.ByDate(gitVersions)))
+		sort.Sort(sort.Reverse(version.ByDate(versions)))
 
-		if len(gitVersions) > util.ImportAllMaxVersions {
-			gitVersions = gitVersions[len(gitVersions)-util.ImportAllMaxVersions:]
+		if len(versions) > util.ImportAllMaxVersions {
+			versions = versions[len(versions)-util.ImportAllMaxVersions:]
 		}
 
 		// Reverse the array to have the older versions first
 		// It matters when we will commit the updates
-		sort.Sort(sort.Reverse(version.ByDate(gitVersions)))
+		sort.Sort(sort.Reverse(version.ByDate(versions)))
 
-		go func(ctx context.Context, pkg *packages.Package, gitVersions []version.Version) {
-			if err := DoUpdate(ctx, pkg, gitVersions); err != nil {
+		go func(ctx context.Context, pkg *packages.Package, versions []version.Version) {
+			if err := DoUpdate(ctx, pkg, versions); err != nil {
 				log.Printf("%s: failed to import all versions: %s\n", *pkg.Name, err)
 			}
-		}(ctx, pkg, gitVersions)
+		}(ctx, pkg, versions)
 	}
 	return nil
 }
