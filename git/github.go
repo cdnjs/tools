@@ -170,8 +170,13 @@ query {
 		}
 
 		if !version.IsVersionIgnored(config, githubVersion.Name) {
+			versionName := githubVersion.Name
+			if versionName[0:1] == "v" {
+				versionName = versionName[1:]
+			}
+
 			versions = append(versions, version.Version{
-				Version: githubVersion.Name,
+				Version: versionName,
 				Tarball: githubVersion.Target.Target.TarballUrl,
 				Date:    date,
 				Source:  "git",
