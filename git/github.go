@@ -11,10 +11,12 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
+	"github.com/cdnjs/tools/version"
 
-	"github.com/davecgh/go-spew/spew"
 	githubapi "github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -24,12 +26,6 @@ import (
 var (
 	GH_TOKEN = os.Getenv("GH_TOKEN")
 )
-
-// Version represents a version of a git repo.
-type Version struct {
-	Version    string `json:"name"`
-	TarballURL string `json:"tarball_url"`
-}
 
 // Stars holds the number of stars for a GitHub repository.
 type Stars struct {
@@ -86,7 +82,11 @@ type GetVersionsRes struct {
 type GitHubVersion struct {
 	Name   string `json:"name"`
 	Target struct {
-		CommittedDate string `json:"committedDate"`
+		Target struct {
+			TarballUrl    string `json:"tarballUrl"`
+			CommittedDate string `json:"committedDate"`
+			AuthoredDate  string `json:"authoredDate"`
+		} `json:"target"`
 	} `json:"target"`
 }
 
@@ -96,20 +96,23 @@ type GraphQLRequest struct {
 
 // GetVersions gets all of the versions associated with a git repo,
 // as well as the latest version.
-func GetVersions(ctx context.Context, gitURL string) ([]Version, error) {
-	repo := getRepo(gitURL)
+func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]version.Version, error) {
+	name := *config.Target
+	repo := getRepo(*config.Target)
 	parts := strings.Split(repo, "/")
 	query := GraphQLRequest{Query: fmt.Sprintf(`
 query {
   repository(name: "%s", owner: "%s") {
-    refs(refPrefix: "refs/tags/", last: 100) {
+    refs(refPrefix: "refs/tags/", last: 30) {
       nodes {
         name
         target {
           ... on Tag {
             target {
               ... on Commit {
+			    tarballUrl
                 committedDate
+                authoredDate
               }
             }
           }
@@ -119,7 +122,6 @@ query {
   }
 }
 	`, parts[1], parts[0])}
-	log.Println(query)
 
 	var res GetVersionsRes
 
@@ -153,22 +155,31 @@ query {
 		return nil, errors.Wrap(err, "failed to decode response")
 	}
 
-	// gitTags := Tags(ctx, packageGitcache)
-	// log.Printf("found tags in git: %s\n", gitTags)
+	versions := make([]version.Version, 0)
 
-	// gitVersions := make([]Version, 0)
-	// for _, tag := range gitTags {
-	// 	version := strings.TrimPrefix(tag, "v")
-	// 	gitVersions = append(gitVersions, Version{
-	// 		Tag:       tag,
-	// 		Version:   version,
-	// 		TimeStamp: TimeStamp(ctx, packageGitcache, tag),
-	// 	})
-	// }
+	for _, githubVersion := range res.Data.Repository.Refs.Nodes {
+		var err error
+		date := time.Time{}
+		if githubVersion.Target.Target.CommittedDate != "" {
+			date, err = time.Parse(time.RFC3339, githubVersion.Target.Target.CommittedDate)
+		} else if githubVersion.Target.Target.AuthoredDate != "" {
+			date, err = time.Parse(time.RFC3339, githubVersion.Target.Target.AuthoredDate)
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse tag date")
+		}
 
-	// if latest := GetMostRecentVersion(gitVersions); latest != nil {
-	// 	return gitVersions, &latest.Version
-	// }
-	spew.Dump(res)
-	return nil, nil
+		if !version.IsVersionIgnored(config, githubVersion.Name) {
+			versions = append(versions, version.Version{
+				Version: githubVersion.Name,
+				Tarball: githubVersion.Target.Target.TarballUrl,
+				Date:    date,
+				Source:  "git",
+			})
+		} else {
+			log.Printf("%s: version %s is ignored\n", name, githubVersion.Name)
+		}
+	}
+
+	return versions, nil
 }

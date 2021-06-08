@@ -37,7 +37,7 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 
 	for _, pkg := range list {
 		if *pkg.Name == d.Pkg {
-			npmVersions, _ := npm.GetVersions(ctx, *pkg.Autoupdate.Target)
+			npmVersions, _ := npm.GetVersions(ctx, pkg.Autoupdate)
 
 			var targetVersion *npm.Version
 			for _, version := range npmVersions {

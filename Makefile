@@ -42,3 +42,7 @@ lint:
 dev: autoupdate
 	docker build -t cdnjs-dev -f ./dev/Dockerfile .
 	docker run -it cdnjs-dev
+
+.PHONY: process-version-sandbox
+process-version-sandbox:
+	docker build -t $@ -f ./docker/process-version/Dockerfile .

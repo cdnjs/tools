@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sandbox"
 	"github.com/cdnjs/tools/util"
+	"github.com/cdnjs/tools/version"
 
 	"github.com/pkg/errors"
 )
@@ -67,22 +67,14 @@ func main() {
 	}
 }
 
-// Represents a version of a package,
-// which could be a git version, npm version, etc.
-type version interface {
-	Get() string                    // Get the version as a string.
-	Download(...interface{}) string // Download a version, returning the download dir.
-	Clean(string)                   // Clean a download dir.
-}
-
-func processVersion(ctx context.Context, pckg *packages.Package, version npm.Version) (string, error) {
+func processVersion(ctx context.Context, pckg *packages.Package, v version.Version) (string, error) {
 	inDir, outDir, err := sandbox.Setup()
 	if err != nil {
 		return outDir, errors.Wrap(err, "failed to setup sandbox")
 	}
 	defer os.RemoveAll(inDir)
 
-	buff := npm.DownloadTar(ctx, version.Tarball)
+	buff := version.DownloadTar(ctx, v)
 
 	dst, err := os.Create(path.Join(inDir, "new-version.tgz"))
 	if err != nil {
@@ -97,7 +89,7 @@ func processVersion(ctx context.Context, pckg *packages.Package, version npm.Ver
 		return outDir, errors.Wrap(err, "failed to write configuration")
 	}
 
-	name := fmt.Sprintf("%s_%s", *pckg.Name, version.Version)
+	name := fmt.Sprintf("%s_%s", *pckg.Name, v.Version)
 	logs, err := sandbox.Run(ctx, name, inDir, outDir)
 	if err != nil {
 		return outDir, errors.Wrap(err, "failed to run sandbox")
@@ -127,62 +119,44 @@ func showFiles(pckgPath string, noPathValidation bool) error {
 	// autoupdate exists, download latest versions based on source
 	src := *pckg.Autoupdate.Source
 
+	var versions []version.Version
+
 	switch src {
 	case "npm":
 		{
 			// get npm versions and sort
-			versions, _ := npm.GetVersions(ctx, pckg.Autoupdate)
-			sort.Sort(npm.ByTimeStamp(versions))
-
-			// download into temp dir
-			if len(versions) > 0 {
-				// print info for first src version
-				if err := printMostRecentVersion(ctx, pckg, versions[0]); err != nil {
-					return errors.Wrap(err, "could not print most recent version")
-				}
-
-				// print aggregate info for the few last src versions
-				if err := printLastVersions(ctx, pckg, versions[1:]); err != nil {
-					return errors.Wrap(err, "could not print most last versions")
-				}
-			} else {
-				showErr(ctx, "no version found on npm")
-			}
+			versions, _ = npm.GetVersions(ctx, pckg.Autoupdate)
+			sort.Sort(version.ByDate(versions))
 		}
 	case "git":
 		{
-			// WIP
+			var err error
+			// get git versions and sort
+			versions, err = git.GetVersions(ctx, pckg.Autoupdate)
+			if err != nil {
+				return errors.Wrap(err, "failed to retrieve git versions")
+			}
+			sort.Sort(version.ByDate(versions))
 		}
-	// case "git":
-	// 	{
-	// 		// make temp dir and clone
-	// 		packageGitDir, direrr := ioutil.TempDir("", src)
-	// 		util.Check(direrr)
-	// 		out, cloneerr := git.Clone(ctx, *pckg.Autoupdate.Target, packageGitDir)
-	// 		if cloneerr != nil {
-	// 			showErr(ctx, fmt.Sprintf("could not clone repo: %s: %s\n", cloneerr, out))
-	// 			return
-	// 		}
-
-	// 		// get git versions and sort
-	// 		gitVersions, _ := git.GetVersions(ctx, packageGitDir)
-	// 		sort.Sort(git.ByTimeStamp(gitVersions))
-
-	// 		// cast to interface
-	// 		for _, v := range gitVersions {
-	// 			versions = append(versions, v)
-	// 		}
-
-	// 		// set download dir
-	// 		downloadDir = packageGitDir
-
-	// 		// set err string if no versions
-	// 		noVersionsErr = "no tagged version found in git"
-	// 	}
 	default:
 		{
 			panic(fmt.Sprintf("unknown autoupdate source: %s", src))
 		}
+	}
+
+	// download into temp dir
+	if len(versions) > 0 {
+		// print info for first src version
+		if err := printMostRecentVersion(ctx, pckg, versions[0]); err != nil {
+			return errors.Wrap(err, "could not print most recent version")
+		}
+
+		// print aggregate info for the few last src versions
+		if err := printLastVersions(ctx, pckg, versions[1:]); err != nil {
+			return errors.Wrap(err, "could not print most last versions")
+		}
+	} else {
+		showErr(ctx, "no version found on "+src)
 	}
 	return nil
 }
@@ -248,7 +222,7 @@ func filewalker(basedir string, files *[]string) filepath.WalkFunc {
 
 // Prints the files of a package version, outputting debug
 // messages if no valid files are present.
-func printMostRecentVersion(ctx context.Context, p *packages.Package, v npm.Version) error {
+func printMostRecentVersion(ctx context.Context, p *packages.Package, v version.Version) error {
 	fmt.Printf("\nmost recent version: %s\n", v.Version)
 
 	outDir, err := processVersion(ctx, p, v)
@@ -265,7 +239,7 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, v npm.Vers
 	}
 
 	if len(files) == 0 {
-		errormsg := fmt.Sprintf("No files will be published for version %s.\n", v.Get())
+		errormsg := fmt.Sprintf("No files will be published for version %s.\n", v.Version)
 		showErr(ctx, errormsg)
 		return nil
 	}
@@ -282,7 +256,7 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, v npm.Vers
 	fmt.Printf("```\n")
 
 	if p.Filename != nil && !filenameFound {
-		showErr(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", *p.Filename, v.Get()))
+		showErr(ctx, fmt.Sprintf("Filename `%s` not found in most recent version `%s`.\n", *p.Filename, v.Version))
 	}
 	return nil
 }
@@ -290,7 +264,7 @@ func printMostRecentVersion(ctx context.Context, p *packages.Package, v npm.Vers
 // Prints the matching files of a number of last versions.
 // Each previous version will be downloaded and cleaned up if necessary.
 // For example, a temporary directory may be downloaded and then removed later.
-func printLastVersions(ctx context.Context, p *packages.Package, versions []npm.Version) error {
+func printLastVersions(ctx context.Context, p *packages.Package, versions []version.Version) error {
 	// limit versions
 	if len(versions) > util.ImportAllMaxVersions {
 		versions = versions[:util.ImportAllMaxVersions]
@@ -320,20 +294,6 @@ func printLastVersions(ctx context.Context, p *packages.Package, versions []npm.
 		os.RemoveAll(outDir)
 	}
 	return nil
-}
-
-func makeGlobDebugLink(glob string, dir string) string {
-	encodedGlob := url.QueryEscape(glob)
-	allTests := ""
-
-	util.Check(filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			allTests += "&tests=" + url.QueryEscape(info.Name())
-		}
-		return nil
-	}))
-
-	return fmt.Sprintf("https://www.digitalocean.com/community/tools/glob?comments=true&glob=%s&matches=true%s&tests=", encodedGlob, allTests)
 }
 
 func checkGitHubPopularity(ctx context.Context, pckg *packages.Package) bool {

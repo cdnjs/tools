@@ -7,13 +7,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
-
-	"github.com/gobwas/glob"
+	"github.com/cdnjs/tools/version"
 )
 
 // Registry contains metadata about a particular npm package.
@@ -21,28 +19,6 @@ type Registry struct {
 	Versions   map[string]interface{} `json:"versions"`  // Versions contains metadata about each npm version.
 	TimeStamps map[string]interface{} `json:"time"`      // TimeStamps contains times for each versions as well as the created/modified time.
 	DistTags   map[string]string      `json:"dist-tags"` // DistTags map dist tags to string versions
-}
-
-// Version represents a version of an npm package.
-type Version struct {
-	Version   string
-	Tarball   string
-	TimeStamp time.Time
-}
-
-// Get gets the version of a particular Version.
-func (n Version) Get() string {
-	return n.Version
-}
-
-// Clean is used to clean up a download directory.
-func (n Version) Clean(downloadDir string) {
-	os.RemoveAll(downloadDir) // clean up temp tarball dir
-}
-
-// GetTimeStamp gets the time stamp for a particular npm version.
-func (n Version) GetTimeStamp() time.Time {
-	return n.TimeStamp
 }
 
 // MonthlyDownload holds the number of monthly downloads
@@ -73,19 +49,9 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 	return counts
 }
 
-func isVersionIgnored(config *packages.Autoupdate, version string) bool {
-	for _, ignored := range config.IgnoreVersions {
-		g := glob.MustCompile(ignored)
-		if g.Match(version) {
-			return true
-		}
-	}
-	return false
-}
-
 // GetVersions gets all of the versions associated with an npm package,
 // as well as the latest version based on the `latest` tag.
-func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]Version, *string) {
+func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]version.Version, *string) {
 	name := *config.Target
 	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
@@ -97,7 +63,7 @@ func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]Version, *
 	var r Registry
 	util.Check(json.Unmarshal(body, &r))
 
-	versions := make([]Version, 0)
+	versions := make([]version.Version, 0)
 	for k, v := range r.Versions {
 		if v, ok := v.(map[string]interface{}); ok {
 			dist := v["dist"].(map[string]interface{})
@@ -109,11 +75,12 @@ func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]Version, *
 					timeStamp, err := time.Parse(time.RFC3339, timeStr)
 					util.Check(err)
 
-					if !isVersionIgnored(config, k) {
-						versions = append(versions, Version{
-							Version:   k,
-							Tarball:   tarball,
-							TimeStamp: timeStamp,
+					if !version.IsVersionIgnored(config, k) {
+						versions = append(versions, version.Version{
+							Version: k,
+							Tarball: tarball,
+							Date:    timeStamp,
+							Source:  "npm",
 						})
 					} else {
 						log.Printf("%s: version %s is ignored\n", name, k)

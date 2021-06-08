@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("could not create workspace: %s", err)
 	}
 
-	if err := extractInput(); err != nil {
+	if err := extractInput(*config.Autoupdate.Source); err != nil {
 		log.Fatalf("failed to extract input: %s", err)
 	}
 
@@ -124,6 +124,11 @@ func removePackageDir(path string) string {
 	return path
 }
 
+func removeFirstDir(path string) string {
+	parts := strings.Split(path, "/")
+	return strings.Replace(path, parts[0]+"/", "", 1)
+}
+
 func readConfig() (*packages.Package, error) {
 	file := path.Join(INPUT, "config.json")
 	data, err := ioutil.ReadFile(file)
@@ -137,7 +142,7 @@ func readConfig() (*packages.Package, error) {
 	return config, nil
 }
 
-func extractInput() error {
+func extractInput(source string) error {
 	gzipStream, err := os.Open(path.Join(INPUT, "new-version.tgz"))
 	if err != nil {
 		return errors.Wrap(err, "could not open input")
@@ -159,8 +164,15 @@ func extractInput() error {
 			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
 		}
 
-		// remove package folder
-		target := removePackageDir(header.Name)
+		target := header.Name
+		if source == "npm" {
+			// remove package folder
+			target = removePackageDir(header.Name)
+		}
+		if source == "git" {
+			// remove package folder
+			target = removeFirstDir(header.Name)
+		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -178,8 +190,8 @@ func extractInput() error {
 				return errors.Wrap(err, "ExtractTarGz: Copy() failed")
 			}
 		default:
-			return errors.Errorf(
-				"ExtractTarGz: uknown type: %x in %s",
+			log.Printf(
+				"ExtractTarGz: uknown type: %x in %s\n",
 				header.Typeflag,
 				header.Name)
 		}

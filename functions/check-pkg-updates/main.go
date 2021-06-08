@@ -19,9 +19,10 @@ import (
 )
 
 var (
-	KV_TOKEN      = os.Getenv("KV_TOKEN")
-	CF_ACCOUNT_ID = os.Getenv("CF_ACCOUNT_ID")
-	RESTRICT_PKGS = strings.Split(os.Getenv("RESTRICT_PKGS"), ",")
+	KV_TOKEN              = os.Getenv("KV_TOKEN")
+	CF_ACCOUNT_ID         = os.Getenv("CF_ACCOUNT_ID")
+	PKG_AUTOUPDATE_SOURCE = os.Getenv("PKG_AUTOUPDATE_SOURCE")
+	RESTRICT_PKGS         = strings.Split(os.Getenv("RESTRICT_PKGS"), ",")
 )
 
 type APIPackage struct {
@@ -45,6 +46,10 @@ func getExistingVersions(p *packages.Package) ([]string, error) {
 func Invoke(w http.ResponseWriter, r *http.Request) {
 	sentry.Init()
 	defer sentry.PanicHandler()
+
+	if PKG_AUTOUPDATE_SOURCE == "" {
+		panic("PKG_AUTOUPDATE_SOURCE should be present")
+	}
 
 	list, err := packages.FetchPackages()
 	if err != nil {
@@ -91,22 +96,23 @@ func checkPackage(pkg *packages.Package) error {
 		return nil
 	}
 
-	switch *pkg.Autoupdate.Source {
+	src := *pkg.Autoupdate.Source
+	if src != PKG_AUTOUPDATE_SOURCE {
+		// we are not auto-updateing packages with that source; skip.
+		return nil
+	}
+
+	switch src {
 	case "npm":
+	case "git":
 		{
-			if err := updateNpm(ctx, pkg); err != nil {
-				return errors.Wrap(err, "failed to update package via npm")
+			if err := updatePackage(ctx, pkg); err != nil {
+				return errors.Wrap(err, "failed to update package via "+src)
 			}
 		}
-	// case "git":
-	// 	{
-	// 		if err := updateGit(ctx, pkg); err != nil {
-	// 			return errors.Wrap(err, "failed to update package via git")
-	// 		}
-	// 	}
 	default:
 		{
-			return errors.Errorf("%s invalid autoupdate source: %s", *pkg.Name, *pkg.Autoupdate.Source)
+			return errors.Errorf("%s invalid autoupdate source: %s", *pkg.Name, src)
 		}
 	}
 	return nil

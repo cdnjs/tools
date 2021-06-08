@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/version"
 
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ var (
 	GCS_BUCKET = os.Getenv("GCS_BUCKET")
 )
 
-func AddIncomingFile(fileName string, buff bytes.Buffer, pckg *packages.Package, version npm.Version) error {
+func AddIncomingFile(fileName string, buff bytes.Buffer, pckg *packages.Package, v version.Version) error {
 	// Create GCS connection
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
@@ -49,7 +49,7 @@ func AddIncomingFile(fileName string, buff bytes.Buffer, pckg *packages.Package,
 	// update the metadata once the object is written
 	_, err = obj.Update(ctx, storage.ObjectAttrsToUpdate{
 		Metadata: map[string]string{
-			"version": version.Version,
+			"version": v.Version,
 			"package": *pckg.Name,
 			"config":  string(configBytes),
 		},

@@ -1,4 +1,4 @@
-package npm
+package version
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 
 // ByTimeStamp implements the sort.Interface for []Version,
 // ordering from most recent to least recent time stamps.
-type ByTimeStamp []Version
+type ByDate []Version
 
-func (a ByTimeStamp) Len() int      { return len(a) }
-func (a ByTimeStamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByTimeStamp) Less(i, j int) bool {
-	return a[i].TimeStamp.After(a[j].TimeStamp)
+func (a ByDate) Len() int      { return len(a) }
+func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByDate) Less(i, j int) bool {
+	return a[i].Date.After(a[j].Date)
 }
 
 // GetMostRecentExistingVersion gets the most recent npm.Version based on time stamp
@@ -31,7 +31,7 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 	for _, existingVersion := range existingVersions {
 		if version, ok := npmMap[existingVersion]; ok {
 			allExisting = append(allExisting, version)
-			if mostRecent == nil || version.TimeStamp.After(mostRecent.TimeStamp) {
+			if mostRecent == nil || version.Date.After(mostRecent.Date) {
 				mostRecent = &version // new most recent found
 			}
 			continue

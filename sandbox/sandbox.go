@@ -38,17 +38,19 @@ func Init(ctx context.Context) error {
 		return errors.New("DOCKER_IMAGE needs to be present")
 	}
 
-	cli, err := getCli()
-	if err != nil {
-		return errors.Wrap(err, "could not create client")
-	}
+	if false {
+		cli, err := getCli()
+		if err != nil {
+			return errors.Wrap(err, "could not create client")
+		}
 
-	reader, err := cli.ImagePull(ctx, DOCKER_IMAGE, types.ImagePullOptions{})
-	if err != nil {
-		return errors.Wrap(err, "could not pull image")
-	}
-	if _, err := io.Copy(os.Stdout, reader); err != nil {
-		return errors.Wrap(err, "failed to display pull logs")
+		reader, err := cli.ImagePull(ctx, DOCKER_IMAGE, types.ImagePullOptions{})
+		if err != nil {
+			return errors.Wrap(err, "could not pull image")
+		}
+		if _, err := io.Copy(os.Stdout, reader); err != nil {
+			return errors.Wrap(err, "failed to display pull logs")
+		}
 	}
 	return nil
 }
