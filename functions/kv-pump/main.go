@@ -106,10 +106,6 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		log.Printf("%s: no files to publish\n", pkgName)
 	}
 
-	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
-		log.Printf("failed to audit: %s\n", err)
-	}
-
 	newFiles := cleanNewKVFiles(kvfiles)
 
 	pkg := new(packages.Package)
@@ -131,6 +127,10 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	if err := updateSRIs(ctx, cfapi, sris); err != nil {
 		return fmt.Errorf("failed to update SRIs: %s", err)
+	}
+
+	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
+		log.Printf("failed to audit: %s\n", err)
 	}
 
 	return nil
