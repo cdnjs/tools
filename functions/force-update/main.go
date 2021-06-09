@@ -10,8 +10,10 @@ import (
 
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
+	"github.com/cdnjs/tools/git"
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/version"
 )
 
 type UpdateReq struct {
@@ -37,10 +39,24 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 
 	for _, pkg := range list {
 		if *pkg.Name == d.Pkg {
-			npmVersions, _ := npm.GetVersions(ctx, pkg.Autoupdate)
+			src := *pkg.Autoupdate.Source
+			var versions []version.Version
+			switch src {
+			case "git":
+				versions, err = git.GetVersions(ctx, pkg.Autoupdate)
+				if err != nil {
+					http.Error(w, "failed to fetch versions", 500)
+					fmt.Println(err)
+					return
+				}
+			case "npm":
+				versions, _ = npm.GetVersions(ctx, pkg.Autoupdate)
+			default:
+				panic("unreachable")
+			}
 
-			var targetVersion *npm.Version
-			for _, version := range npmVersions {
+			var targetVersion *version.Version
+			for _, version := range versions {
 				if version.Version == d.Version {
 					targetVersion = &version
 					break
@@ -51,8 +67,7 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "target version not found", 500)
 				return
 			}
-
-			tarball := npm.DownloadTar(ctx, targetVersion.Tarball)
+			tarball := version.DownloadTar(ctx, *targetVersion)
 			if err := gcp.AddIncomingFile(path.Base(targetVersion.Tarball), tarball, pkg, *targetVersion); err != nil {
 				log.Fatalf("could not store in GCS: %s", err)
 			}
