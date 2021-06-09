@@ -36,7 +36,7 @@ func GetMostRecentExistingVersion(ctx context.Context, existingVersions []string
 			}
 			continue
 		}
-		log.Printf("existing version not found on npm: %s", existingVersion)
+		log.Printf("existing version not found: %s", existingVersion)
 	}
 
 	return mostRecent, allExisting

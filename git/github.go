@@ -82,7 +82,10 @@ type GetVersionsRes struct {
 type GitHubVersion struct {
 	Name   string `json:"name"`
 	Target struct {
-		Target struct {
+		TarballUrl    string `json:"tarballUrl"`
+		CommittedDate string `json:"committedDate"`
+		AuthoredDate  string `json:"authoredDate"`
+		Target        struct {
 			TarballUrl    string `json:"tarballUrl"`
 			CommittedDate string `json:"committedDate"`
 			AuthoredDate  string `json:"authoredDate"`
@@ -110,11 +113,16 @@ query {
           ... on Tag {
             target {
               ... on Commit {
-			    tarballUrl
+                tarballUrl
                 committedDate
                 authoredDate
               }
             }
+          }
+          ... on Commit {
+            tarballUrl
+            authoredDate
+            committedDate
           }
         }
       }
@@ -164,9 +172,20 @@ query {
 			date, err = time.Parse(time.RFC3339, githubVersion.Target.Target.CommittedDate)
 		} else if githubVersion.Target.Target.AuthoredDate != "" {
 			date, err = time.Parse(time.RFC3339, githubVersion.Target.Target.AuthoredDate)
+		} else if githubVersion.Target.CommittedDate != "" {
+			date, err = time.Parse(time.RFC3339, githubVersion.Target.CommittedDate)
+		} else if githubVersion.Target.AuthoredDate != "" {
+			date, err = time.Parse(time.RFC3339, githubVersion.Target.AuthoredDate)
 		}
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse tag date")
+		}
+
+		tarballUrl := ""
+		if githubVersion.Target.Target.TarballUrl != "" {
+			tarballUrl = githubVersion.Target.Target.TarballUrl
+		} else if githubVersion.Target.TarballUrl != "" {
+			tarballUrl = githubVersion.Target.TarballUrl
 		}
 
 		if !version.IsVersionIgnored(config, githubVersion.Name) {
@@ -177,7 +196,7 @@ query {
 
 			versions = append(versions, version.Version{
 				Version: versionName,
-				Tarball: githubVersion.Target.Target.TarballUrl,
+				Tarball: tarballUrl,
 				Date:    date,
 				Source:  "git",
 			})

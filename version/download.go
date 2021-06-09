@@ -10,6 +10,9 @@ import (
 )
 
 func DownloadTar(ctx context.Context, v Version) bytes.Buffer {
+	if v.Tarball == "" {
+		panic("no tarball url provided for " + v.Version)
+	}
 	log.Printf("download %s\n", v.Tarball)
 
 	resp, err := http.Get(v.Tarball)
