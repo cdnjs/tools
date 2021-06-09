@@ -106,7 +106,7 @@ func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]version.Ve
 	query := GraphQLRequest{Query: fmt.Sprintf(`
 query {
   repository(name: "%s", owner: "%s") {
-    refs(refPrefix: "refs/tags/", last: 30) {
+    refs(refPrefix: "refs/tags/", last: 10) {
       nodes {
         name
         target {
