@@ -1,9 +1,10 @@
 export DOCKER_BUILDKIT=1
+mkdir -p /tmp/input /tmp/output 
 
 rm -rf /tmp/output/*
 
-curl https://storage.googleapis.com/cdnjs-incoming-staging/fontawesome-free-5.15.3.tgz > /tmp/input/new-version.tgz
-curl https://raw.githubusercontent.com/cdnjs/packages/master/packages/f/font-awesome.json > /tmp/input/config.json
+curl https://storage.googleapis.com/cdnjs-incoming-prod/design-system-2.15.4.tgz > /tmp/input/new-version.tgz
+curl https://raw.githubusercontent.com/cdnjs/packages/master/packages/d/design-system.json > /tmp/input/config.json
 
 ls -lh /tmp/input
 

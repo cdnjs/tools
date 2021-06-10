@@ -39,22 +39,22 @@ type Optimization struct {
 
 // Js returns if we should optimize JavaScript files.
 func (o *Optimization) Js() bool {
-	return o.JS == nil || *o.JS
+	return o == nil || o.JS == nil || *o.JS
 }
 
 // Css returns if we should optimize CSS files.
 func (o *Optimization) Css() bool {
-	return o.CSS == nil || *o.CSS
+	return o == nil || o.CSS == nil || *o.CSS
 }
 
 // Png returns if we should optimize PNG files.
 func (o *Optimization) Png() bool {
-	return o.PNG == nil || *o.PNG
+	return o == nil || o.PNG == nil || *o.PNG
 }
 
 // Jpg returns if we should optimize JPG/JPEG files.
 func (o *Optimization) Jpg() bool {
-	return o.JPG == nil || *o.JPG
+	return o == nil || o.JPG == nil || *o.JPG
 }
 
 // FileMap represents a number of files located

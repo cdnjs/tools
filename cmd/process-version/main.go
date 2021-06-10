@@ -58,25 +58,25 @@ func main() {
 		log.Fatalf("failed to extract input: %s", err)
 	}
 
-	files := config.NpmFilesFrom(WORKSPACE)
-
-	if err := optimizeFiles(ctx, files); err != nil {
+	if err := optimizePackage(ctx, config); err != nil {
 		log.Fatalf("failed to optimize files: %s", err)
 	}
 	log.Printf("processed %s\n", *config.Name)
 }
 
 type optimizeJob struct {
-	Ctx  context.Context
-	File string
-	Dest string
+	Ctx          context.Context
+	Optimization *packages.Optimization
+	File         string
+	Dest         string
 }
 
 func (j optimizeJob) clone() optimizeJob {
 	return optimizeJob{
-		Ctx:  j.Ctx,
-		File: j.File,
-		Dest: j.Dest,
+		Ctx:          j.Ctx,
+		Optimization: j.Optimization,
+		File:         j.File,
+		Dest:         j.Dest,
 	}
 }
 
@@ -205,20 +205,28 @@ func optimizeWorker(wg *sync.WaitGroup, jobs <-chan optimizeJob) {
 		ext := path.Ext(j.File)
 		switch ext {
 		case ".jpg", ".jpeg":
-			compress.Jpeg(j.Ctx, intputFile)
+			if j.Optimization.Jpg() {
+				compress.Jpeg(j.Ctx, intputFile)
+			}
 		case ".png":
-			compress.Png(j.Ctx, intputFile)
+			if j.Optimization.Png() {
+				compress.Png(j.Ctx, intputFile)
+			}
 		case ".js":
-			if out := compress.Js(j.Ctx, intputFile); out != nil {
-				j := j.clone()
-				j.Dest = strings.Replace(j.Dest, ".js", ".min.js", 1)
-				j.emitFromWorkspace(*out)
+			if j.Optimization.Js() {
+				if out := compress.Js(j.Ctx, intputFile); out != nil {
+					j := j.clone()
+					j.Dest = strings.Replace(j.Dest, ".js", ".min.js", 1)
+					j.emitFromWorkspace(*out)
+				}
 			}
 		case ".css":
-			if out := compress.CSS(j.Ctx, intputFile); out != nil {
-				j := j.clone()
-				j.Dest = strings.Replace(j.Dest, ".css", ".min.css", 1)
-				j.emitFromWorkspace(*out)
+			if j.Optimization.Css() {
+				if out := compress.CSS(j.Ctx, intputFile); out != nil {
+					j := j.clone()
+					j.Dest = strings.Replace(j.Dest, ".css", ".min.css", 1)
+					j.emitFromWorkspace(*out)
+				}
 			}
 		}
 
@@ -227,8 +235,15 @@ func optimizeWorker(wg *sync.WaitGroup, jobs <-chan optimizeJob) {
 	}
 }
 
-// Optimizes/minifies files on disk for a particular package version.
-func optimizeFiles(ctx context.Context, files []packages.NpmFileMoveOp) error {
+// Optimizes/minifies package's files on disk for a particular package version.
+func optimizePackage(ctx context.Context, config *packages.Package) error {
+	log.Printf("optimizing files (Js %t, Css %t, Png %t, Jpg %t)\n",
+		config.Optimization.Js(),
+		config.Optimization.Css(),
+		config.Optimization.Png(),
+		config.Optimization.Jpg())
+
+	files := config.NpmFilesFrom(WORKSPACE)
 	cpuCount := runtime.NumCPU()
 	jobs := make(chan optimizeJob, cpuCount)
 
@@ -241,9 +256,10 @@ func optimizeFiles(ctx context.Context, files []packages.NpmFileMoveOp) error {
 
 	for _, file := range files {
 		jobs <- optimizeJob{
-			Ctx:  ctx,
-			File: file.From,
-			Dest: file.To,
+			Ctx:          ctx,
+			Optimization: config.Optimization,
+			File:         file.From,
+			Dest:         file.To,
 		}
 	}
 	close(jobs)
