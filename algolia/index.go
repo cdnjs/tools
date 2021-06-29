@@ -95,7 +95,7 @@ func getSRI(p *packages.Package, srimap map[string]string) (string, error) {
 }
 
 // IndexPackage saves a package to the Algolia.
-func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]string) error {
+func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]string) (*SearchEntry, error) {
 	var author string
 	if p.Author != nil {
 		author = *p.Author
@@ -120,7 +120,7 @@ func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]st
 	if err != nil {
 		fmt.Printf("%s", err)
 		if strings.Contains(err.Error(), "403 API rate limit") {
-			return fmt.Errorf("Fatal error `%s`", err)
+			return nil, fmt.Errorf("Fatal error `%s`", err)
 		}
 	}
 
@@ -153,5 +153,5 @@ func IndexPackage(p *packages.Package, index *search.Index, srimap map[string]st
 	}
 
 	_, err = index.SaveObject(searchEntry)
-	return err
+	return &searchEntry, err
 }

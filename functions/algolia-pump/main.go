@@ -92,6 +92,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		hasFiles = true
 		return nil
 	}
+	log.Printf("hasFiles: %t\n", hasFiles)
 	log.Printf("SRIs: %s\n", sris)
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
@@ -112,10 +113,11 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	index := algolia.GetProdIndex(algolia.GetClient())
 
-	if err := algolia.IndexPackage(pkg, index, sris); err != nil {
+	entry, err := algolia.IndexPackage(pkg, index, sris)
+	if err != nil {
 		return fmt.Errorf("failed to update algolia index: %v", err)
 	}
-	if err := audit.WroteAlgolia(ctx, pkgName, currVersion, pkg.Version); err != nil {
+	if err := audit.WroteAlgolia(ctx, pkgName, currVersion, pkg.Version, entry); err != nil {
 		return fmt.Errorf("failed to audit: %s", err)
 	}
 	return nil

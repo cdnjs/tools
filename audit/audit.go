@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cdnjs/tools/algolia"
+
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -169,7 +171,7 @@ func WroteKV(ctx context.Context, pkgName string, version string,
 	return nil
 }
 
-func WroteAlgolia(ctx context.Context, pkgName string, currVersion string, lastVersion *string) error {
+func WroteAlgolia(ctx context.Context, pkgName string, currVersion string, lastVersion *string, entry *algolia.SearchEntry) error {
 	content := bytes.NewBufferString("")
 	fmt.Fprintf(content, "current version: %s\n", currVersion)
 	if lastVersion != nil {
@@ -177,6 +179,8 @@ func WroteAlgolia(ctx context.Context, pkgName string, currVersion string, lastV
 	} else {
 		fmt.Fprintf(content, "set last version: <nil>\n")
 	}
+	fmt.Fprintf(content, "filename: %s\n", entry.Filename)
+	fmt.Fprintf(content, "sri: %s\n", entry.Sri)
 	if err := create(ctx, pkgName, currVersion, "algolia-publish", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
 	}
