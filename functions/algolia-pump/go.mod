@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/pubsub v1.10.3 // indirect
 	cloud.google.com/go/storage v1.15.0 // indirect
 	github.com/GoogleCloudPlatform/functions-framework-go v1.2.0 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/cdnjs/tools v0.0.0-00010101000000-000000000000
 	github.com/cloudevents/sdk-go/v2 v2.2.0 // indirect
 	github.com/cloudflare/cloudflare-go v0.16.0

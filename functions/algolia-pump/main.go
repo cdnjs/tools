@@ -73,35 +73,42 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	}
 
 	sris := make(map[string]string)
-	hasFiles := false
+	files := make([]string, 0)
 	onFile := func(name string, r io.Reader) error {
 		ext := filepath.Ext(name)
 		// remove leading slash
 		name = name[1:]
+		filename := name[0 : len(name)-len(ext)]
 
 		if ext == ".sri" {
 			content, err := ioutil.ReadAll(r)
 			if err != nil {
 				return errors.Wrap(err, "could not read file")
 			}
-			filename := name[0 : len(name)-len(ext)]
 			sris[filename] = string(content)
 		}
-		hasFiles = true
+
+		if ext == ".gz" || ext == ".woff2" {
+			files = append(files, filename)
+		}
 		return nil
 	}
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
 
-	log.Printf("%s: hasFiles: %t, SRIs: %s\n", pkgName, hasFiles, sris)
+	log.Printf("%s: %d files, SRIs: %s\n", pkgName, len(files), sris)
 
-	if hasFiles {
+	if len(files) > 0 {
 		// add the current version in case it was yet present in KV
 		versions = append(versions, currVersion)
 	}
 
+	// Update package's current version and fix filename if needed
 	pkg.Version = packages.GetLatestStableVersion(versions)
+	if err := packages.UpdateFilenameIfMissing(ctx, pkg, files); err != nil {
+		return errors.Wrap(err, "failed to fix missing filename")
+	}
 
 	log.Printf("%s: updating %s in search index (last version %s)\n", pkgName, pkgName, printStrPtr(pkg.Version))
 	if ENV != "prod" {

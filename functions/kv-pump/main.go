@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,7 +20,6 @@ import (
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 
-	"github.com/agnivade/levenshtein"
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 )
@@ -191,7 +189,7 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 	pkg.Version = packages.GetLatestStableVersion(versions)
 	log.Println("updated package", pkg)
 
-	if err := updateFilenameIfMissing(ctx, cfapi, pkg, files); err != nil {
+	if err := packages.UpdateFilenameIfMissing(ctx, pkg, files); err != nil {
 		return errors.Wrap(err, "failed to fix missing filename")
 	}
 
@@ -202,48 +200,6 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 	log.Println("updated package")
 
 	return nil
-}
-
-// Update the package's filename if the latest
-// version does not contain the filename
-// Note that if the filename is nil it will stay nil.
-func updateFilenameIfMissing(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Package, files []string) error {
-	if len(files) == 0 {
-		log.Printf("%s: KV version contains no files\n", *pkg.Name)
-		return nil
-	}
-
-	if pkg.Filename != nil {
-		// check if assets contains filename
-		filename := *pkg.Filename
-		for _, asset := range files {
-			if asset == filename {
-				return nil // filename included in latest version, so return
-			}
-		}
-
-		// set filename to be the most similar string in []assets
-		mostSimilar := getMostSimilarFilename(filename, files)
-		pkg.Filename = &mostSimilar
-		log.Printf("Updated filename `%s` -> `%s`\n", filename, mostSimilar)
-		return nil
-	}
-	log.Printf("Filename missing, so will stay missing.\n")
-	return nil
-}
-
-// Gets the most similar filename to a target filename.
-// The []string of alternatives must have at least one element.
-func getMostSimilarFilename(target string, filenames []string) string {
-	var mostSimilar string
-	var minDist int = math.MaxInt32
-	for _, f := range filenames {
-		if dist := levenshtein.ComputeDistance(target, f); dist < minDist {
-			mostSimilar = f
-			minDist = dist
-		}
-	}
-	return mostSimilar
 }
 
 func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,

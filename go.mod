@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/pubsub v1.10.3 // indirect
 	cloud.google.com/go/storage v1.15.0
 	github.com/GoogleCloudPlatform/functions-framework-go v1.2.0 // indirect
-	github.com/agnivade/levenshtein v1.1.0
+	github.com/agnivade/levenshtein v1.1.1
 	github.com/algolia/algoliasearch-client-go/v3 v3.4.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cloudevents/sdk-go v0.10.0 // indirect

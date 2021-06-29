@@ -5,7 +5,8 @@ go 1.16
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	cloud.google.com/go/storage v1.15.0 // indirect
-	github.com/agnivade/levenshtein v1.1.0
+	github.com/agnivade/levenshtein v1.1.1
+	github.com/algolia/algoliasearch-client-go/v3 v3.19.0 // indirect
 	github.com/cdnjs/tools v0.0.0-00010101000000-000000000000
 	github.com/cloudflare/cloudflare-go v0.16.0
 	github.com/dlclark/regexp2 v1.2.0 // indirect
