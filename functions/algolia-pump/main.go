@@ -79,24 +79,22 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		// remove leading slash
 		name = name[1:]
 
-		content, err := ioutil.ReadAll(r)
-		if err != nil {
-			return errors.Wrap(err, "could not read file")
-		}
-
 		if ext == ".sri" {
+			content, err := ioutil.ReadAll(r)
+			if err != nil {
+				return errors.Wrap(err, "could not read file")
+			}
 			filename := name[0 : len(name)-len(ext)]
 			sris[filename] = string(content)
-			return nil
 		}
 		hasFiles = true
 		return nil
 	}
-	log.Printf("hasFiles: %t\n", hasFiles)
-	log.Printf("SRIs: %s\n", sris)
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
+
+	log.Printf("%s: hasFiles: %t, SRIs: %s\n", pkgName, hasFiles, sris)
 
 	if hasFiles {
 		// add the current version in case it was yet present in KV
@@ -105,9 +103,9 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	pkg.Version = packages.GetLatestStableVersion(versions)
 
-	log.Printf("updating %s in search index (last version %s)\n", pkgName, printStrPtr(pkg.Version))
+	log.Printf("%s: updating %s in search index (last version %s)\n", pkgName, pkgName, printStrPtr(pkg.Version))
 	if ENV != "prod" {
-		log.Printf("Algolia doesn't update in %s\n", ENV)
+		log.Printf("%s: algolia doesn't update in %s\n", pkgName, ENV)
 		return nil
 	}
 
