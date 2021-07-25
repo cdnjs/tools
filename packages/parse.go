@@ -14,6 +14,18 @@ import (
 // Unmarshals the human-readable JSON into a *Package,
 // setting the legacy `author` field if needed.
 func ReadHumanJSONBytes(ctx context.Context, file string, bytes []byte) (*Package, error) {
+	// validate against human readable JSON schema
+	res, err := HumanReadableSchema.Validate(gojsonschema.NewBytesLoader(bytes))
+	if err != nil {
+		// invalid JSON
+		return nil, errors.Wrapf(err, "failed to parse %s", file)
+	}
+
+	if !res.Valid() {
+		// invalid schema, so return result and custom error
+		return nil, InvalidSchemaError{res}
+	}
+
 	// unmarshal JSON into package
 	var p Package
 	if err := json.Unmarshal(bytes, &p); err != nil {
