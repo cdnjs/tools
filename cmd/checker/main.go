@@ -184,6 +184,7 @@ func parseHumanPackage(ctx context.Context, pckgPath string, noPathValidation bo
 
 	bytes, err := ioutil.ReadFile(pckgPath)
 	if err != nil {
+		showErr(ctx, "failed to read")
 		return nil, errors.Wrap(err, "failed to read package file")
 	}
 

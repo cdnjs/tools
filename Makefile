@@ -30,7 +30,7 @@ clean:
 	rm -rfv functions/*/*.zip
 
 .PHONY: test
-test: clean
+test: clean bin/checker
 	go test -v ./test/...
 
 .PHONY: lint
