@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"path"
 
@@ -174,14 +175,14 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 
 				info, staterr := os.Stat(fp)
 				if staterr != nil {
-					util.Warnf(p.ctx, "stat: "+staterr.Error())
+					log.Printf("stat: %s\n", staterr.Error())
 					continue
 				}
 
 				// warn for files with sizes exceeding max file size
 				size := info.Size()
 				if size > util.MaxFileSize {
-					util.Warnf(p.ctx, "file %s ignored due to byte size (%d > %d)", f, size, util.MaxFileSize)
+					log.Printf("file %s ignored due to byte size (%d > %d)\n", f, size, util.MaxFileSize)
 					continue
 				}
 
