@@ -20,7 +20,8 @@ func DownloadTar(ctx context.Context, v Version) bytes.Buffer {
 	defer resp.Body.Close()
 
 	var buff bytes.Buffer
-	buff.ReadFrom(resp.Body)
+	_, err = buff.ReadFrom(resp.Body)
+	util.Check(err)
 
 	return buff
 }

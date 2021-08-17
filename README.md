@@ -12,11 +12,7 @@ This repository contains various tools that we use to help with the process of m
 
 ## Tools
 
-- [algolia](./cmd/algolia)
 - [checker](./cmd/checker)
-- [packages](./cmd/packages)
-- [autoupdate](./cmd/autoupdate)
-- [kv](./cmd/kv)
 
 ## Configuration
 
@@ -38,14 +34,6 @@ In `tools/` run `npm install`.
 - [jpegoptim](https://www.kokkonen.net/tjko/projects.html)
 - [zopflipng](https://github.com/google/zopfli)
 - [brotli](https://github.com/google/brotli) (Linux)
-
-## Local environment
-
-```
-$ make dev
-$ autoupdate -no-pull -package=h/hi-sven.json
-$ ls /cdnjs/cdnjs/ajax/libs/hi-sven
-```
 
 ## License
 
