@@ -189,7 +189,7 @@ func parseHumanPackage(ctx context.Context, pckgPath string, noPathValidation bo
 	}
 
 	// parse package JSON
-	pckg, readerr := packages.ReadHumanJSONBytes(ctx, pckgPath, bytes)
+	pckg, readerr := packages.ReadHumanJSONBytes(ctx, pckgPath, bytes, true)
 	if readerr != nil {
 		if invalidHumanErr, ok := readerr.(packages.InvalidSchemaError); ok {
 			// output all schema errors

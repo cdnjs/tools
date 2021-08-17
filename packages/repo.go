@@ -75,7 +75,7 @@ func inflatePackages(src *os.File) ([]*Package, error) {
 				return nil, errors.Wrap(err, "could not read file")
 			}
 
-			pkg, err := ReadHumanJSONBytes(ctx, f.Name, bytes)
+			pkg, err := ReadHumanJSONBytes(ctx, f.Name, bytes, false)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not parse Package: %s", f.Name)
 			}
