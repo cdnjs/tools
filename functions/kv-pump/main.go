@@ -141,7 +141,11 @@ func cleanNewKVFiles(files []string) []string {
 	out := make([]string, 0)
 	for _, file := range files {
 		ext := filepath.Ext(file)
-		name := file[0 : len(file)-len(ext)]
+		name := file
+		if ext == ".gz" || ext == ".br" {
+			// remove trailing .gz or .br
+			name = file[0 : len(file)-len(ext)]
+		}
 
 		if _, ok := seen[name]; ok {
 			continue
