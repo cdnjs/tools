@@ -13,6 +13,35 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 )
 
+// GetVersionsFromAggregatedMetadata gets the list version for a particular package
+// using the aggregated metadata endpoint.
+//
+// The aggregated metadata will only contain non-empty versions, so this is useful
+// for updating Algolia.
+func GetVersionsFromAggregatedMetadata(api *cloudflare.API, pckgname string) ([]string, error) {
+	aggPkg, err := getAggregatedMetadata(api, pckgname)
+	if err != nil {
+		switch err.(type) {
+		case KeyNotFoundError:
+			{
+				return nil, nil
+			}
+		default:
+			{
+				// api error
+				return nil, err
+			}
+		}
+	}
+
+	var versions []string
+	for _, asset := range aggPkg.Assets {
+		versions = append(versions, asset.Version)
+	}
+
+	return versions, nil
+}
+
 // RemoveVersionFromAggregatedMetadata will remove a particular version from
 // a package's KV entry for aggregated metadata if it exists.
 // This is useful for removing empty versions with no files.
