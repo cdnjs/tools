@@ -64,7 +64,12 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if targetVersion == nil {
-				http.Error(w, "target version not found", 500)
+				var versionNames []string
+				for _, version := range versions {
+					versionNames = append(versionNames, version.Version)
+				}
+				msg := fmt.Sprintf("target version `%s` not found: %v", d.Version, versionNames)
+				http.Error(w, msg, 500)
 				return
 			}
 			tarball := version.DownloadTar(ctx, *targetVersion)
