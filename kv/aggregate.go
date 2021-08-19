@@ -13,6 +13,39 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 )
 
+// RemoveVersionFromAggregatedMetadata will remove a particular version from
+// a package's KV entry for aggregated metadata if it exists.
+// This is useful for removing empty versions with no files.
+func RemoveVersionFromAggregatedMetadata(api *cloudflare.API, ctx context.Context, pkg *packages.Package, version string) ([]string, error) {
+	aggPkg, err := getAggregatedMetadata(api, *pkg.Name)
+	if err != nil {
+		switch err.(type) {
+		case KeyNotFoundError:
+			{
+				// key not found
+				log.Printf("Removing version %s from aggregated metadata: KV key `%s` not found, ignoring\n", version, *pkg.Name)
+				return nil, nil
+			}
+		default:
+			{
+				// api error
+				return nil, err
+			}
+		}
+	}
+
+	if !aggPkg.HasVersion(version) {
+		log.Printf("Removing version %s from aggregated metadata: version does not exist\n", version)
+		return nil, nil
+	}
+
+	// remove the version
+	log.Printf("Removing version %s from aggregated metadata: version found\n", version)
+	aggPkg.RemoveVersion(version)
+
+	return writeAggregatedMetadata(ctx, api, aggPkg)
+}
+
 // UpdateAggregatedMetadata updates a package's KV entry for aggregated metadata.
 // Returns the keys written to KV, whether the existing entry was found, and if there were any errors.
 func UpdateAggregatedMetadata(api *cloudflare.API, ctx context.Context,
@@ -39,7 +72,6 @@ func UpdateAggregatedMetadata(api *cloudflare.API, ctx context.Context,
 			}
 		}
 	} else {
-
 		if !aggPkg.HasVersion(newVersion) {
 			aggPkg.Assets = append(aggPkg.Assets, newAssets)
 			log.Printf("Aggregated metadata for `%s` found. Updating aggregated metadata...\n", *pkg.Name)
