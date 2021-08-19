@@ -210,11 +210,11 @@ func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,
 	pkg *packages.Package, version string, newFiles []string) error {
 	if len(newFiles) == 0 {
 		log.Println("updateAggregatedMetadata: update contains no files")
-		kvWrites, err := kv.RemoveVersionFromAggregatedMetadata(cfapi, ctx, pkg, version)
+		kvWrites, wroteKV, err := kv.RemoveVersionFromAggregatedMetadata(cfapi, ctx, pkg, version)
 		if err != nil {
 			return errors.Errorf("(%s) failed to update aggregated metadata (remove version %s): %s", *pkg.Name, version, err)
 		}
-		if len(kvWrites) == 0 {
+		if wroteKV && len(kvWrites) == 0 {
 			return errors.Errorf("(%s) failed to update aggregated metadata (remove version %s) (no KV writes!)", *pkg.Name, version)
 		}
 		log.Printf("remove version %s: updated aggregated: %v\n", version, kvWrites)

@@ -16,7 +16,7 @@ import (
 // RemoveVersionFromAggregatedMetadata will remove a particular version from
 // a package's KV entry for aggregated metadata if it exists.
 // This is useful for removing empty versions with no files.
-func RemoveVersionFromAggregatedMetadata(api *cloudflare.API, ctx context.Context, pkg *packages.Package, version string) ([]string, error) {
+func RemoveVersionFromAggregatedMetadata(api *cloudflare.API, ctx context.Context, pkg *packages.Package, version string) ([]string, bool, error) {
 	aggPkg, err := getAggregatedMetadata(api, *pkg.Name)
 	if err != nil {
 		switch err.(type) {
@@ -24,26 +24,27 @@ func RemoveVersionFromAggregatedMetadata(api *cloudflare.API, ctx context.Contex
 			{
 				// key not found
 				log.Printf("Removing version %s from aggregated metadata: KV key `%s` not found, ignoring\n", version, *pkg.Name)
-				return nil, nil
+				return nil, false, nil
 			}
 		default:
 			{
 				// api error
-				return nil, err
+				return nil, false, err
 			}
 		}
 	}
 
 	if !aggPkg.HasVersion(version) {
 		log.Printf("Removing version %s from aggregated metadata: version does not exist\n", version)
-		return nil, nil
+		return nil, false, nil
 	}
 
 	// remove the version
 	log.Printf("Removing version %s from aggregated metadata: version found\n", version)
 	aggPkg.RemoveVersion(version)
 
-	return writeAggregatedMetadata(ctx, api, aggPkg)
+	successfulWrites, err := writeAggregatedMetadata(ctx, api, aggPkg)
+	return successfulWrites, true, err
 }
 
 // UpdateAggregatedMetadata updates a package's KV entry for aggregated metadata.
