@@ -29,13 +29,13 @@ var (
 	CF_ACCOUNT_ID = os.Getenv("CF_ACCOUNT_ID")
 )
 
-func getExistingVersions(p *packages.Package) ([]string, error) {
+func getExistingVersionsFromAggregatedMetadata(p *packages.Package) ([]string, error) {
 	cfapi, err := cloudflare.NewWithAPIToken(KV_TOKEN, cloudflare.UsingAccount(CF_ACCOUNT_ID))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create cloudflare API client")
 	}
 
-	versions, err := kv.GetVersions(cfapi, *p.Name)
+	versions, err := kv.GetVersionsFromAggregatedMetadata(cfapi, *p.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get verions")
 	}
@@ -63,7 +63,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("could not decode config: %v", err)
 	}
 	// update package version with latest
-	versions, err := getExistingVersions(pkg)
+	versions, err := getExistingVersionsFromAggregatedMetadata(pkg)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve existing versions: %s", err)
 	}
