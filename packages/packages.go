@@ -148,6 +148,16 @@ func (p *Package) UpdateVersion(name string, newAsset Asset) {
 	}
 }
 
+func (p *Package) RemoveVersion(name string) {
+	newAssets := make([]Asset, 0)
+	for _, asset := range p.Assets {
+		if asset.Version != name {
+			newAssets = append(newAssets, asset)
+		}
+	}
+	p.Assets = newAssets
+}
+
 // NpmFilesFrom lists files that match the npm glob pattern in the `base` directory
 // Returns a struct that represent the move semantics
 func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {

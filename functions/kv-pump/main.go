@@ -209,7 +209,15 @@ func updatePackage(ctx context.Context, cfapi *cloudflare.API, pkg *packages.Pac
 func updateAggregatedMetadata(ctx context.Context, cfapi *cloudflare.API,
 	pkg *packages.Package, version string, newFiles []string) error {
 	if len(newFiles) == 0 {
-		log.Println("updateAggregatedMetadata: update contains no files, ignoring")
+		log.Println("updateAggregatedMetadata: update contains no files")
+		kvWrites, err := kv.RemoveVersionFromAggregatedMetadata(cfapi, ctx, pkg, version)
+		if err != nil {
+			return errors.Errorf("(%s) failed to update aggregated metadata (remove version %s): %s", *pkg.Name, version, err)
+		}
+		if len(kvWrites) == 0 {
+			return errors.Errorf("(%s) failed to update aggregated metadata (remove version %s) (no KV writes!)", *pkg.Name, version)
+		}
+		log.Printf("remove version %s: updated aggregated: %v\n", version, kvWrites)
 		return nil
 	}
 	// Update aggregated package metadata for cdnjs API.
