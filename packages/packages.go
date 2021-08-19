@@ -218,25 +218,56 @@ type Asset struct {
 }
 
 // A "stable" version is considered to be a version that contains no pre-releases.
-// If no latest stable version is found (ex. all are non-semver), a nil *string
-// will be returned.
+//
+// If no latest stable version is found (ex. all are non-semver),
+// we will pick the greatest one using string comparison.
+//
+// If there are no versions at all, a nil *string will be returned.
 func GetLatestStableVersion(versions []string) *string {
-	var latest *semver.Version
-	for _, version := range versions {
-		if s, err := semver.Parse(version); err == nil && len(s.Pre) == 0 {
-			if latest != nil {
-				if latest.LT(s) {
-					latest = &s
+	var latestStable *semver.Version
+	var anySemver *semver.Version
+	var greatestStr *string
+	for i := 0; i < len(versions); i++ {
+		version := versions[i]
+		s, err := semver.Parse(version)
+		if err == nil {
+			if len(s.Pre) == 0 {
+				// stable semver
+				if latestStable != nil {
+					if latestStable.LT(s) {
+						latestStable = &s
+					}
+				} else {
+					latestStable = &s
 				}
 			} else {
-				latest = &s
+				// not stable semver
+				if anySemver != nil {
+					if anySemver.LT(s) {
+						anySemver = &s
+					}
+				} else {
+					anySemver = &s
+				}
+			}
+		} else {
+			// not semver
+			if greatestStr != nil {
+				if *greatestStr < version {
+					greatestStr = &version
+				}
+			} else {
+				greatestStr = &version
 			}
 		}
 	}
-	if latest != nil {
-		s := latest.String()
+	if latestStable != nil {
+		s := latestStable.String()
 		return &s
-	} else {
-		return nil
 	}
+	if anySemver != nil {
+		s := anySemver.String()
+		return &s
+	}
+	return greatestStr
 }
