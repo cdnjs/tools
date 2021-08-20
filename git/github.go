@@ -100,13 +100,17 @@ type GraphQLRequest struct {
 // GetVersions gets all of the versions associated with a git repo,
 // as well as the latest version.
 func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]version.Version, error) {
+	return GetVersionsWithLimit(ctx, config, 10)
+}
+
+func GetVersionsWithLimit(ctx context.Context, config *packages.Autoupdate, limit int) ([]version.Version, error) {
 	name := *config.Target
 	repo := getRepo(*config.Target)
 	parts := strings.Split(repo, "/")
 	query := GraphQLRequest{Query: fmt.Sprintf(`
 query {
   repository(name: "%s", owner: "%s") {
-    refs(refPrefix: "refs/tags/", last: 10) {
+    refs(refPrefix: "refs/tags/", last: %d) {
       nodes {
         name
         target {
@@ -129,7 +133,7 @@ query {
     }
   }
 }
-	`, parts[1], parts[0])}
+	`, parts[1], parts[0], limit)}
 
 	var res GetVersionsRes
 
