@@ -21,6 +21,7 @@ import (
 func GetVersionsFromAggregatedMetadata(api *cloudflare.API, pckgname string) ([]string, error) {
 	aggPkg, err := getAggregatedMetadata(api, pckgname)
 	if err != nil {
+		log.Printf("Fetching aggregated metadata for `%s`: %s\n", pckgname, err.Error())
 		switch err.(type) {
 		case KeyNotFoundError:
 			{

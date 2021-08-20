@@ -35,9 +35,10 @@ func getExistingVersionsFromAggregatedMetadata(p *packages.Package) ([]string, e
 		return nil, errors.Wrap(err, "failed to create cloudflare API client")
 	}
 
+	log.Printf("Fetching versions from aggregated metadata for: `%s`\n", *p.Name)
 	versions, err := kv.GetVersionsFromAggregatedMetadata(cfapi, *p.Name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get verions")
+		return nil, errors.Wrap(err, "failed to get versions")
 	}
 
 	return versions, nil
