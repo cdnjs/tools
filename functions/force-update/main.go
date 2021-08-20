@@ -43,7 +43,7 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 			var versions []version.Version
 			switch src {
 			case "git":
-				versions, err = git.GetVersions(ctx, pkg.Autoupdate)
+				versions, err = git.GetVersionsWithLimit(ctx, pkg.Autoupdate, 100)
 				if err != nil {
 					http.Error(w, "failed to fetch versions", 500)
 					fmt.Println(err)
