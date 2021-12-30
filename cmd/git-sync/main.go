@@ -62,7 +62,7 @@ func updateLastSync(path string, t time.Time) error {
 		return errors.Wrap(err, "failed to write file")
 	}
 
-	if err := git("add", path); err != nil {
+	if err := git("add", "--sparse", path); err != nil {
 		return errors.Wrap(err, "failed to run git")
 	}
 
