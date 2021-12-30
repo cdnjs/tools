@@ -204,7 +204,7 @@ func addNewVersion(item Item) (*time.Time, error) {
 	}
 
 	if hasFiles {
-		if err := git("add", dest); err != nil {
+		if err := git("add", "--sparse", dest); err != nil {
 			return nil, errors.Wrap(err, "failed to run git")
 		}
 
