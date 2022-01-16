@@ -73,7 +73,8 @@ func updateLastSync(path string, t time.Time) error {
 }
 
 var (
-	DEBUG = os.Getenv("DEBUG") == "1"
+	DEBUG               = os.Getenv("DEBUG") == "1"
+	MAX_UPDATES_PER_RUN = 50
 )
 
 func main() {
@@ -101,6 +102,11 @@ func main() {
 		for _, version := range newVersions {
 			log.Printf("%s new version %s\n", version.TimeCreated, version.Name)
 		}
+	}
+
+	if len(newVersions) > MAX_UPDATES_PER_RUN {
+		newVersions = newVersions[:MAX_UPDATES_PER_RUN]
+		log.Printf("too many updates; limiting to %d updates\n", MAX_UPDATES_PER_RUN)
 	}
 
 	// Keep track of the last successful version we addedd
