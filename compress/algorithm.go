@@ -23,9 +23,11 @@ func runAlgorithm(ctx context.Context, alg string, args ...string) []byte {
 
 	log.Printf("algorithm: run %s\n", cmd)
 	err := cmd.Run()
-	// log.Println(string(stdOut.Bytes()))
-	// log.Println(string(stdErr.Bytes()))
-	util.Check(err)
+	if err != nil {
+		log.Println(stdOut.String())
+		log.Println(stdErr.String())
+		util.Check(err)
+	}
 
 	if stdErr.Len() > 0 {
 		panic(fmt.Sprintf("%s failed: %s", alg, stdErr.String()))
