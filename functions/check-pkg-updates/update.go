@@ -2,8 +2,8 @@ package check_pkg_updates
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"path"
 	"sort"
 	"strings"
 
@@ -98,7 +98,8 @@ func DoUpdate(ctx context.Context, pkg *packages.Package, versions []version.Ver
 
 	log.Printf("%s: new version detected: %s\n", *pkg.Name, v.Version)
 	tarball := version.DownloadTar(ctx, v)
-	if err := gcp.AddIncomingFile(path.Base(v.Tarball), tarball, pkg, v); err != nil {
+	filename := fmt.Sprintf("%s-%s", *pkg.Name, v.Version)
+	if err := gcp.AddIncomingFile(filename, tarball, pkg, v); err != nil {
 		return errors.Wrap(err, "could not store in GCS: %s")
 	}
 
