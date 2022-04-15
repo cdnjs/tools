@@ -17,18 +17,16 @@ var (
 
 // Js performs a compression of the file.
 func Js(ctx context.Context, file string) *string {
-	ext := path.Ext(file)
-	outfile := file[0:len(file)-len(ext)] + ".min.js"
-
-	// compressed file already exists, ignore
-	if _, err := os.Stat(outfile); err == nil {
-		log.Printf("compressed file already exists: %s\n", outfile)
+	if strings.HasSuffix(file, ".min.js") {
+		log.Printf("%s is already compressed\n", file)
 		return nil
 	}
 
-	// Already minified, ignore
-	if strings.HasSuffix(file, ".min.js") {
-		log.Printf("%s.min.js compressed file already exists\n", file)
+	ext := path.Ext(file)
+	outfile := file[0:len(file)-len(ext)] + ".min.js"
+
+	if _, err := os.Stat(outfile); err == nil {
+		log.Printf("%s already has corresponding compressed file\n", outfile)
 		return nil
 	}
 

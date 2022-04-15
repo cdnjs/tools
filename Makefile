@@ -19,6 +19,9 @@ bin/git-sync:
 bin/process-version-host:
 	go build $(GO_BUILD_ARGS) -o bin/process-version-host ./cmd/process-version-host
 
+bin/process-version:
+	go build $(GO_BUILD_ARGS) -o bin/process-version ./cmd/process-version
+
 .PHONY: schema
 schema:
 	./bin/packages human > schema_human.json

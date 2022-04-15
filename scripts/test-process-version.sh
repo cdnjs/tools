@@ -7,8 +7,7 @@ echo "processing $package $version"
 
 export DOCKER_BUILDKIT=1
 mkdir -p /tmp/input /tmp/output 
-
-rm -rf /tmp/output/*
+rm -rf /tmp/output/* /tmp/input/*
 
 echo "loading new version files"
 curl --fail https://storage.googleapis.com/cdnjs-incoming-prod/$package-$version.tgz > /tmp/input/new-version.tgz
