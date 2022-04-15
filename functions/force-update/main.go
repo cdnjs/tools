@@ -80,9 +80,11 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 				log.Fatalf("could not audit: %s", err)
 			}
 
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(fmt.Sprintf("OK, file: https://storage.googleapis.com/cdnjs-incoming-prod/%s", filename)))
 			return
 		}
 	}
 
-	w.Write([]byte("OK"))
+	http.Error(w, "package or version not found", 404)
 }
