@@ -95,12 +95,20 @@ func (j optimizeJob) emitFromWorkspace(src string) {
 
 	if _, ok := doNotCompress[ext]; !ok {
 		outBr := fmt.Sprintf("%s.br", dest)
-		compress.Brotli11CLI(j.Ctx, src, outBr)
-		log.Printf("br %s -> %s\n", src, outBr)
+		if _, err := os.Stat(outBr); err == nil {
+			log.Printf("file %s already exists at the output\n", outBr)
+		} else {
+			compress.Brotli11CLI(j.Ctx, src, outBr)
+			log.Printf("br %s -> %s\n", src, outBr)
+		}
 
 		outGz := fmt.Sprintf("%s.gz", dest)
-		compress.Gzip9Native(j.Ctx, src, outGz)
-		log.Printf("gz %s -> %s\n", src, outGz)
+		if _, err := os.Stat(outGz); err == nil {
+			log.Printf("file %s already exists at the output\n", outGz)
+		} else {
+			compress.Gzip9Native(j.Ctx, src, outGz)
+			log.Printf("gz %s -> %s\n", src, outGz)
+		}
 	} else {
 		if err := copyFile(src, dest); err != nil {
 			log.Fatalf("failed to copy file: %s", err)
