@@ -35,6 +35,12 @@ In `tools/` run `npm install`.
 - [zopflipng](https://github.com/google/zopfli)
 - [brotli](https://github.com/google/brotli) (Linux)
 
+## Run update locally
+
+```
+bash ./scripts/test-process-version.sh package-name package-version
+```
+
 ## License
 
 Each library hosted on cdnjs is released under its own license. This cdnjs repository is published under [MIT license](LICENSE).
