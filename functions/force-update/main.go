@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path"
 
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
@@ -73,7 +72,8 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tarball := version.DownloadTar(ctx, *targetVersion)
-			if err := gcp.AddIncomingFile(path.Base(targetVersion.Tarball), tarball, pkg, *targetVersion); err != nil {
+			filename := fmt.Sprintf("%s-%s", *pkg.Name, targetVersion.Version)
+			if err := gcp.AddIncomingFile(filename, tarball, pkg, *targetVersion); err != nil {
 				log.Fatalf("could not store in GCS: %s", err)
 			}
 			if err := audit.NewVersionDetected(ctx, *pkg.Name, targetVersion.Version); err != nil {
