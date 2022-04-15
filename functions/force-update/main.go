@@ -72,7 +72,7 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tarball := version.DownloadTar(ctx, *targetVersion)
-			filename := fmt.Sprintf("%s-%s", *pkg.Name, targetVersion.Version)
+			filename := fmt.Sprintf("%s-%s.tgz", *pkg.Name, targetVersion.Version)
 			if err := gcp.AddIncomingFile(filename, tarball, pkg, *targetVersion); err != nil {
 				log.Fatalf("could not store in GCS: %s", err)
 			}
