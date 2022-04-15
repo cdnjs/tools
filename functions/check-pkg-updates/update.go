@@ -98,7 +98,7 @@ func DoUpdate(ctx context.Context, pkg *packages.Package, versions []version.Ver
 
 	log.Printf("%s: new version detected: %s\n", *pkg.Name, v.Version)
 	tarball := version.DownloadTar(ctx, v)
-	filename := fmt.Sprintf("%s-%s", *pkg.Name, v.Version)
+	filename := fmt.Sprintf("%s-%s.tgz", *pkg.Name, v.Version)
 	if err := gcp.AddIncomingFile(filename, tarball, pkg, v); err != nil {
 		return errors.Wrap(err, "could not store in GCS: %s")
 	}
