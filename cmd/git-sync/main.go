@@ -74,7 +74,7 @@ func updateLastSync(path string, t time.Time) error {
 
 var (
 	DEBUG               = os.Getenv("DEBUG") == "1"
-	MAX_UPDATES_PER_RUN = 100
+	MAX_UPDATES_PER_RUN = 50
 )
 
 func main() {
