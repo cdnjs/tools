@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -73,8 +74,7 @@ func updateLastSync(path string, t time.Time) error {
 }
 
 var (
-	DEBUG               = os.Getenv("DEBUG") == "1"
-	MAX_UPDATES_PER_RUN = 100
+	DEBUG = os.Getenv("DEBUG") == "1"
 )
 
 func main() {
@@ -104,9 +104,14 @@ func main() {
 		}
 	}
 
-	if len(newVersions) > MAX_UPDATES_PER_RUN {
-		newVersions = newVersions[:MAX_UPDATES_PER_RUN]
-		log.Printf("too many updates; limiting to %d updates\n", MAX_UPDATES_PER_RUN)
+	maxUpdatesPerRun, err := strconv.Atoi(os.Getenv("MAX_UPDATES_PER_RUN"))
+	if err != nil {
+		panic("failed to parse MAX_UPDATES_PER_RUN")
+	}
+
+	if len(newVersions) > maxUpdatesPerRun {
+		newVersions = newVersions[:maxUpdatesPerRun]
+		log.Printf("too many updates; limiting to %d updates\n", maxUpdatesPerRun)
 	}
 
 	// Keep track of the last successful version we addedd
