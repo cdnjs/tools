@@ -55,7 +55,7 @@ func readLastSync(path string) (time.Time, error) {
 	return time.Parse(time.RFC3339Nano, strings.TrimSpace(string(data)))
 }
 
-func updateLastSync(path string, t time.Time) error {
+func updateLastSync(path string, t *time.Time) error {
 	log.Printf("advance last sync to %s\n", t)
 	data := t.Format(time.RFC3339Nano)
 	err := ioutil.WriteFile(path, []byte(data), 0644)
@@ -104,31 +104,28 @@ func main() {
 		}
 	}
 
-	maxUpdatesPerRun, err := strconv.Atoi(os.Getenv("MAX_UPDATES_PER_RUN"))
+	pushFreq, err := strconv.Atoi(os.Getenv("PUSH_FREQ"))
 	if err != nil {
-		panic("failed to parse MAX_UPDATES_PER_RUN")
+		panic("failed to parse PUSH_FREQ")
 	}
 
-	if len(newVersions) > maxUpdatesPerRun {
-		newVersions = newVersions[:maxUpdatesPerRun]
-		log.Printf("too many updates; limiting to %d updates\n", maxUpdatesPerRun)
-	}
-
-	// Keep track of the last successful version we addedd
-	lastSuccessfullSync := lastSync
+	syncCount := 0
 
 	for _, version := range newVersions {
-		t, err := addNewVersion(version)
+		lastSync, err := addNewVersion(version)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to add new version: %s\n", err)
-		} else {
-			lastSuccessfullSync = *t
+			log.Fatalf("failed to add new version: %s\n", err)
 		}
-	}
+		syncCount += 1
 
-	if lastSuccessfullSync != lastSync {
-		if err := updateLastSync(os.Args[1], lastSuccessfullSync); err != nil {
-			log.Fatalf("could not update last sync: %s", err)
+		if syncCount%pushFreq == 0 {
+			if err := updateLastSync(os.Args[1], lastSync); err != nil {
+				log.Fatalf("could not update last sync: %s", err)
+			}
+
+			if err := git("push"); err != nil {
+				log.Fatalf("failed to push: %s", err)
+			}
 		}
 	}
 }
