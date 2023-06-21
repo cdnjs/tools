@@ -39,7 +39,7 @@ func (r ConsumableWriteRequest) GetValue() []byte {
 }
 func (r ConsumableWriteRequest) GetMeta() *FileMetadata { return r.Meta }
 func (r ConsumableWriteRequest) Consumed() {
-	r.Value = nil
+	r.Value = nil //nolint:all
 }
 
 type MetaWriteRequest struct {
