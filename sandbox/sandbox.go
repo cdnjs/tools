@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -16,7 +17,8 @@ import (
 )
 
 var (
-	DOCKER_IMAGE = os.Getenv("DOCKER_IMAGE")
+	DOCKER_IMAGE      = os.Getenv("DOCKER_IMAGE")
+	CONTAINER_NAME_RE = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
 )
 
 func Setup() (string, string, error) {
@@ -67,6 +69,10 @@ func Run(ctx context.Context, containerName, in, out string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "could not create client")
 	}
+
+	// Sanitize the container's name because some package use special character
+	// in their versions and Docker doesn't accept that.
+	containerName = CONTAINER_NAME_RE.ReplaceAllString(containerName, "-")
 
 	resp, err := cli.ContainerCreate(ctx,
 		&container.Config{
