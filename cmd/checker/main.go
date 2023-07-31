@@ -212,7 +212,7 @@ func filewalker(basedir string, files *[]string) filepath.WalkFunc {
 			return errors.Wrap(err, "failed to walk fs")
 		}
 		ext := filepath.Ext(path)
-		if ext == ".gz" {
+		if ext == ".gz" || ext == ".woff2" {
 			path = strings.ReplaceAll(path, ".gz", "")
 			path = strings.ReplaceAll(path, basedir+"/", "")
 			*files = append(*files, path)
