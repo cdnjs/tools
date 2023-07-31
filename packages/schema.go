@@ -143,6 +143,9 @@ const humanReadableProperties = `
                 "target": {
                     "type": "string",
                     "minLength": 1
+                },
+                "excludeFromSearch": {
+                    "type": "boolean"
                 }
             },
             "required": [
