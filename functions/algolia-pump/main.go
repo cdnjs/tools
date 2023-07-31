@@ -63,6 +63,13 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	if err := json.Unmarshal([]byte(configStr), &pkg); err != nil {
 		return fmt.Errorf("could not decode config: %v", err)
 	}
+
+	if pkg.Autoupdate != nil && pkg.Autoupdate.ExcludeFromSearch != nil && *pkg.Autoupdate.ExcludeFromSearch {
+		// The package is exluded from the search index. Stop processing here.
+		log.Printf("%s: excluded from search. Exiting.\n", pkgName)
+		return nil
+	}
+
 	// update package version with latest
 	versions, err := getExistingVersionsFromAggregatedMetadata(pkg)
 	if err != nil {
