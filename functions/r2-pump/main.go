@@ -1,4 +1,4 @@
-package kv_pump
+package r2_pump
 
 import (
 	"bytes"
@@ -31,6 +31,12 @@ var (
 	R2_KEY_ID     = os.Getenv("R2_KEY_ID")
 	R2_KEY_SECRET = os.Getenv("R2_KEY_SECRET")
 	R2_ENDPOINT   = os.Getenv("R2_ENDPOINT")
+
+	// In an attempt to spread the load across multiple gcp functions, we split
+	// the upload per file extension (either gz, br or woff2). There should
+	// be 50/50 for gz and br. Unknown for woff2.
+	// Example: FILE_EXTENSION=gz
+	FILE_EXTENSION = os.Getenv("FILE_EXTENSION")
 )
 
 func Invoke(ctx context.Context, e gcp.GCSEvent) error {
@@ -82,7 +88,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 			return errors.Wrap(err, "could not read file")
 		}
 
-		if ext == ".gz" || ext == ".br" || ext == ".woff2" {
+		if ext == "."+FILE_EXTENSION {
 			keys = append(keys, key)
 
 			meta := newMetadata(len(content))
@@ -112,7 +118,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		return fmt.Errorf("failed to parse config: %s", err)
 	}
 
-	if err := audit.WroteR2(ctx, pkgName, version, keys); err != nil {
+	if err := audit.WroteR2(ctx, pkgName, version, keys, FILE_EXTENSION); err != nil {
 		log.Printf("failed to audit: %s\n", err)
 	}
 
