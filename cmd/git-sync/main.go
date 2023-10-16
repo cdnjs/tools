@@ -97,6 +97,8 @@ func main() {
 		log.Fatalf("failed to detect new versions: %s", err)
 	}
 
+	newVersions = filterGitIgnore(newVersions)
+
 	log.Printf("%d updates since %s\n", len(newVersions), lastSync)
 	if DEBUG {
 		for _, version := range newVersions {
@@ -256,6 +258,31 @@ func download(item Item) (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
+}
+
+func isGitIgnored(version Item) bool {
+	for _, glob := range GIT_IGNORE {
+		versionDir := fmt.Sprintf("/ajax/libs/%s/%s/", version.Metadata.Pkg, version.Metadata.Version)
+		if glob.Match(versionDir) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func filterGitIgnore(versions []Item) []Item {
+	newVersions := make([]Item, 0)
+
+	for _, version := range versions {
+		if !isGitIgnored(version) {
+			newVersions = append(newVersions, version)
+		} else {
+			log.Printf("%s is ignored from git, skipping.\n", version.Name)
+		}
+	}
+
+	return newVersions
 }
 
 func getItems(bucket string) ([]Item, error) {
