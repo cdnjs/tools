@@ -5,20 +5,15 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
 
-	"github.com/cdnjs/tools/compress"
 	"github.com/cdnjs/tools/packages"
-	"github.com/cdnjs/tools/sri"
 
 	"github.com/pkg/errors"
 )
@@ -28,6 +23,7 @@ var (
 	// but not compressed
 	doNotCompress = map[string]bool{
 		".woff2": true,
+		".sri":   true, // internal SRI hash file
 	}
 	// we calculate SRIs for these file extensions
 	calculateSRI = map[string]bool{
@@ -37,9 +33,9 @@ var (
 )
 
 const (
-	INPUT     = "/input"
-	OUTPUT    = "/output"
-	WORKSPACE = "/tmp/work"
+	INPUT   = "/input"
+	OUTPUT  = "/output"
+	PACKAGE = "/tmp/pkg"
 )
 
 func main() {
@@ -50,76 +46,32 @@ func main() {
 		log.Fatalf("could not read config: %s", err)
 	}
 
-	if err := os.MkdirAll(WORKSPACE, 0700); err != nil {
-		log.Fatalf("could not create workspace: %s", err)
+	if err := os.MkdirAll(PACKAGE, 0700); err != nil {
+		log.Fatalf("could not create PACKAGE: %s", err)
 	}
 
 	if err := extractInput(*config.Autoupdate.Source); err != nil {
 		log.Fatalf("failed to extract input: %s", err)
 	}
 
+	// Step 1. copy all package files to their destination according to the
+	// fileMap configuration.
+	if err := copyPackage(ctx, config); err != nil {
+		log.Fatalf("failed to optimize files: %s", err)
+	}
+	// Step 2. iterate over the last output and minify files
 	if err := optimizePackage(ctx, config); err != nil {
 		log.Fatalf("failed to optimize files: %s", err)
 	}
+	// Step 3. iterate over the last output and calculate SRIs for each files
+	if err := calcSriPackage(ctx, config); err != nil {
+		log.Fatalf("failed to optimize files: %s", err)
+	}
+	// Step 4. iterate over the last output and compress all files
+	if err := compressPackage(ctx, config); err != nil {
+		log.Fatalf("failed to optimize files: %s", err)
+	}
 	log.Printf("processed %s\n", *config.Name)
-}
-
-type optimizeJob struct {
-	Ctx          context.Context
-	Optimization *packages.Optimization
-	File         string
-	Dest         string
-}
-
-func (j optimizeJob) clone() optimizeJob {
-	return optimizeJob{
-		Ctx:          j.Ctx,
-		Optimization: j.Optimization,
-		File:         j.File,
-		Dest:         j.Dest,
-	}
-}
-
-func (j optimizeJob) emitFromWorkspace(src string) {
-	dest := path.Join(OUTPUT, j.Dest)
-	if err := os.MkdirAll(path.Dir(dest), 0755); err != nil {
-		log.Fatalf("could not create dest dir: %s", err)
-	}
-
-	ext := path.Ext(src)
-	if _, ok := calculateSRI[ext]; ok {
-		outSRI := fmt.Sprintf("%s.sri", dest)
-		sri.CalculateFileSRI(src, outSRI)
-		log.Printf("sri %s -> %s\n", src, outSRI)
-	}
-
-	if _, ok := doNotCompress[ext]; !ok {
-		outBr := fmt.Sprintf("%s.br", dest)
-		if _, err := os.Stat(outBr); err == nil {
-			log.Printf("file %s already exists at the output\n", outBr)
-		} else {
-			compress.Brotli11CLI(j.Ctx, src, outBr)
-			log.Printf("br %s -> %s\n", src, outBr)
-		}
-
-		outGz := fmt.Sprintf("%s.gz", dest)
-		if _, err := os.Stat(outGz); err == nil {
-			log.Printf("file %s already exists at the output\n", outGz)
-		} else {
-			compress.Gzip9Native(j.Ctx, src, outGz)
-			log.Printf("gz %s -> %s\n", src, outGz)
-		}
-	} else {
-		if err := copyFile(src, dest); err != nil {
-			log.Fatalf("failed to copy file: %s", err)
-		}
-		log.Printf("copy %s -> %s\n", src, dest)
-	}
-}
-
-func (j optimizeJob) emit(name string) {
-	src := path.Join(WORKSPACE, name)
-	j.emitFromWorkspace(src)
 }
 
 func removePackageDir(path string) string {
@@ -186,10 +138,10 @@ func extractInput(source string) error {
 		case tar.TypeDir:
 			// ignore dirs
 		case tar.TypeReg:
-			if err := os.MkdirAll(path.Join(WORKSPACE, filepath.Dir(target)), 0755); err != nil {
+			if err := os.MkdirAll(path.Join(PACKAGE, filepath.Dir(target)), 0755); err != nil {
 				return errors.Wrap(err, "ExtractTarGz: Mkdir() failed")
 			}
-			outFile, err := os.Create(path.Join(WORKSPACE, target))
+			outFile, err := os.Create(path.Join(PACKAGE, target))
 			if err != nil {
 				return errors.Wrap(err, "ExtractTarGz: Create() failed")
 			}
@@ -207,72 +159,20 @@ func extractInput(source string) error {
 	return nil
 }
 
-func optimizeWorker(wg *sync.WaitGroup, jobs <-chan optimizeJob) {
-	for j := range jobs {
-		intputFile := path.Join(WORKSPACE, j.File)
-		ext := path.Ext(j.File)
-		switch ext {
-		case ".jpg", ".jpeg":
-			if j.Optimization.Jpg() {
-				compress.Jpeg(j.Ctx, intputFile)
-			}
-		case ".png":
-			if j.Optimization.Png() {
-				compress.Png(j.Ctx, intputFile)
-			}
-		case ".js":
-			if j.Optimization.Js() {
-				if out := compress.Js(j.Ctx, intputFile); out != nil {
-					j := j.clone()
-					j.Dest = strings.Replace(j.Dest, ".js", ".min.js", 1)
-					j.emitFromWorkspace(*out)
-				}
-			}
-		case ".css":
-			if j.Optimization.Css() {
-				if out := compress.CSS(j.Ctx, intputFile); out != nil {
-					j := j.clone()
-					j.Dest = strings.Replace(j.Dest, ".css", ".min.css", 1)
-					j.emitFromWorkspace(*out)
-				}
-			}
-		}
-
-		j.emit(j.File)
-		wg.Done()
-	}
-}
-
-// Optimizes/minifies package's files on disk for a particular package version.
-func optimizePackage(ctx context.Context, config *packages.Package) error {
-	log.Printf("optimizing files (Js %t, Css %t, Png %t, Jpg %t)\n",
-		config.Optimization.Js(),
-		config.Optimization.Css(),
-		config.Optimization.Png(),
-		config.Optimization.Jpg())
-
-	files := config.NpmFilesFrom(WORKSPACE)
-	cpuCount := runtime.NumCPU()
-	jobs := make(chan optimizeJob, cpuCount)
-
-	var wg sync.WaitGroup
-	wg.Add(len(files))
-
-	for w := 1; w <= cpuCount; w++ {
-		go optimizeWorker(&wg, jobs)
-	}
+// Copy the files package to their inteded location
+func copyPackage(ctx context.Context, config *packages.Package) error {
+	files := config.NpmFilesFrom(PACKAGE)
 
 	for _, file := range files {
-		jobs <- optimizeJob{
-			Ctx:          ctx,
-			Optimization: config.Optimization,
-			File:         file.From,
-			Dest:         file.To,
-		}
-	}
-	close(jobs)
+		src := path.Join(PACKAGE, file.From)
+		dest := path.Join(OUTPUT, file.To)
 
-	wg.Wait()
+		if err := copyFile(src, dest); err != nil {
+			log.Fatalf("failed to copy file: %s", err)
+		}
+		log.Printf("copy %s -> %s\n", src, dest)
+	}
+
 	return nil
 }
 
