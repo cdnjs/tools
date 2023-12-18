@@ -38,7 +38,8 @@ func CSS(ctx context.Context, file string) *string {
 	}
 
 	cmd := exec.Command(cleanCSS, args...)
-	log.Printf("compress: run %s\n", cmd)
+	version := getNpmVersion("uglify-es")
+	log.Printf("compress: run %s (%s) %s\n", cleanCSS, version, args)
 
 	if _, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("Failed to compress CSS: %v\n", err)

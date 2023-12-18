@@ -40,13 +40,15 @@ func Js(ctx context.Context, file string) *string {
 
 	// try with uglifyjs, if it fails retry with uglifyes
 	cmd := exec.Command(UGLIFYJS, args...)
-	log.Printf("compress: run %s\n", cmd)
+	version := getNpmVersion("uglify-js")
+	log.Printf("compress: run %s (%s) %s\n", UGLIFYJS, version, args)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("failed with %s: %s\n", err, out)
 
 		cmd := exec.Command(UGLIFYES, args...)
-		log.Printf("compress: run %s\n", cmd)
+		version := getNpmVersion("uglify-es")
+		log.Printf("compress: run %s (%s) %s\n", UGLIFYES, version, args)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Printf("failed with %s: %s\n", err, out)
