@@ -17,6 +17,7 @@ import (
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/kv"
+	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 
@@ -129,6 +130,9 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 
 	if err := audit.WroteKV(ctx, pkgName, version, sris, kvKeys, string(configStr)); err != nil {
 		log.Printf("failed to audit: %s\n", err)
+	}
+	if err := metrics.NewUpdatePublishedKV(); err != nil {
+		return errors.Wrap(err, "could not report metrics")
 	}
 
 	return nil

@@ -34,6 +34,24 @@ func NewUpdateProccessed() error {
 	})
 }
 
+func NewUpdatePublishedKV() error {
+	return sendMetrics(&IncMetricPayload{
+		Name: "new_update_published_kv",
+	})
+}
+
+func NewUpdatePublishedR2() error {
+	return sendMetrics(&IncMetricPayload{
+		Name: "new_update_published_r2",
+	})
+}
+
+func NewUpdatePublishedAlgolia() error {
+	return sendMetrics(&IncMetricPayload{
+		Name: "new_update_published_algolia",
+	})
+}
+
 func sendMetrics(payload *IncMetricPayload) error {
 	json, err := json.Marshal(payload)
 	if err != nil {
