@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cdnjs/tools/audit"
+	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/sandbox"
 	"github.com/cdnjs/tools/sentry"
 
@@ -111,6 +112,9 @@ func processMessage(ctx context.Context, data []byte) error {
 
 	if err := audit.ProcessedVersion(ctx, message.Pkg, message.Version, logs); err != nil {
 		return errors.Wrap(err, "could not post audit")
+	}
+	if err := metrics.NewUpdateProccessed(); err != nil {
+		return errors.Wrap(err, "could not report metrics")
 	}
 
 	log.Printf("compressing %s\n", outDir)
@@ -231,6 +235,6 @@ func compress(src string, buf io.Writer) error {
 	if err := zr.Close(); err != nil {
 		return err
 	}
-	//
+
 	return nil
 }

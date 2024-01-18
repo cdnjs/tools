@@ -10,6 +10,7 @@ import (
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/git"
+	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/npm"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/util"
@@ -105,6 +106,9 @@ func DoUpdate(ctx context.Context, pkg *packages.Package, versions []version.Ver
 
 	if err := audit.NewVersionDetected(ctx, *pkg.Name, v.Version); err != nil {
 		return errors.Wrap(err, "could not audit")
+	}
+	if err := metrics.NewUpdateDetected(); err != nil {
+		return errors.Wrap(err, "could not report metrics")
 	}
 
 	return nil
