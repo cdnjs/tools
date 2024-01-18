@@ -27,10 +27,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
-	golang.org/x/net v0.0.0-20210326060303-6b1517762897
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/net v0.20.0
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78
-	golang.org/x/tools v0.1.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/api v0.45.0
 	google.golang.org/genproto v0.0.0-20210423144448-3a41ef94ed2b // indirect
 )

@@ -19,6 +19,7 @@ import (
 	"github.com/cdnjs/tools/audit"
 	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/kv"
+	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
 	"github.com/cdnjs/tools/sentry"
 )
@@ -133,6 +134,10 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	if err := audit.WroteAlgolia(ctx, pkgName, currVersion, pkg.Version, entry); err != nil {
 		return fmt.Errorf("failed to audit: %s", err)
 	}
+	if err := metrics.NewUpdatePublishedAlgolia(); err != nil {
+		return errors.Wrap(err, "could not report metrics")
+	}
+
 	return nil
 }
 
