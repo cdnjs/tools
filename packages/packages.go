@@ -176,15 +176,15 @@ func (p *Package) NpmFilesFrom(base string) []NpmFileMoveOp {
 			util.Check(err) // should have already run before in checker so panic if glob invalid
 
 			for _, f := range list {
-				fp := path.Join(basePath, f)
+				filename := path.Join(basePath, f)
 
 				// check if file has been processed before
-				if _, ok := seen[fp]; ok {
+				if _, ok := seen[filename]; ok {
 					continue
 				}
-				seen[fp] = true
+				seen[filename] = true
 
-				info, staterr := os.Stat(fp)
+				info, staterr := os.Stat(filename)
 				if staterr != nil {
 					log.Printf("stat: %s\n", staterr.Error())
 					continue

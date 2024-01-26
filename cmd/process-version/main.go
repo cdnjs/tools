@@ -89,8 +89,12 @@ func (j optimizeJob) emitFromWorkspace(src string) {
 	ext := path.Ext(src)
 	if _, ok := calculateSRI[ext]; ok {
 		outSRI := fmt.Sprintf("%s.sri", dest)
-		sri.CalculateFileSRI(src, outSRI)
-		log.Printf("sri %s -> %s\n", src, outSRI)
+		if _, err := os.Stat(outSRI); err == nil {
+			log.Printf("file %s already exists at the output\n", outSRI)
+		} else {
+			sri.CalculateFileSRI(src, outSRI)
+			log.Printf("sri %s -> %s\n", src, outSRI)
+		}
 	}
 
 	if _, ok := doNotCompress[ext]; !ok {
