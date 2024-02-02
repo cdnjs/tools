@@ -23,6 +23,9 @@ var (
 	CF_ACCOUNT_ID         = os.Getenv("CF_ACCOUNT_ID")
 	PKG_AUTOUPDATE_SOURCE = os.Getenv("PKG_AUTOUPDATE_SOURCE")
 	RESTRICT_PKGS         = strings.Split(os.Getenv("RESTRICT_PKGS"), ",")
+
+	// If specified, only update packages starting with this prefix.
+	PKG_PREFIX = os.Getenv("PKG_PREFIX")
 )
 
 type APIPackage struct {
@@ -73,7 +76,11 @@ func Invoke(w http.ResponseWriter, r *http.Request) {
 
 func isAllowed(pkg string) bool {
 	if os.Getenv("RESTRICT_PKGS") == "" {
-		return true
+		if PKG_PREFIX == "" {
+			return true
+		} else {
+			return strings.HasPrefix(pkg, PKG_PREFIX)
+		}
 	}
 	for _, n := range RESTRICT_PKGS {
 		if pkg == n {
