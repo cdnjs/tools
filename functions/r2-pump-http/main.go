@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -33,12 +32,6 @@ var (
 	R2_KEY_ID     = os.Getenv("R2_KEY_ID")
 	R2_KEY_SECRET = os.Getenv("R2_KEY_SECRET")
 	R2_ENDPOINT   = os.Getenv("R2_ENDPOINT")
-
-	// In an attempt to spread the load across multiple gcp functions, we split
-	// the upload per file extension (either gz, br or woff2). There should
-	// be 50/50 for gz and br. Unknown for woff2.
-	// Example: FILE_EXTENSION=gz
-	FILE_EXTENSION = os.Getenv("FILE_EXTENSION")
 
 	UPLOAD_CONCURENCY = os.Getenv("UPLOAD_CONCURENCY")
 )
@@ -97,7 +90,6 @@ func InvokeInner(d InvokePayload, ctx context.Context) error {
 	}
 
 	onFile := func(name string, r io.Reader) error {
-		ext := filepath.Ext(name)
 		// remove leading slash
 		name = name[1:]
 		key := fmt.Sprintf("%s/%s/%s", pkgName, version, name)
@@ -107,19 +99,17 @@ func InvokeInner(d InvokePayload, ctx context.Context) error {
 			return errors.Wrap(err, "could not read file")
 		}
 
-		if ext == "."+FILE_EXTENSION {
-			keys = append(keys, key)
+		keys = append(keys, key)
 
-			meta := newMetadata(len(content))
+		meta := newMetadata(len(content))
 
-			s3Object := s3.PutObjectInput{
-				Body:     bytes.NewReader(content),
-				Bucket:   bucket,
-				Key:      aws.String(key),
-				Metadata: meta,
-			}
-			uploadQueue <- s3Object
+		s3Object := s3.PutObjectInput{
+			Body:     bytes.NewReader(content),
+			Bucket:   bucket,
+			Key:      aws.String(key),
+			Metadata: meta,
 		}
+		uploadQueue <- s3Object
 		return nil
 	}
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
@@ -136,7 +126,7 @@ func InvokeInner(d InvokePayload, ctx context.Context) error {
 		return fmt.Errorf("failed to parse config: %s", err)
 	}
 
-	if err := audit.WroteR2(ctx, pkgName, version, keys, FILE_EXTENSION); err != nil {
+	if err := audit.WroteR2(ctx, pkgName, version, keys); err != nil {
 		log.Printf("failed to audit: %s\n", err)
 	}
 	if err := metrics.NewUpdatePublishedR2(); err != nil {
