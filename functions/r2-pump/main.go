@@ -133,7 +133,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	if err := audit.WroteR2(ctx, pkgName, version, keys, FILE_EXTENSION); err != nil {
 		log.Printf("failed to audit: %s\n", err)
 	}
-	if err := metrics.NewUpdatePublishedR2(); err != nil {
+	if err := metrics.NewUpdatePublishedR2(FILE_EXTENSION); err != nil {
 		return errors.Wrap(err, "could not report metrics")
 	}
 

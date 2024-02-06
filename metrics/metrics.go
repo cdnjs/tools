@@ -19,36 +19,42 @@ var (
 )
 
 type IncMetricPayload struct {
-	Name string `json:"name"`
+	Name   string   `json:"name"`
+	Labels []string `json:"labels"`
 }
 
 func NewUpdateDetected() error {
 	return sendMetrics(&IncMetricPayload{
-		Name: "new_update_detected",
+		Name:   "new_update_detected",
+		Labels: make([]string, 0),
 	})
 }
 
 func NewUpdateProccessed() error {
 	return sendMetrics(&IncMetricPayload{
-		Name: "new_update_processed",
+		Name:   "new_update_processed",
+		Labels: make([]string, 0),
 	})
 }
 
 func NewUpdatePublishedKV() error {
 	return sendMetrics(&IncMetricPayload{
-		Name: "new_update_published_kv",
+		Name:   "new_update_published_kv",
+		Labels: make([]string, 0),
 	})
 }
 
-func NewUpdatePublishedR2() error {
+func NewUpdatePublishedR2(ext string) error {
 	return sendMetrics(&IncMetricPayload{
-		Name: "new_update_published_r2",
+		Name:   "new_update_published_r2",
+		Labels: []string{ext},
 	})
 }
 
 func NewUpdatePublishedAlgolia() error {
 	return sendMetrics(&IncMetricPayload{
-		Name: "new_update_published_algolia",
+		Name:   "new_update_published_algolia",
+		Labels: make([]string, 0),
 	})
 }
 
