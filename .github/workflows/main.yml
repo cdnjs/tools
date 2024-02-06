@@ -74,16 +74,6 @@ jobs:
           asset_content_type: application/zip
 
       - uses: actions/upload-release-asset@v1
-        name: release r2-pump-http function
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./functions/r2-pump-http/r2-pump-http.zip
-          asset_name: r2-pump-http.zip
-          asset_content_type: application/zip
-
-      - uses: actions/upload-release-asset@v1
         name: release force-update function
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
