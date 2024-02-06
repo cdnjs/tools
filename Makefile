@@ -1,5 +1,5 @@
 GO_BUILD_ARGS = -mod=readonly -v -ldflags="-s -w"
-CLOUD_FUNCTIONS = process-version check-pkg-updates kv-pump algolia-pump force-update r2-pump r2-pump-http
+CLOUD_FUNCTIONS = process-version check-pkg-updates kv-pump algolia-pump force-update r2-pump
 
 define generate-func-make
 	make -C ./functions/$1 $1.zip
