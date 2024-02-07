@@ -100,7 +100,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 				Key:      aws.String(key),
 				Metadata: meta,
 			}
-			if err := uploadFile(ctx, s3Client, &s3Object); err != nil {
+			if err := uploadFileIfMissing(ctx, s3Client, &s3Object); err != nil {
 				return errors.Wrap(err, "failed to upload file")
 			}
 		}
@@ -144,9 +144,23 @@ func newMetadata(size int) map[string]string {
 	return meta
 }
 
-func uploadFile(ctx context.Context, s3Client *s3.Client, obj *s3.PutObjectInput) error {
-	if _, err := s3Client.PutObject(ctx, obj); err != nil {
-		return errors.Wrapf(err, "failed to put Object %s", *obj.Key)
+func uploadFileIfMissing(ctx context.Context, s3Client *s3.Client, putObj *s3.PutObjectInput) error {
+	headObj := s3.HeadObjectInput{
+		Bucket: putObj.Bucket,
+		Key:    putObj.Key,
+	}
+	obj, err := s3Client.HeadObject(ctx, headObj)
+	if err != nil {
+		return errors.Wrapf(err, "failed to head Object %s", *putObj.Key)
+	}
+
+	if obj != nil {
+		log.Printf("obj %s already exists: skipping\n", *putObj.key)
+		return nil
+	}
+
+	if _, err := s3Client.PutObject(ctx, putObj); err != nil {
+		return errors.Wrapf(err, "failed to put Object %s", *putObj.Key)
 	}
 
 	return nil
