@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/cdnjs/tools/audit"
@@ -39,18 +38,11 @@ var (
 	// be 50/50 for gz and br. Unknown for woff2.
 	// Example: FILE_EXTENSION=gz
 	FILE_EXTENSION = os.Getenv("FILE_EXTENSION")
-
-	UPLOAD_CONCURENCY = os.Getenv("UPLOAD_CONCURENCY")
 )
 
 func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	sentry.Init()
 	defer sentry.PanicHandler()
-
-	uploadConcurency, err := strconv.Atoi(UPLOAD_CONCURENCY)
-	if err != nil {
-		return fmt.Errorf("could not read UPLOAD_CONCURENCY: %v", err)
-	}
 
 	pkgName := e.Metadata["package"].(string)
 	version := e.Metadata["version"].(string)
@@ -83,12 +75,8 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	}
 
 	s3Client := s3.NewFromConfig(cfg)
-	keys := make([]string, 0)
-	uploadQueue := make(chan s3.PutObjectInput)
 
-	for w := 1; w <= uploadConcurency; w++ {
-		go uploadWorker(ctx, s3Client, uploadQueue)
-	}
+	keys := make([]string, 0)
 
 	onFile := func(name string, r io.Reader) error {
 		ext := filepath.Ext(name)
@@ -112,14 +100,15 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 				Key:      aws.String(key),
 				Metadata: meta,
 			}
-			uploadQueue <- s3Object
+			if err := uploadFile(ctx, s3Client, &s3Object); err != nil {
+				return errors.Wrap(err, "failed to upload file")
+			}
 		}
 		return nil
 	}
 	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
-	close(uploadQueue)
 
 	if len(keys) == 0 {
 		log.Printf("%s: no files to publish\n", pkgName)
@@ -161,12 +150,4 @@ func uploadFile(ctx context.Context, s3Client *s3.Client, obj *s3.PutObjectInput
 	}
 
 	return nil
-}
-
-func uploadWorker(ctx context.Context, s3Client *s3.Client, queue <-chan s3.PutObjectInput) {
-	for item := range queue {
-		if err := uploadFile(ctx, s3Client, &item); err != nil {
-			panic(errors.Wrap(err, "failed to upload file"))
-		}
-	}
 }
