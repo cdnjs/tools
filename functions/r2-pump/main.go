@@ -48,6 +48,12 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	version := e.Metadata["version"].(string)
 	log.Printf("Invoke %s %s\n", pkgName, version)
 
+	// This update is causing timeouts, ignore for now and sync storages later.
+	if pkgName == "cldr-json" && version == "srl295/random-v44" {
+		log.Printf("update is ignored\n")
+		return nil
+	}
+
 	configStr, err := b64.StdEncoding.DecodeString(e.Metadata["config"].(string))
 	if err != nil {
 		return fmt.Errorf("could not decode config: %v", err)
