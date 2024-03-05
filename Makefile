@@ -7,7 +7,7 @@ define generate-func-make
 endef
 
 .PHONY: all
-all: bin/process-version-host bin/git-sync bin/checker \
+all: bin/process-version-host bin/git-sync bin/checker bin/r2-pump \
    ;$(foreach n,${CLOUD_FUNCTIONS},$(call generate-func-make,$n))
 
 bin/checker:
@@ -21,6 +21,9 @@ bin/process-version-host:
 
 bin/process-version:
 	go build $(GO_BUILD_ARGS) -o bin/process-version ./cmd/process-version
+
+bin/r2-pump:
+	go build $(GO_BUILD_ARGS) -o bin/r2-pump ./cmd/r2-pump
 
 .PHONY: schema
 schema:

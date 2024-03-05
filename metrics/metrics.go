@@ -48,11 +48,13 @@ func NewUpdatePublishedKV() error {
 	})
 }
 
-func NewUpdatePublishedR2(ext string) error {
+func NewUpdatePublishedR2() error {
+	t := "instance"
+
 	return sendMetrics(&IncMetricPayload{
 		Name: "new_update_published_r2",
 		Labels: IncMetricPayloadLabels{
-			Type: &ext,
+			Type: &t,
 		},
 	})
 }
