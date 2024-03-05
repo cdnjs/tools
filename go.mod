@@ -8,6 +8,10 @@ require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.2.0 // indirect
 	github.com/agnivade/levenshtein v1.1.1
 	github.com/algolia/algoliasearch-client-go/v3 v3.4.0
+	github.com/aws/aws-sdk-go-v2 v1.25.2 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.27.5 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.2 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cloudevents/sdk-go v0.10.0 // indirect
 	github.com/cloudflare/cloudflare-go v0.12.1
@@ -33,4 +37,5 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/api v0.45.0
 	google.golang.org/genproto v0.0.0-20210423144448-3a41ef94ed2b // indirect
+	google.golang.org/grpc v1.37.0 // indirect
 )

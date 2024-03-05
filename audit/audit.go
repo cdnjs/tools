@@ -187,14 +187,14 @@ func WroteAlgolia(ctx context.Context, pkgName string, currVersion string, lastV
 	return nil
 }
 
-func WroteR2(ctx context.Context, pkgName string, version string, keys []string, ext string) error {
+func WroteR2(ctx context.Context, pkgName string, version string, keys []string) error {
 	content := bytes.NewBufferString("")
 	fmt.Fprint(content, "Files:\n")
 	for _, key := range keys {
 		fmt.Fprintf(content, "- %s\n", key)
 	}
 
-	if err := create(ctx, pkgName, version, "r2-publish/"+ext, content); err != nil {
+	if err := create(ctx, pkgName, version, "r2-publish", content); err != nil {
 		return errors.Wrap(err, "could not create audit log file")
 	}
 	return nil
