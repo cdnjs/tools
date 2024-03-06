@@ -118,6 +118,7 @@ func invoke(ctx context.Context, e gcp.GCSEvent) error {
 	})
 
 	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion("auto"),
 		config.WithEndpointResolverWithOptions(r2Resolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(R2_KEY_ID, R2_KEY_SECRET, "")),
 	)
