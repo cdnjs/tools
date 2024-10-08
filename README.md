@@ -12,7 +12,11 @@ This repository contains various tools that we use to help with the process of m
 
 ## Tools
 
-- [checker](./cmd/checker)
+- [checker](./cmd/checker): tools for our CI
+- [git-sync](./cmd/git-sync): pushes new cdnjs updates to the GitHub repo
+- [process-version-host](./cmd/process-version-host): listens for new versions and spawns container with [process-version].
+- [process-version](./cmd/process-version): processes new versions (organizes files, compresses, minifies etc)
+- [r2-pump](./cmd/r2-pump): pushes new cdnjs updates to the Cloudflare R2
 
 ## Configuration
 
