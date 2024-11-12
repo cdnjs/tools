@@ -41,6 +41,20 @@ In `tools/` run `npm install`.
 bash ./scripts/test-process-version.sh package-name package-version
 ```
 
+### Cloudflare Workers
+
+
+Compile:
+```
+cd ./worker
+GOOS=js GOARCH=wasm tinygo build -o wasm.wasm ./main.go
+```
+
+Run:
+```
+node run.js wasm.wasm
+```
+
 ## License
 
 Each library hosted on cdnjs is released under its own license. This cdnjs repository is published under [MIT license](LICENSE).

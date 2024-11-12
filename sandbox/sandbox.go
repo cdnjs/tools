@@ -16,11 +16,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	DOCKER_IMAGE      = os.Getenv("DOCKER_IMAGE")
-	CONTAINER_NAME_RE = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
-)
-
 func Setup() (string, string, error) {
 	tmpDir := os.TempDir()
 	inDir, err := ioutil.TempDir(tmpDir, "in")
@@ -36,6 +31,7 @@ func Setup() (string, string, error) {
 }
 
 func Init(ctx context.Context) error {
+	DOCKER_IMAGE = os.Getenv("DOCKER_IMAGE")
 	if DOCKER_IMAGE == "" {
 		return errors.New("DOCKER_IMAGE needs to be present")
 	}
@@ -72,8 +68,10 @@ func Run(ctx context.Context, containerName, in, out string) (string, error) {
 
 	// Sanitize the container's name because some package use special character
 	// in their versions and Docker doesn't accept that.
+	CONTAINER_NAME_RE = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
 	containerName = CONTAINER_NAME_RE.ReplaceAllString(containerName, "-")
 
+	DOCKER_IMAGE = os.Getenv("DOCKER_IMAGE")
 	resp, err := cli.ContainerCreate(ctx,
 		&container.Config{
 			Image: DOCKER_IMAGE,

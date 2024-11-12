@@ -8,8 +8,27 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/karrick/godirwalk"
+	// Fails to compile with:
+	// # github.com/karrick/godirwalk
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/modeTypeWithoutType.go:16:36: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/nameWithoutNamlen.go:13:48: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/nameWithoutNamlen.go:15:33: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:16:35: undefined: os.Getpagesize
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:34:18: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:37:22: undefined: syscall.ReadDirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:55:33: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:58:6: undefined: inoFromDirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:82:19: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:96:22: undefined: syscall.ReadDirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:114:19: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/readdir_unix.go:118:6: undefined: inoFromDirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/reclenFromReclen.go:7:25: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/scandir_unix.go:21:24: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/scandir_unix.go:100:18: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/scandir_unix.go:132:22: undefined: syscall.ReadDirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/scandir_unix.go:149:33: undefined: syscall.Dirent
+	// ../../../../go/pkg/mod/github.com/karrick/godirwalk@v1.15.6/scandir_unix.go:152:6: undefined: inoFromDirent
+	// "github.com/karrick/godirwalk"
 )
 
 // ListFilesGlob is the legacy, slower version that uses
@@ -69,19 +88,19 @@ func ListFilesInVersion(ctx context.Context, base string) ([]string, error) {
 	}
 
 	// walk the files recursively within the cdnjs package version directory
-	err := godirwalk.Walk(base, &godirwalk.Options{
-		Callback: func(fp string, de *godirwalk.Dirent) error {
-			// trim a full path to a path relative to the base directory (inside package version dir)
-			// trim any leading '/' for consistency with legacy ListFilesGlob implementation
-			fp = strings.TrimLeft(strings.TrimPrefix(fp, base), "/")
-			// path must not be a directory, not be hidden, and not be empty
-			if !de.IsDir() && !isHidden(fp) && fp != "" {
-				list = append(list, fp)
-			}
-			return nil
-		},
-		FollowSymbolicLinks: true,
-	})
+	// err := godirwalk.Walk(base, &godirwalk.Options{
+	// 	Callback: func(fp string, de *godirwalk.Dirent) error {
+	// 		// trim a full path to a path relative to the base directory (inside package version dir)
+	// 		// trim any leading '/' for consistency with legacy ListFilesGlob implementation
+	// 		fp = strings.TrimLeft(strings.TrimPrefix(fp, base), "/")
+	// 		// path must not be a directory, not be hidden, and not be empty
+	// 		if !de.IsDir() && !isHidden(fp) && fp != "" {
+	// 			list = append(list, fp)
+	// 		}
+	// 		return nil
+	// 	},
+	// 	FollowSymbolicLinks: true,
+	// })
 
-	return list, err
+	return list, nil
 }

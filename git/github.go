@@ -37,7 +37,8 @@ func getRepo(gitURL string) string {
 	// "git@github.com:chris-pearce/backpack.css.git"
 	// "git+https://github.com/18F/web-design-standards.git"
 	// "https://github.com/epeli/underscore.string"
-	re := regexp.MustCompile(`.*github\.com[:|/](.*?)(?:\.git)?$`)
+	// re := regexp.MustCompile(`.*github\.com[:|/](.*?)(?:\.git)?$`)
+	re := regexp.MustCompile(`.*github\.com/.*`)
 	return re.ReplaceAllString(gitURL, "$1")
 }
 

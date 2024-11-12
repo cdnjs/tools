@@ -17,10 +17,10 @@ import (
 
 	"github.com/cdnjs/tools/algolia"
 	"github.com/cdnjs/tools/audit"
-	"github.com/cdnjs/tools/gcp"
 	"github.com/cdnjs/tools/kv"
 	"github.com/cdnjs/tools/metrics"
 	"github.com/cdnjs/tools/packages"
+	"github.com/cdnjs/tools/r2"
 	"github.com/cdnjs/tools/sentry"
 )
 
@@ -45,17 +45,14 @@ func getExistingVersionsFromAggregatedMetadata(p *packages.Package) ([]string, e
 	return versions, nil
 }
 
-func Invoke(ctx context.Context, e gcp.GCSEvent) error {
+func Run(ctx context.Context, bucket string, file string, pkgName string, currVersion string, config string) error {
 	sentry.Init()
 	defer sentry.PanicHandler()
 
-	log.Printf("File: %v\n", e.Name)
-	log.Printf("Metadata: %v\n", e.Metadata)
+	log.Printf("File: %v\n", file)
+	log.Printf("Config: %v\n", config)
 
-	pkgName := e.Metadata["package"].(string)
-	currVersion := e.Metadata["version"].(string)
-
-	configStr, err := b64.StdEncoding.DecodeString(e.Metadata["config"].(string))
+	configStr, err := b64.StdEncoding.DecodeString(config)
 	if err != nil {
 		return fmt.Errorf("could not decode config: %v", err)
 	}
@@ -76,7 +73,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 	if err != nil {
 		return fmt.Errorf("failed to retrieve existing versions: %s", err)
 	}
-	archive, err := gcp.ReadObject(ctx, e.Bucket, e.Name)
+	archive, err := r2.ReadObject(ctx, bucket, file)
 	if err != nil {
 		return fmt.Errorf("could not read object: %v", err)
 	}
@@ -102,7 +99,7 @@ func Invoke(ctx context.Context, e gcp.GCSEvent) error {
 		}
 		return nil
 	}
-	if err := gcp.Inflate(bytes.NewReader(archive), onFile); err != nil {
+	if err := r2.Inflate(bytes.NewReader(archive), onFile); err != nil {
 		return fmt.Errorf("could not inflate archive: %s", err)
 	}
 

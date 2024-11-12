@@ -55,7 +55,8 @@ func getAlternativeNames(name string) []string {
 	return names
 }
 
-var githubURL = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
+// var githubURL = regexp.MustCompile(`github\.com[/|:]([\w\.-]+)\/([\w\.-]+)\/?`)
+var githubURL = regexp.MustCompile(`github\.com/.*`)
 
 func getGitHubMeta(repo *packages.Repository) (*GitHubMeta, error) {
 	if repo == nil {
