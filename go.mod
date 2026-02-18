@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cloudflare/cloudflare-go v0.12.1
-	github.com/docker/docker v23.0.18+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/gobwas/glob v0.2.3
