@@ -6,6 +6,8 @@ jobs:
     name: Release
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v2
 
@@ -151,11 +153,19 @@ jobs:
 
   register_docker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # Pull requests from forks always get a read-only token, whatever
+      # `permissions` asks for, so they only build the image.
+      PUSH_IMAGE: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Login to GitHub Docker registry
+        if: env.PUSH_IMAGE == 'true'
         uses: docker/login-action@v1
         with:
           username: ${{ github.actor }}
@@ -167,5 +177,5 @@ jobs:
         with:
           context: .
           file: ./docker/process-version/Dockerfile
-          push: true
+          push: ${{ env.PUSH_IMAGE == 'true' }}
           tags: ghcr.io/${{ github.repository_owner }}/tools:c${{ github.sha }}
