@@ -147,6 +147,10 @@ func TestHumanReadableSchema(t *testing.T) {
 			errors:   []string{"autoupdate.target: String length must be greater than or equal to 1"},
 		},
 		{
+			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/ignore_versions_duplicate.json",
+			errors:   []string{"autoupdate.ignoreVersions: array items[0,1] must be unique"},
+		},
+		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/ignore_versions_empty.json",
 			errors:   []string{"autoupdate.ignoreVersions.0: String length must be greater than or equal to 1"},
 		},

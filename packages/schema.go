@@ -150,6 +150,7 @@ const humanReadableProperties = `
                 "ignoreVersions": {
                     "description": "Upstream versions to skip. Each entry is a glob matched against the whole version.",
                     "type": "array",
+                    "uniqueItems": true,
                     "items": {
                         "type": "string",
                         "minLength": 1
