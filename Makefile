@@ -25,11 +25,6 @@ bin/process-version:
 bin/r2-pump:
 	go build $(GO_BUILD_ARGS) -o bin/r2-pump ./cmd/r2-pump
 
-.PHONY: schema
-schema:
-	./bin/packages human > schema_human.json
-	./bin/packages non-human > schema_non_human.json
-
 .PHONY: clean
 clean:
 	rm -rfv bin/*
