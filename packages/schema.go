@@ -146,6 +146,14 @@ const humanReadableProperties = `
                 },
                 "excludeFromSearch": {
                     "type": "boolean"
+                },
+                "ignoreVersions": {
+                    "description": "Upstream versions to skip. Each entry is a glob matched against the whole version.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
                 }
             },
             "required": [

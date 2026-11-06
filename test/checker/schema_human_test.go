@@ -99,6 +99,10 @@ func TestHumanReadableSchema(t *testing.T) {
 			valid:    true,
 		},
 		{
+			filePath: "schema_tests/human_schema_tests/autoupdate/valid/ignore_versions.json",
+			valid:    true,
+		},
+		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/valid/source_git.json",
 			valid:    true,
 		},
@@ -141,6 +145,14 @@ func TestHumanReadableSchema(t *testing.T) {
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/empty_target.json",
 			errors:   []string{"autoupdate.target: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/ignore_versions_empty.json",
+			errors:   []string{"autoupdate.ignoreVersions.0: String length must be greater than or equal to 1"},
+		},
+		{
+			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/ignore_versions_not_array.json",
+			errors:   []string{"autoupdate.ignoreVersions: Invalid type. Expected: array, given: string"},
 		},
 		{
 			filePath: "schema_tests/human_schema_tests/autoupdate/invalid/missing_autoupdate.json",
