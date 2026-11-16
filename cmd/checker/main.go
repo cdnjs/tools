@@ -144,6 +144,17 @@ func showFiles(pckgPath string, noPathValidation bool) error {
 		}
 	}
 
+	// check the version cdnjs serves as latest first, not the most recently
+	// published one: a package that still maintains an older major line can
+	// publish a patch there after its latest release
+	versionNames := make([]string, 0, len(versions))
+	for _, v := range versions {
+		versionNames = append(versionNames, v.Version)
+	}
+	if latest := packages.GetLatestStableVersion(versionNames); latest != nil {
+		versions = moveVersionToFront(versions, *latest)
+	}
+
 	// download into temp dir
 	if len(versions) > 0 {
 		// print info for first src version
@@ -159,6 +170,21 @@ func showFiles(pckgPath string, noPathValidation bool) error {
 		showErr(ctx, "no version found on "+src)
 	}
 	return nil
+}
+
+// moveVersionToFront returns versions with the given version moved to
+// the front, keeping the order of the others. It returns versions
+// unchanged if the version isn't in it.
+func moveVersionToFront(versions []version.Version, v string) []version.Version {
+	for i, candidate := range versions {
+		if candidate.Version == v {
+			reordered := make([]version.Version, 0, len(versions))
+			reordered = append(reordered, candidate)
+			reordered = append(reordered, versions[:i]...)
+			return append(reordered, versions[i+1:]...)
+		}
+	}
+	return versions
 }
 
 // Try to parse a *Package, outputting ci errors/warnings.
