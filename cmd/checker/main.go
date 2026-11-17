@@ -131,8 +131,11 @@ func showFiles(pckgPath string, noPathValidation bool) error {
 	case "git":
 		{
 			var err error
-			// get git versions and sort
-			versions, err = git.GetVersions(ctx, pckg.Autoupdate)
+			// get git versions and sort. GitHub returns tags sorted by
+			// name, so fetch as many as cdnjs-bot (50): with only the
+			// last 10, a repo whose old tags sort after its new ones
+			// (`Release_4_1_0` after `5.1.1`) never shows a new version
+			versions, err = git.GetVersionsWithLimit(ctx, pckg.Autoupdate, 50)
 			if err != nil {
 				return errors.Wrap(err, "failed to retrieve git versions")
 			}
