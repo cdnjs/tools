@@ -29,20 +29,33 @@ type MonthlyDownload struct {
 
 // Exists determines if an npm package exists.
 func Exists(name string) bool {
-	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
+	resp, err := util.GetWithRetry(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
-	return resp.StatusCode == http.StatusOK
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true
+	case http.StatusNotFound:
+		return false
+	default:
+		body, _ := ioutil.ReadAll(resp.Body)
+		panic(fmt.Errorf("registry.npmjs.org returned HTTP %d for %s: %.200s", resp.StatusCode, name, body))
+	}
 }
 
 // GetMonthlyDownload uses the npm API to get the MonthlyDownload
 // for a particular npm package.
 func GetMonthlyDownload(name string) MonthlyDownload {
-	resp, err := http.Get(util.GetProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
+	resp, err := util.GetWithRetry(util.GetProtocol() + "://api.npmjs.org/downloads/point/last-month/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	util.Check(err)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		panic(fmt.Errorf("api.npmjs.org returned HTTP %d for %s: %.200s", resp.StatusCode, name, body))
+	}
 
 	var counts MonthlyDownload
 	util.Check(json.Unmarshal(body, &counts))
@@ -53,12 +66,15 @@ func GetMonthlyDownload(name string) MonthlyDownload {
 // as well as the latest version based on the `latest` tag.
 func GetVersions(ctx context.Context, config *packages.Autoupdate) ([]version.Version, *string) {
 	name := *config.Target
-	resp, err := http.Get(util.GetProtocol() + "://registry.npmjs.org/" + name)
+	resp, err := util.GetWithRetry(util.GetProtocol() + "://registry.npmjs.org/" + name)
 	util.Check(err)
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	util.Check(err)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		panic(fmt.Errorf("registry.npmjs.org returned HTTP %d for %s: %.200s", resp.StatusCode, name, body))
+	}
 
 	var r Registry
 	util.Check(json.Unmarshal(body, &r))

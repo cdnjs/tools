@@ -475,7 +475,7 @@ c.js
 		},
 
 		{
-			name: "sort by time stamp",
+			name: "latest stable version first, then sort by time stamp",
 			input: `{
 		    "name": "a-happy-tyler",
 		    "description": "Tyler is happy. Be like Tyler.",
@@ -495,7 +495,7 @@ c.js
 		        "type": "git",
 		        "url": "git://github.com/tc80/a-happy-tyler.git"
 		    },
-		    "filename": "2.js",
+		    "filename": "5.js",
 		    "homepage": "https://github.com/tc80",
 			"autoupdate": {
 				"source": "npm",
@@ -507,16 +507,16 @@ c.js
 		}`,
 			expected: `
 
-most recent version: 2.0.0
+most recent version: 5.0.0
 
 ` + "```" + `
-2.js
+5.js
 ` + "```" + `
 
 4 last version(s):
+- 2.0.0: 1 file(s) matched :heavy_check_mark:
 - 3.0.0: 1 file(s) matched :heavy_check_mark:
 - 1.0.0: 1 file(s) matched :heavy_check_mark:
-- 5.0.0: 1 file(s) matched :heavy_check_mark:
 - 4.0.0: 1 file(s) matched :heavy_check_mark:
 `,
 		},

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,9 +26,13 @@ const (
 	unpopularPkg   = "unpopular"
 	nonexistentPkg = "nonexistent"
 	normalPkg      = "normal"
+	rateLimitedPkg = "ratelimited"
 	unpopularRepo  = "user/unpopularRepo"
 	popularRepo    = "user/popularRepo"
 )
+
+// counts requests to the downloads API for rateLimitedPkg
+var rateLimitedDownloadRequests int32
 
 // fakes the npm api and GitHub api for testing purposes
 func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
@@ -39,8 +44,21 @@ func fakeNpmGitHubHandlerLint(w http.ResponseWriter, r *http.Request) {
 		}
 	case "registry.npmjs.org/" + unpopularPkg:
 	case "registry.npmjs.org/" + normalPkg:
+	case "registry.npmjs.org/" + rateLimitedPkg:
 		{
 			fmt.Fprint(w, `{}`)
+		}
+	case "api.npmjs.org/downloads/point/last-month/" + rateLimitedPkg:
+		{
+			// answer the first request like npm's rate limiter: HTTP 429,
+			// `Retry-After: 0` and a body that isn't JSON
+			if atomic.AddInt32(&rateLimitedDownloadRequests, 1) == 1 {
+				w.Header().Set("Retry-After", "0")
+				w.WriteHeader(http.StatusTooManyRequests)
+				fmt.Fprint(w, "error code: 1015")
+				return
+			}
+			fmt.Fprintf(w, `{"downloads":3,"start":"2020-05-28","end":"2020-06-26","package":"%s"}`, rateLimitedPkg)
 		}
 	case "api.npmjs.org/downloads/point/last-month/" + unpopularPkg:
 		{
@@ -285,6 +303,48 @@ func TestCheckerLint(t *testing.T) {
 		},
 
 		{
+			name: "retry npm downloads when rate limited",
+			input: `{
+		    "name": "a-happy-tyler",
+		    "description": "Tyler is happy. Be like Tyler.",
+		    "keywords": [
+		        "tyler",
+		        "happy"
+		    ],
+		    "authors": [
+		        {
+		            "name": "Tyler Caslin",
+		            "email": "tylercaslin47@gmail.com",
+		            "url": "https://github.com/tc80"
+		        }
+		    ],
+		    "license": "MIT",
+		    "repository": {
+		        "type": "git",
+		        "url": "git://github.com/` + unpopularRepo + `"
+		    },
+		    "filename": "happy.js",
+		    "homepage": "https://github.com/tc80",
+		    "autoupdate": {
+		        "source": "npm",
+		        "target": "` + rateLimitedPkg + `",
+		        "fileMap": [
+		            {
+		                "basePath": "src",
+		                "files": [
+		                    "*"
+		                ]
+		            }
+		        ]
+		    }
+		}`,
+			expected: []string{
+				ciWarn(file, "stars on GitHub is under 200"),
+				ciWarn(file, "package download per month on npm is under 800"),
+			},
+		},
+
+		{
 			name: "check popularity (npm)",
 			input: `{
 		    "name": "a-happy-tyler",
@@ -433,6 +493,7 @@ func TestCheckerLint(t *testing.T) {
 				assert.Nil(t, err)
 			}
 
+			atomic.StoreInt32(&rateLimitedDownloadRequests, 0)
 			out := runChecker(fakeBotPath, httpTestProxy, tc.validatePath, "lint", pkgFile)
 			for _, text := range tc.expected {
 				assert.Contains(t, out, strings.ReplaceAll(text, "\n", ""))
